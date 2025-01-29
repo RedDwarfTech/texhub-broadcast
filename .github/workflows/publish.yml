@@ -1,0 +1,24 @@
+name: rdy-websocket-npm-publish
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      # https://stackoverflow.com/questions/71318659/gitgithub-com-permission-denied-publickey-when-using-yarn-to-install-github
+      - name: Build React App
+        run: |
+          npm install
+          npm run dist
+        env:
+          CI: false
+      - uses: JS-DevTools/npm-publish@v2
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
