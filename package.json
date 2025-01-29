@@ -1,0 +1,42 @@
+{
+  "name": "y-websocket-ts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint --fix",
+    "dev": "vite-node src/app.ts",
+    "build": "vue-tsc --noEmit && vite build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "globals": "^15.14.0",
+    "lib0": "^0.2.99",
+    "lodash": "^4.17.21",
+    "log4js": "^6.9.1",
+    "meilisearch": "^0.35.1",
+    "prom-client": "^14.2.0",
+    "socket.io": "^4.8.1",
+    "ws": "^8.18.0",
+    "y-leveldb": "^0.1.2",
+    "y-protocols": "^1.0.6",
+    "yjs": "^13.6.23"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/lodash": "^4.17.15",
+    "@types/ws": "^8.5.14",
+    "@typescript-eslint/eslint-plugin": "^8.22.0",
+    "@typescript-eslint/parser": "^8.22.0",
+    "eslint": "^9.19.0",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.11",
+    "vite-node": "^3.0.4",
+    "vitest": "^3.0.4"
+  }
+}

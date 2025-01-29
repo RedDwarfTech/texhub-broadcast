@@ -1,2 +1,8 @@
-# texhub-broadcast
-The collarborate server side for texhub.
+
+#### start app
+
+```bash
+pnpm vite-node src/app.ts
+```
+
+
