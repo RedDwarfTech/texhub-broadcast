@@ -1,7 +1,7 @@
+import express, { Request, Response } from "express";
 export const routerProfile = express.Router();
 import fs from 'fs';
 import v8 from 'v8';
-import express, { Request, Response } from "express";
 
 routerProfile.get('/dump', (req: Request, res: Response) => {
   const snapshotStream = v8.getHeapSnapshot()
