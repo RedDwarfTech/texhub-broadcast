@@ -31,8 +31,6 @@ export function setupWSConnection(
         messageListener(conn, doc, new Uint8Array(message));
     }
   );
-  // Check if connection is still alive
-  let pongReceived = true;
   conn.on("close", (code, reason, wasClean) => {
     if (code !== 1000 && code !== 4001) {
       logger.error(
@@ -47,9 +45,6 @@ export function setupWSConnection(
       );
     }
     closeConn(doc, conn);
-  });
-  conn.on("pong", () => {
-    pongReceived = true;
   });
   // put the following in a variables in a block so the interval handlers don't keep in in
   // scope

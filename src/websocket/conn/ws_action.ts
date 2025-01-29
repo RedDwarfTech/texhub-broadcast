@@ -61,14 +61,14 @@ export const send = (doc: WSSharedDoc, conn: any, m: Uint8Array) => {
  * @param {Uint8Array} message
  */
 export const messageListener = (
-  conn: any,
+  conn: Socket,
   doc: WSSharedDoc,
   message: Uint8Array
 ) => {
   try {
     const encoder = encoding.createEncoder();
     const decoder = decoding.createDecoder(message);
-    const messageType = decoding.readVarUint(decoder);
+    const messageType: number = decoding.readVarUint(decoder);
     switch (messageType) {
       case messageSync:
         encoding.writeVarUint(encoder, messageSync);
