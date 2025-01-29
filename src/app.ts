@@ -18,7 +18,11 @@ app.use("/metrics", routerProfile);
 var httpServer = http.createServer(app);
 
 // websocket
-const websocketServer = new Server(httpServer);
+const websocketServer = new Server(httpServer, {
+  cors: {
+    origin: "https://tex.poemhub.top",
+  },
+});
 
 websocketServer.on("connection", (socket: Socket) => {
   if (logger.isDebugEnabled()) {
