@@ -41,6 +41,9 @@ dependencies:
   y-protocols:
     specifier: ^1.0.6
     version: 1.0.6(yjs@13.6.23)
+  y-websocket:
+    specifier: ^1.5.0
+    version: 1.5.4(yjs@13.6.23)
   yjs:
     specifier: ^13.6.23
     version: 13.6.23
@@ -52,6 +55,9 @@ devDependencies:
   '@types/lodash':
     specifier: ^4.17.15
     version: 4.17.15
+  '@types/node':
+    specifier: ^22.12.0
+    version: 22.12.0
   '@types/ws':
     specifier: ^8.5.14
     version: 8.5.14
@@ -69,13 +75,13 @@ devDependencies:
     version: 5.7.3
   vite:
     specifier: ^6.0.11
-    version: 6.0.11
+    version: 6.0.11(@types/node@22.12.0)
   vite-node:
     specifier: ^3.0.4
-    version: 3.0.4
+    version: 3.0.4(@types/node@22.12.0)
   vitest:
     specifier: ^3.0.4
-    version: 3.0.4
+    version: 3.0.4(@types/node@22.12.0)
 
 packages:
 
@@ -821,7 +827,7 @@ packages:
       '@vitest/spy': 3.0.4
       estree-walker: 3.0.3
       magic-string: 0.30.17
-      vite: 6.0.11
+      vite: 6.0.11(@types/node@22.12.0)
     dev: true
 
   /@vitest/pretty-format@3.0.4:
@@ -933,6 +939,12 @@ packages:
     resolution: {integrity: sha512-Izi8RQcffqCeNVgFigKli1ssklIbpHnCYc6AknXGYoB6grJqyeby7jv12JUQgmTAnIDnbck1uxksT4dzN3PWBA==}
     engines: {node: '>=12'}
     dev: true
+
+  /async-limiter@1.0.1:
+    resolution: {integrity: sha512-csOlWGAcRFJaI6m+F2WKdnMKr4HhdhFVBk0H/QbJFMCr+uO2kwohwXQPxw/9OCxp05r5ghVBFSyioixx3gfkNQ==}
+    requiresBuild: true
+    dev: false
+    optional: true
 
   /balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
@@ -1876,6 +1888,10 @@ packages:
       p-locate: 5.0.0
     dev: true
 
+  /lodash.debounce@4.0.8:
+    resolution: {integrity: sha512-FT1yDzDYEoYWhnSGnpE/4Kj1fLZkDFyqRb7fNt6FdYOSxlUWAtp42Eh6Wb0rGIv/m9Bgo7x4GhQbm5Ys4SG5ow==}
+    dev: false
+
   /lodash.merge@4.6.2:
     resolution: {integrity: sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==}
     dev: true
@@ -2534,7 +2550,7 @@ packages:
     engines: {node: '>= 0.8'}
     dev: false
 
-  /vite-node@3.0.4:
+  /vite-node@3.0.4(@types/node@22.12.0):
     resolution: {integrity: sha512-7JZKEzcYV2Nx3u6rlvN8qdo3QV7Fxyt6hx+CCKz9fbWxdX5IvUOmTWEAxMrWxaiSf7CKGLJQ5rFu8prb/jBjOA==}
     engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
     hasBin: true
@@ -2543,7 +2559,7 @@ packages:
       debug: 4.4.0
       es-module-lexer: 1.6.0
       pathe: 2.0.2
-      vite: 6.0.11
+      vite: 6.0.11(@types/node@22.12.0)
     transitivePeerDependencies:
       - '@types/node'
       - jiti
@@ -2559,7 +2575,7 @@ packages:
       - yaml
     dev: true
 
-  /vite@6.0.11:
+  /vite@6.0.11(@types/node@22.12.0):
     resolution: {integrity: sha512-4VL9mQPKoHy4+FE0NnRE/kbY51TOfaknxAjt3fJbGJxhIpBZiqVzlZDEesWWsuREXHwNdAoOFZ9MkPEVXczHwg==}
     engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
     hasBin: true
@@ -2599,6 +2615,7 @@ packages:
       yaml:
         optional: true
     dependencies:
+      '@types/node': 22.12.0
       esbuild: 0.24.2
       postcss: 8.5.1
       rollup: 4.32.1
@@ -2606,7 +2623,7 @@ packages:
       fsevents: 2.3.3
     dev: true
 
-  /vitest@3.0.4:
+  /vitest@3.0.4(@types/node@22.12.0):
     resolution: {integrity: sha512-6XG8oTKy2gnJIFTHP6LD7ExFeNLxiTkK3CfMvT7IfR8IN+BYICCf0lXUQmX7i7JoxUP8QmeP4mTnWXgflu4yjw==}
     engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
     hasBin: true
@@ -2634,6 +2651,7 @@ packages:
       jsdom:
         optional: true
     dependencies:
+      '@types/node': 22.12.0
       '@vitest/expect': 3.0.4
       '@vitest/mocker': 3.0.4(vite@6.0.11)
       '@vitest/pretty-format': 3.0.4
@@ -2651,8 +2669,8 @@ packages:
       tinyexec: 0.3.2
       tinypool: 1.0.2
       tinyrainbow: 2.0.0
-      vite: 6.0.11
-      vite-node: 3.0.4
+      vite: 6.0.11(@types/node@22.12.0)
+      vite-node: 3.0.4(@types/node@22.12.0)
       why-is-node-running: 2.3.0
     transitivePeerDependencies:
       - jiti
@@ -2701,6 +2719,22 @@ packages:
     resolution: {integrity: sha512-BN22B5eaMMI9UMtjrGd5g5eCYPpCPDUy0FJXbYsaT5zYxjFOckS53SQDE3pWkVoWpHXVb3BrYcEN4Twa55B5cA==}
     engines: {node: '>=0.10.0'}
     dev: true
+
+  /ws@6.2.3:
+    resolution: {integrity: sha512-jmTjYU0j60B+vHey6TfR3Z7RD61z/hmxBS3VMSGIrroOWXQEneK1zNuotOUrGyBHQj0yrpsLHPWtigEFd13ndA==}
+    requiresBuild: true
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: ^5.0.2
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+    dependencies:
+      async-limiter: 1.0.1
+    dev: false
+    optional: true
 
   /ws@8.17.1:
     resolution: {integrity: sha512-6XQFvXTkbfUOZOKKILFG1PDK2NDQs4azKQl26T0YS5CxqWLgXajbPZ+h4gZekJyRqFU8pvnbAbbs/3TgRPy+GQ==}
@@ -2751,6 +2785,25 @@ packages:
     dependencies:
       lib0: 0.2.99
       yjs: 13.6.23
+    dev: false
+
+  /y-websocket@1.5.4(yjs@13.6.23):
+    resolution: {integrity: sha512-Y3021uy0anOIHqAPyAZbNDoR05JuMEGjRNI8c+K9MHzVS8dWoImdJUjccljAznc8H2L7WkIXhRHZ1igWNRSgPw==}
+    engines: {node: '>=16.0.0', npm: '>=8.0.0'}
+    hasBin: true
+    peerDependencies:
+      yjs: ^13.5.6
+    dependencies:
+      lib0: 0.2.99
+      lodash.debounce: 4.0.8
+      y-protocols: 1.0.6(yjs@13.6.23)
+      yjs: 13.6.23
+    optionalDependencies:
+      ws: 6.2.3
+      y-leveldb: 0.1.2(yjs@13.6.23)
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
     dev: false
 
   /yjs@13.6.23:
