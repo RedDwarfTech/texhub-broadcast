@@ -1,5 +1,5 @@
 // @ts-ignore
-import mapWrapper from "lib0/dist/map.cjs";
+import { mapWrapper } from "lib0/dist/map.cjs";
 import { WSSharedDoc } from "./ws_share_doc";
 import { persistence } from "../storage/leveldb";
 // @ts-ignore
