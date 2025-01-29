@@ -11,5 +11,5 @@ COPY --chown=node:node . .
 COPY ./scripts/startup-app.sh /home/node/app
 ADD ./docs/sources.list /etc/apt/ 
 EXPOSE 1234
-EXPOSE 3000
+
 CMD ["sh","./startup-app.sh"]
