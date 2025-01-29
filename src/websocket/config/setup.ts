@@ -1,7 +1,5 @@
-import log4js from "log4js";
 import { getYDoc, messageSync } from "../../yjs/yjs_utils";
 import { closeConn, messageListener, send } from "../conn/ws_action";
-var logger = log4js.getLogger();
 // @ts-ignore
 import encoding from "lib0/dist/encoding.cjs";
 // @ts-ignore
@@ -13,6 +11,7 @@ import { messageAwareness } from "../../yjs/ws_share_doc";
 import awarenessProtocol from "y-protocols/dist/awareness.cjs";
 import { Socket } from "socket.io";
 import http from "http";
+import logger from "../../common/log4js_config";
 
 export function setupWSConnection(
   conn: Socket,
@@ -25,12 +24,10 @@ export function setupWSConnection(
   const doc = getYDoc(docName, gc);
   doc.conns.set(conn, new Set());
   // listen and reply to events
-  conn.on(
-    "message",
-    (message) => {
-        messageListener(conn, doc, new Uint8Array(message));
-    }
-  );
+  conn.on("message", (message) => {
+    logger.info("received message:" + message);
+    messageListener(conn, doc, new Uint8Array(message));
+  });
   conn.on("close", (code, reason, wasClean) => {
     if (code !== 1000 && code !== 4001) {
       logger.error(

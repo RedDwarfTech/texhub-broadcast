@@ -6,6 +6,7 @@ import { routerHealth } from "./controller/health/health_controller";
 import { routerDoc } from "./controller/doc/doc_controller";
 import { routerMetrics } from "./controller/profile/metrics_controller";
 import { routerProfile } from "./controller/profile/profile_controller";
+import logger from "./common/log4js_config";
 const PORT = 1234;
 const app = express();
 
@@ -20,6 +21,10 @@ var httpServer = http.createServer(app);
 const websocketServer = new Server(httpServer);
 
 websocketServer.on("connection", (socket: Socket) => {
+  if (logger.isDebugEnabled()) {
+    logger.debug("connection....");
+  }
+  logger.warn("connection warning....");
   setupWSConnection(socket, socket.request);
 });
 
