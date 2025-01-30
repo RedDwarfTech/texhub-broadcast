@@ -22,9 +22,8 @@ const websocketServer = new Server(httpServer, {
   cors: {
     origin: "https://tex.poemhub.top",
     credentials: true,
-    allowedHeaders: [
-      "my-custom-header"
-    ]
+    allowedHeaders: ["*"],
+    methods: ["GET", "HEAD", "OPTIONS"]
   },
 });
 
