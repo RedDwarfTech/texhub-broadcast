@@ -1,7 +1,7 @@
 // @ts-ignore
 import * as Y from "yjs";
 // @ts-ignore
-import encoding from "lib0/dist/encoding.cjs";
+import { createEncoder, writeVarUint, writeVarUint8Array, toUint8Array } from "lib0/dist/encoding.cjs";
 // @ts-ignore
 import decoding from "lib0/dist/decoding.cjs";
 // @ts-ignore
@@ -62,13 +62,13 @@ export class WSSharedDoc extends Y.Doc {
         }
       }
       // broadcast awareness update
-      const encoder = encoding.createEncoder();
-      encoding.writeVarUint(encoder, messageAwareness);
-      encoding.writeVarUint8Array(
+      const encoder = createEncoder();
+      writeVarUint(encoder, messageAwareness);
+      writeVarUint8Array(
         encoder,
         awarenessProtocol.encodeAwarenessUpdate(this.awareness, changedClients)
       );
-      const buff = encoding.toUint8Array(encoder);
+      const buff = toUint8Array(encoder);
       this.conns.forEach((_, c) => {
         send(this, c, buff);
       });
