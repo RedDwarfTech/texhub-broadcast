@@ -1,7 +1,7 @@
 import { getYDoc, messageSync } from "../../yjs/yjs_utils";
 import { closeConn, messageListener, send } from "../conn/ws_action";
 // @ts-ignore
-import encoding from "lib0/dist/encoding.cjs";
+import { createEncoder, toUint8Array,writeVarUint,writeVarUint8Array } from "lib0/dist/encoding.cjs";
 // @ts-ignore
 import decoding from "lib0/dist/decoding.cjs";
 // @ts-ignore
@@ -47,22 +47,22 @@ export function setupWSConnection(
   // scope
   {
     // send sync step 1
-    const encoder = encoding.createEncoder();
-    encoding.writeVarUint(encoder, messageSync);
+    const encoder = createEncoder();
+    writeVarUint(encoder, messageSync);
     syncProtocol.writeSyncStep1(encoder, doc);
-    send(doc, conn, encoding.toUint8Array(encoder));
+    send(doc, conn, toUint8Array(encoder));
     const awarenessStates = doc.awareness.getStates();
     if (awarenessStates.size > 0) {
-      const encoder = encoding.createEncoder();
-      encoding.writeVarUint(encoder, messageAwareness);
-      encoding.writeVarUint8Array(
+      const encoder = createEncoder();
+      writeVarUint(encoder, messageAwareness);
+      writeVarUint8Array(
         encoder,
         awarenessProtocol.encodeAwarenessUpdate(
           doc.awareness,
           Array.from(awarenessStates.keys())
         )
       );
-      send(doc, conn, encoding.toUint8Array(encoder));
+      send(doc, conn, toUint8Array(encoder));
     }
   }
 }
