@@ -5,7 +5,7 @@ WORKDIR /home/node/app
 COPY package*.json ./
 COPY dist ./dist
 USER root
-RUN npm install && npm install npx && apt-get install curl -y
+RUN npm install && npm install npx && apt-get update && apt-get install curl -y
 # RUN apk update && apk add curl websocat
 COPY --chown=node:node . .
 COPY ./scripts/startup-app.sh /home/node/app
