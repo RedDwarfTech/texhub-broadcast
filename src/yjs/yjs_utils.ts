@@ -1,5 +1,5 @@
 // @ts-ignore
-import { mapWrapper } from "lib0/dist/map.cjs";
+import { setIfUndefined } from "lib0/dist/map.cjs";
 import { WSSharedDoc } from "./ws_share_doc";
 import { persistence } from "../storage/leveldb";
 // @ts-ignore
@@ -34,7 +34,7 @@ export const messageSync = 0;
  * @return {WSSharedDoc}
  */
 export const getYDoc = (docname: string, gc: boolean = true): WSSharedDoc =>
-  mapWrapper.setIfUndefined(docs, docname, () => {
+  setIfUndefined(docs, docname, () => {
     const doc: WSSharedDoc = new WSSharedDoc(docname);
     doc.gc = gc;
     if (persistence !== null) {
