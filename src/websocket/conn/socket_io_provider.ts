@@ -26,6 +26,7 @@ import * as encoding from "lib0/encoding";
 import * as bc from "lib0/broadcastchannel";
 // @ts-ignore
 import * as time from 'lib0/time';
+import { Socket } from "socket.io";
 
 export const messageSync = 0;
 export const messageQueryAwareness = 3;
@@ -133,9 +134,9 @@ const readMessage = (provider: any, buf: any, emitSynced: any) => {
  * @param {WebsocketProvider} provider
  * @param {ArrayBuffer} buf
  */
-const broadcastMessage = (provider: any, buf: any) => {
+const broadcastMessage = (provider: SocketIOProvider, buf: any) => {
   const ws = provider.ws;
-  if (provider.wsconnected && ws && ws.readyState === ws.OPEN) {
+  if (provider.wsconnected && ws && ws.connected) {
     ws.send(buf);
   }
   if (provider.bcconnected) {
@@ -165,7 +166,7 @@ export class SocketIOProvider extends Observable<string> {
   wsUnsuccessfulReconnects: number;
   messageHandlers: any;
   _synced: boolean;
-  ws: any;
+  ws: Socket | undefined;
   wsLastMessageReceived: number;
   shouldConnect: boolean;
   _resyncInterval: any;
@@ -219,10 +220,7 @@ export class SocketIOProvider extends Observable<string> {
      * @type {boolean}
      */
     this._synced = false;
-    /**
-     * @type {WebSocket?}
-     */
-    this.ws = null;
+    // this.ws =null;
     this.wsLastMessageReceived = 0;
     /**
      * Whether to connect to other peers or not
@@ -236,7 +234,7 @@ export class SocketIOProvider extends Observable<string> {
     this._resyncInterval = 0;
     if (resyncInterval > 0) {
       this._resyncInterval = /** @type {any} */ setInterval(() => {
-        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        if (this.ws && this.ws.connected) {
           // resend sync step 1
           const encoder = createEncoder();
           writeVarUint(encoder, messageSync);
@@ -307,7 +305,8 @@ export class SocketIOProvider extends Observable<string> {
       ) {
         // no message received in a long time - not even your own awareness
         // updates (which are updated every 15 seconds)
-        /** @type {WebSocket} */ this.ws.close();
+        /** @type {WebSocket} */ 
+        //this.ws.close();
       }
     }, messageReconnectTimeout / 10);
     if (connect) {
