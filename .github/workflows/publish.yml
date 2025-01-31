@@ -1,8 +1,8 @@
-name: rdy-websocket-npm-publish
+name: texhub-broadcast-npm-publish
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
 
 jobs:
   build:
@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
       # https://stackoverflow.com/questions/71318659/gitgithub-com-permission-denied-publickey-when-using-yarn-to-install-github
       - name: Build React App
         run: |
