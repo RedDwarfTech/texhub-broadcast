@@ -84,7 +84,9 @@ export const updateHandler = (
   encoding.writeVarUint(encoder, messageSync);
   syncProtocol.writeUpdate(encoder, update);
   const message = encoding.toUint8Array(encoder);
-  doc.conns.forEach((_, conn) => send(doc, conn, message));
+  doc.conns.forEach((_, conn) => {
+    send(doc, conn, message);
+  });
 };
 
 

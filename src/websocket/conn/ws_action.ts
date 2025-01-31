@@ -34,12 +34,24 @@ export const closeConn = (doc: WSSharedDoc, conn: Socket) => {
   }
 };
 
-/**
- * @param {WSSharedDoc} doc
- * @param {WebSocket} conn
- * @param {Uint8Array} m
- */
-export const send = (doc: WSSharedDoc, conn: Socket, m: Uint8Array) => {
+export const sendWithType = (doc: WSSharedDoc, conn: Socket, m: Uint8Array) => {
+  try {
+    if (conn.connected) {
+      // https://stackoverflow.com/questions/16518153/get-connection-status-on-socket-io-client
+      conn.send(m);
+    } else {
+      logger.warn("connection state is not open, doc:" + doc.name);
+      closeConn(doc, conn);
+    }
+  } catch (e) {
+    const decoder = new TextDecoder("utf-8");
+    const text = decoder.decode(m);
+    logger.error("send message facing error,text:" + text, e);
+    closeConn(doc, conn);
+  }
+};
+
+export const send = (doc: WSSharedDoc, conn: any, m: Uint8Array) => {
   try {
     if (conn.connected) {
       // https://stackoverflow.com/questions/16518153/get-connection-status-on-socket-io-client
