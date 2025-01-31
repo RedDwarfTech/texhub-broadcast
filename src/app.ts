@@ -31,7 +31,7 @@ websocketServer.on("connection", (socket: Socket) => {
   if (logger.isDebugEnabled()) {
     logger.debug("connection....");
   }
-  logger.warn("connection warning....");
+  logger.info("connection status:" + socket.connected);
   setupWSConnection(socket, socket.request);
 });
 
