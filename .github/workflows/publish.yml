@@ -12,7 +12,6 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 18
-      # https://stackoverflow.com/questions/71318659/gitgithub-com-permission-denied-publickey-when-using-yarn-to-install-github
       - name: Build React App
         run: |
           npm install
