@@ -5,6 +5,7 @@
   "main": "./dist/app.js",
   "module": "./dist/app.js",
   "exports": {
+    "./dist/websocket/conn/socket_io_provider": "./dist/websocket/conn/socket_io_provider.js",
     ".": {
       "import": "./dist/app.js"
     }
