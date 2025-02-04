@@ -1,4 +1,6 @@
-declare var AASocket: {
+import { Socket } from "socket.io";
+
+export var AASocket: {
     prototype: Socket;
     new(url: string | URL, protocols?: string | string[]): Socket;
     readonly CONNECTING: 0;

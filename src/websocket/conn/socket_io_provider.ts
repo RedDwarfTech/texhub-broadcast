@@ -31,6 +31,9 @@ import { io } from "socket.io-client";
 // @ts-ignore
 import { math } from "lib0";
 import { WsParam } from "../../model/texhub/ws_param";
+import SocketPolyfill from "./SocketPolyfill";
+import SocketPolyfill1 from "./SocketPolyfill";
+import { AASocket } from "../../types/textypes";
 
 export const messageSync = 0;
 export const messageQueryAwareness = 3;
