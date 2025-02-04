@@ -1,6 +1,6 @@
 {
   "name": "texhub-broadcast",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "",
   "main": "./dist/app.js",
   "module": "./dist/app.js",
@@ -37,7 +37,8 @@
     "y-leveldb": "^0.1.2",
     "y-protocols": "^1.0.6",
     "yjs": "^13.6.23",
-    "y-websocket": "^1.5.0"
+    "y-websocket": "^1.5.0",
+    "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",

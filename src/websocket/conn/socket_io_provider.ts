@@ -27,6 +27,7 @@ import * as bc from "lib0/broadcastchannel";
 // @ts-ignore
 import * as time from "lib0/time";
 import { Socket } from "socket.io";
+import { io } from "socket.io-client";
 // @ts-ignore
 import { math } from "lib0";
 import { WsParam } from "../../model/texhub/ws_param";
@@ -262,14 +263,6 @@ const setupWS = (provider: SocketIOProvider) => {
   }
 };
 
-declare var AASocket: {
-  prototype: Socket;
-  new(url: string | URL, protocols?: string | string[]): Socket;
-  readonly CONNECTING: 0;
-  readonly OPEN: 1;
-  readonly CLOSING: 2;
-  readonly CLOSED: 3;
-};
 export class SocketIOProvider extends Observable<string> {
   maxBackoffTime: number;
   bcChannel: string;
