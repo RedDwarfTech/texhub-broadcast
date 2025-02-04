@@ -25,8 +25,11 @@ import * as encoding from "lib0/encoding";
 // @ts-ignore
 import * as bc from "lib0/broadcastchannel";
 // @ts-ignore
-import * as time from 'lib0/time';
+import * as time from "lib0/time";
 import { Socket } from "socket.io";
+// @ts-ignore
+import { math } from "lib0";
+import { WsParam } from "../../model/texhub/ws_param";
 
 export const messageSync = 0;
 export const messageQueryAwareness = 3;
@@ -144,20 +147,136 @@ const broadcastMessage = (provider: SocketIOProvider, buf: any) => {
   }
 };
 
+/**
+ * @param {SocketIOProvider} provider
+ */
+const setupWS = (provider: SocketIOProvider) => {
+  if (provider.shouldConnect && provider.ws === null) {
+    const websocket: Socket = new provider._WS(provider.url);
+    // websocket.binaryType = "arraybuffer";
+    provider.ws = websocket;
+    provider.wsconnecting = true;
+    provider.wsconnected = false;
+    provider._synced = false;
+
+    websocket.on("message", (event) => {
+      provider.wsLastMessageReceived = time.getUnixTime();
+      const encoder = readMessage(provider, new Uint8Array(event.data), true);
+      if (encoding.length(encoder) > 1) {
+        websocket.send(encoding.toUint8Array(encoder));
+      }
+      provider.emit("message", [event, provider]);
+    });
+    websocket.on("error", (event) => {
+      provider.emit("connection-error", [event, provider]);
+    });
+    websocket.on("close", (event) => {
+      provider.emit("connection-close", [event, provider]);
+      provider.ws = undefined;
+      provider.wsconnecting = false;
+      if (provider.wsconnected) {
+        provider.wsconnected = false;
+        provider._synced = false;
+        // update awareness (all users except local left)
+        awarenessProtocol.removeAwarenessStates(
+          provider.awareness,
+          Array.from(provider.awareness.getStates().keys()).filter(
+            (client) => client !== provider.doc.clientID
+          ),
+          provider
+        );
+        provider.emit("status", [
+          {
+            status: "disconnected",
+          },
+        ]);
+      } else {
+        provider.wsUnsuccessfulReconnects++;
+      }
+
+      // Do not reconnect if auth failed
+      if (event.code === 4000) {
+        console.log("Auth failed", event.code);
+        provider.emit("auth", [
+          {
+            status: "failed",
+          },
+        ]);
+        return;
+      }
+
+      if (event.code === 4001) {
+        console.log("Auth failed expire", event.code);
+        provider.emit("auth", [
+          {
+            status: "expired",
+          },
+        ]);
+        return;
+      }
+
+      // Start with no reconnect timeout and increase timeout by
+      // using exponential backoff starting with 100ms
+      setTimeout(
+        setupWS,
+        math.min(
+          math.pow(2, provider.wsUnsuccessfulReconnects) * 100,
+          provider.maxBackoffTime
+        ),
+        provider
+      );
+    });
+    websocket.on("open", () => {
+      provider.wsLastMessageReceived = time.getUnixTime();
+      provider.wsconnecting = false;
+      provider.wsconnected = true;
+      provider.wsUnsuccessfulReconnects = 0;
+      provider.emit("status", [
+        {
+          status: "connected",
+        },
+      ]);
+      // always send sync step 1 when connected
+      const encoder = encoding.createEncoder();
+      encoding.writeVarUint(encoder, messageSync);
+      syncProtocol.writeSyncStep1(encoder, provider.doc);
+      websocket.send(encoding.toUint8Array(encoder));
+      // broadcast local awareness state
+      if (provider.awareness.getLocalState() !== null) {
+        const encoderAwarenessState = encoding.createEncoder();
+        encoding.writeVarUint(encoderAwarenessState, messageAwareness);
+        encoding.writeVarUint8Array(
+          encoderAwarenessState,
+          awarenessProtocol.encodeAwarenessUpdate(provider.awareness, [
+            provider.doc.clientID,
+          ])
+        );
+        websocket.send(encoding.toUint8Array(encoderAwarenessState));
+      }
+    });
+    provider.emit("status", [
+      {
+        status: "connecting",
+      },
+    ]);
+  }
+};
+
+declare var AASocket: {
+  prototype: Socket;
+  new(url: string | URL, protocols?: string | string[]): Socket;
+  readonly CONNECTING: 0;
+  readonly OPEN: 1;
+  readonly CLOSING: 2;
+  readonly CLOSED: 3;
+};
 export class SocketIOProvider extends Observable<string> {
   maxBackoffTime: number;
   bcChannel: string;
   url: string;
   roomname: string;
   doc: Y.Doc;
-  _WS: {
-    new (url: string | URL, protocols?: string | string[]): WebSocket;
-    prototype: WebSocket;
-    readonly CONNECTING: 0;
-    readonly OPEN: 1;
-    readonly CLOSING: 2;
-    readonly CLOSED: 3;
-  };
+  _WS: WsParam;
   awareness: awarenessProtocol.Awareness;
   wsconnected: boolean;
   wsconnecting: boolean;
@@ -187,7 +306,7 @@ export class SocketIOProvider extends Observable<string> {
       connect = true,
       awareness = new awarenessProtocol.Awareness(doc),
       params = {},
-      WebSocketPolyfill = WebSocket,
+      SocketPolyfill = AASocket,
       resyncInterval = -1,
       maxBackoffTime = 2500,
       disableBc = false,
@@ -208,7 +327,7 @@ export class SocketIOProvider extends Observable<string> {
       (encodedParams.length === 0 ? "" : "?" + encodedParams);
     this.roomname = roomname;
     this.doc = doc;
-    this._WS = WebSocketPolyfill;
+    this._WS = SocketPolyfill;
     this.awareness = awareness;
     this.wsconnected = false;
     this.wsconnecting = false;
@@ -305,7 +424,7 @@ export class SocketIOProvider extends Observable<string> {
       ) {
         // no message received in a long time - not even your own awareness
         // updates (which are updated every 15 seconds)
-        /** @type {WebSocket} */ 
+        /** @type {WebSocket} */
         //this.ws.close();
       }
     }, messageReconnectTimeout / 10);
@@ -313,7 +432,80 @@ export class SocketIOProvider extends Observable<string> {
       this.connect();
     }
   }
+
+  connectBc() {
+    if (this.disableBc) {
+      return;
+    }
+    if (!this.bcconnected) {
+      bc.subscribe(this.bcChannel, this._bcSubscriber);
+      this.bcconnected = true;
+    }
+    // send sync step1 to bc
+    // write sync step 1
+    const encoderSync = encoding.createEncoder();
+    encoding.writeVarUint(encoderSync, messageSync);
+    syncProtocol.writeSyncStep1(encoderSync, this.doc);
+    bc.publish(this.bcChannel, encoding.toUint8Array(encoderSync), this);
+    // broadcast local state
+    const encoderState = encoding.createEncoder();
+    encoding.writeVarUint(encoderState, messageSync);
+    syncProtocol.writeSyncStep2(encoderState, this.doc);
+    bc.publish(this.bcChannel, encoding.toUint8Array(encoderState), this);
+    // write queryAwareness
+    const encoderAwarenessQuery = encoding.createEncoder();
+    encoding.writeVarUint(encoderAwarenessQuery, messageQueryAwareness);
+    bc.publish(
+      this.bcChannel,
+      encoding.toUint8Array(encoderAwarenessQuery),
+      this
+    );
+    // broadcast local awareness state
+    const encoderAwarenessState = encoding.createEncoder();
+    encoding.writeVarUint(encoderAwarenessState, messageAwareness);
+    encoding.writeVarUint8Array(
+      encoderAwarenessState,
+      awarenessProtocol.encodeAwarenessUpdate(this.awareness, [
+        this.doc.clientID,
+      ])
+    );
+    bc.publish(
+      this.bcChannel,
+      encoding.toUint8Array(encoderAwarenessState),
+      this
+    );
+  }
+
+  disconnectBc () {
+    // broadcast message with local awareness state set to null (indicating disconnect)
+    const encoder = encoding.createEncoder()
+    encoding.writeVarUint(encoder, messageAwareness)
+    encoding.writeVarUint8Array(
+      encoder,
+      awarenessProtocol.encodeAwarenessUpdate(this.awareness, [
+        this.doc.clientID
+      ], new Map())
+    )
+    broadcastMessage(this, encoding.toUint8Array(encoder))
+    if (this.bcconnected) {
+      bc.unsubscribe(this.bcChannel, this._bcSubscriber)
+      this.bcconnected = false
+    }
+  }
+
+  disconnect () {
+    this.shouldConnect = false
+    this.disconnectBc()
+    if (this.ws !== null && this.ws) {
+      this.ws.disconnect()
+    }
+  }
+
   connect() {
-    throw new Error("Method not implemented.");
+    this.shouldConnect = true;
+    if (!this.wsconnected && this.ws === null) {
+      setupWS(this);
+      this.connectBc();
+    }
   }
 }
