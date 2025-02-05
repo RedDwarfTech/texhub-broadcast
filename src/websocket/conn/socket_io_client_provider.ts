@@ -10,10 +10,13 @@ import {
   writeVarUint,
   writeVarUint8Array,
   readVarUint8Array,
-  createDecoder,
   readVarUint,
   // @ts-ignore
 } from "lib0/dist/encoding.cjs";
+import {
+  createDecoder,
+  // @ts-ignore
+} from "lib0/dist/decoding.cjs";
 // @ts-ignore
 import * as syncProtocol from "y-protocols/sync";
 // @ts-ignore
