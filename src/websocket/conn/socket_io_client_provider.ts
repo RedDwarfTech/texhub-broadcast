@@ -496,7 +496,7 @@ export class SocketIOClientProvider extends Observable<string> {
 
   connect() {
     this.shouldConnect = true;
-    if (!this.wsconnected && this.ws === null) {
+    if (!this.wsconnected || this.ws === null || this.ws === undefined) {
       setupWS(this);
       this.connectBc();
     }
