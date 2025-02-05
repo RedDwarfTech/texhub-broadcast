@@ -176,7 +176,7 @@ const setupWS = (provider: SocketIOClientProvider) => {
     });
     websocket.on("close", (event) => {
       provider.emit("connection-close", [event, provider]);
-      provider.ws = undefined;
+      provider.ws = null;
       provider.wsconnecting = false;
       if (provider.wsconnected) {
         provider.wsconnected = false;
@@ -281,7 +281,7 @@ export class SocketIOClientProvider extends Observable<string> {
   wsUnsuccessfulReconnects: number;
   messageHandlers: any;
   _synced: boolean;
-  ws: Socket | undefined;
+  ws: Socket | null;
   wsLastMessageReceived: number;
   shouldConnect: boolean;
   _resyncInterval: any;
@@ -335,7 +335,7 @@ export class SocketIOClientProvider extends Observable<string> {
      * @type {boolean}
      */
     this._synced = false;
-    // this.ws =null;
+    this.ws = null;
     this.wsLastMessageReceived = 0;
     /**
      * Whether to connect to other peers or not
