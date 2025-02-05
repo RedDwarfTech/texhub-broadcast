@@ -1,10 +1,8 @@
-import { Socket } from "socket.io";
+import { Socket, io } from "socket.io-client";
 
-export var AASocket: {
-    prototype: Socket;
-    new(url: string | URL, protocols?: string | string[]): Socket;
-    readonly CONNECTING: 0;
-    readonly OPEN: 1;
-    readonly CLOSING: 2;
-    readonly CLOSED: 3;
-  };
+export class MySocket {
+  constructor(url: string) {
+    const doc: Socket =  io(url);
+    return doc;
+  }
+}

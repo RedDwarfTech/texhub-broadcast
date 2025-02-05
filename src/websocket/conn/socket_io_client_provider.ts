@@ -26,14 +26,11 @@ import * as encoding from "lib0/encoding";
 import * as bc from "lib0/broadcastchannel";
 // @ts-ignore
 import * as time from "lib0/time";
-import { Socket } from "socket.io";
-import { io } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 // @ts-ignore
 import { math } from "lib0";
 import { WsParam } from "../../model/texhub/ws_param";
-import SocketPolyfill from "./SocketPolyfill";
-import SocketPolyfill1 from "./SocketPolyfill";
-import { AASocket } from "../../types/textypes";
+import { MySocket } from "../../types/textypes";
 
 export const messageSync = 0;
 export const messageQueryAwareness = 3;
@@ -141,7 +138,7 @@ const readMessage = (provider: any, buf: any, emitSynced: any) => {
  * @param {WebsocketProvider} provider
  * @param {ArrayBuffer} buf
  */
-const broadcastMessage = (provider: SocketIOProvider, buf: any) => {
+const broadcastMessage = (provider: SocketIOClientProvider, buf: any) => {
   const ws = provider.ws;
   if (provider.wsconnected && ws && ws.connected) {
     ws.send(buf);
@@ -152,9 +149,9 @@ const broadcastMessage = (provider: SocketIOProvider, buf: any) => {
 };
 
 /**
- * @param {SocketIOProvider} provider
+ * @param {SocketIOClientProvider} provider
  */
-const setupWS = (provider: SocketIOProvider) => {
+const setupWS = (provider: SocketIOClientProvider) => {
   if (provider.shouldConnect && provider.ws === null) {
     const websocket: Socket = new provider._WS(provider.url);
     // websocket.binaryType = "arraybuffer";
@@ -266,7 +263,7 @@ const setupWS = (provider: SocketIOProvider) => {
   }
 };
 
-export class SocketIOProvider extends Observable<string> {
+export class SocketIOClientProvider extends Observable<string> {
   maxBackoffTime: number;
   bcChannel: string;
   url: string;
@@ -302,7 +299,7 @@ export class SocketIOProvider extends Observable<string> {
       connect = true,
       awareness = new awarenessProtocol.Awareness(doc),
       params = {},
-      SocketPolyfill = AASocket,
+      SocketPolyfill = MySocket as unknown as WsParam,
       resyncInterval = -1,
       maxBackoffTime = 2500,
       disableBc = false,
