@@ -8,13 +8,13 @@ import {
   createEncoder,
   toUint8Array,
   writeVarUint,
-  writeVarUint8Array,
-  readVarUint8Array,
-  readVarUint,
+  writeVarUint8Array
   // @ts-ignore
 } from "lib0/dist/encoding.cjs";
 import {
   createDecoder,
+  readVarUint,
+  readVarUint8Array
   // @ts-ignore
 } from "lib0/dist/decoding.cjs";
 // @ts-ignore
