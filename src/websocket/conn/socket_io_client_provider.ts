@@ -321,7 +321,7 @@ export class SocketIOClientProvider extends Observable<string> {
       "/" +
       roomname +
       (encodedParams.length === 0 ? "" : "?" + encodedParams);
-    this.roomname = roomname;
+    this.roomname = roomname; 
     this.doc = doc;
     this._WS = SocketPolyfill;
     this.awareness = awareness;
