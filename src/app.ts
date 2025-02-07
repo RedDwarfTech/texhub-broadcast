@@ -42,4 +42,10 @@ websocketServer.on("connection_error", (err: any) => {
   logger.error("conn error:" + err.context); // some additional error context
 });
 
+websocketServer.engine.on("connection_error", (err: any) => {
+  logger.error("engine error:" + err.req); // the request object
+  logger.error("engine error:" + err.code); // the error code, for example 1
+  logger.error("engine error:" + err.message); // the error message, for example "Session ID unknown"
+  logger.error("engine error:" + err.context); // some additional error context
+});
 httpServer.listen(PORT);
