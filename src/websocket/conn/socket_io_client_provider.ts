@@ -29,7 +29,7 @@ import * as encoding from "lib0/encoding";
 import * as bc from "lib0/broadcastchannel";
 // @ts-ignore
 import * as time from "lib0/time";
-import { io, Socket } from "socket.io-client";
+import { io, ManagerOptions, Socket, SocketOptions } from "socket.io-client";
 // @ts-ignore
 import { math } from "lib0";
 import { WsParam } from "../../model/texhub/ws_param";
@@ -156,7 +156,7 @@ const broadcastMessage = (provider: SocketIOClientProvider, buf: any) => {
  */
 const setupWS = (provider: SocketIOClientProvider) => {
   if (provider.shouldConnect && provider.ws === null) {
-    const websocket: Socket = new provider._WS(provider.url);
+    const websocket: Socket = new provider._WS(provider.url, provider.options);
     // websocket.binaryType = "arraybuffer";
     provider.ws = websocket;
     provider.wsconnecting = true;
@@ -269,6 +269,7 @@ const setupWS = (provider: SocketIOClientProvider) => {
 export class SocketIOClientProvider extends Observable<string> {
   maxBackoffTime: number;
   bcChannel: string;
+  options?: Partial<ManagerOptions & SocketOptions>;
   url: string;
   roomname: string;
   doc: Y.Doc;
@@ -298,6 +299,7 @@ export class SocketIOClientProvider extends Observable<string> {
     serverUrl: string,
     roomname: string,
     doc: Y.Doc,
+    options?:Partial<ManagerOptions & SocketOptions>,
     {
       connect = true,
       awareness = new awarenessProtocol.Awareness(doc),
@@ -314,6 +316,7 @@ export class SocketIOClientProvider extends Observable<string> {
       serverUrl = serverUrl.slice(0, serverUrl.length - 1);
     }
     const encodedParams = url.encodeQueryParams(params);
+    this.options = options;
     this.maxBackoffTime = maxBackoffTime;
     this.bcChannel = serverUrl + "/" + roomname;
     this.url =

@@ -1,8 +1,8 @@
-import { Socket, io } from "socket.io-client";
+import { ManagerOptions, Socket, SocketOptions, io } from "socket.io-client";
 
 export class MySocket {
-  constructor(url: string) {
-    const doc: Socket =  io(url);
+  constructor(url: string, options?: Partial<ManagerOptions & SocketOptions>) {
+    const doc: Socket = io(url, options);
     return doc;
   }
 }

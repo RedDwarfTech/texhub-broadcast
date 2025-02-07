@@ -1,4 +1,4 @@
-import { Socket } from "socket.io-client";
-export type WsParam = { 
-    new (url: string): Socket;
-}
+import { ManagerOptions, Socket, SocketOptions } from "socket.io-client";
+export type WsParam = {
+  new (url: string, options?: Partial<ManagerOptions & SocketOptions>): Socket;
+};
