@@ -20,7 +20,7 @@ var httpServer = http.createServer(app);
 // websocket
 const websocketServer = new Server(httpServer, {
   cors: {
-    origin: ["https://tex.poemhub.top","*"],
+    origin: ["https://tex.poemhub.top", "*"],
     credentials: true,
     allowedHeaders: ["*"],
     methods: ["GET", "HEAD", "OPTIONS"],
@@ -33,6 +33,13 @@ websocketServer.on("connection", (socket: Socket) => {
   }
   logger.info("connection status:" + socket.connected);
   setupWSConnection(socket, socket.request);
+});
+
+websocketServer.on("connection_error", (err: any) => {
+  logger.error("conn error:" + err.req); // the request object
+  logger.error("conn error:" + err.code); // the error code, for example 1
+  logger.error("conn error:" + err.message); // the error message, for example "Session ID unknown"
+  logger.error("conn error:" + err.context); // some additional error context
 });
 
 httpServer.listen(PORT);
