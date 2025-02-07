@@ -20,8 +20,7 @@ var httpServer = http.createServer(app);
 // websocket
 const websocketServer = new Server(httpServer, {
   cors: {
-    //origin: "https://tex.poemhub.top",
-    origin: "*",
+    origin: ["https://tex.poemhub.top","*"],
     credentials: true,
     allowedHeaders: ["*"],
     methods: ["GET", "HEAD", "OPTIONS"],
