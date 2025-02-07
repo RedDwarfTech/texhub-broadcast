@@ -1,9 +1,10 @@
 {
   "name": "texhub-broadcast",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "description": "",
   "main": "./dist/app.js",
   "module": "./dist/app.js",
+  "types": "./dist/app.d.ts",
   "exports": {
     "./dist/websocket/conn/socket_io_client_provider": "./dist/websocket/conn/socket_io_client_provider.js",
     ".": {
