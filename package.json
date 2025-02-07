@@ -27,6 +27,7 @@
   "dependencies": {
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "flatted": "^3.3.2",
     "globals": "^15.14.0",
     "lib0": "^0.2.99",
     "lodash": "^4.17.21",
@@ -34,12 +35,12 @@
     "meilisearch": "^0.35.1",
     "prom-client": "^14.2.0",
     "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "ws": "^8.18.0",
     "y-leveldb": "^0.1.2",
     "y-protocols": "^1.0.6",
-    "yjs": "^13.6.23",
     "y-websocket": "^1.5.0",
-    "socket.io-client": "^4.8.1"
+    "yjs": "^13.6.23"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",

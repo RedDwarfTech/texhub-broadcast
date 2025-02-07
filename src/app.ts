@@ -35,19 +35,11 @@ websocketServer.on("connection", (socket: Socket) => {
   setupWSConnection(socket, socket.request);
 });
 
-websocketServer.on("connection_error", (err: any) => {
-  logger.error("conn error:" + err.req); // the request object
-  logger.error("conn error:" + err.code); // the error code, for example 1
-  logger.error("conn error:" + err.message); // the error message, for example "Session ID unknown"
-  logger.error("conn error:" + err.context); // some additional error context
-});
-
 websocketServer.engine.on("connection_error", (err: any) => {
   logger.error("engine error:" + err.req); // the request object
   logger.error("engine error:" + err.code); // the error code, for example 1
   logger.error("engine error:" + err.message); // the error message, for example "Session ID unknown"
   logger.error("engine error:" + err.context); // some additional error context
-  logger.error(JSON.stringify(err));
   logger.error(typeof err);
 });
 httpServer.listen(PORT);

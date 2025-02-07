@@ -11,6 +11,9 @@ dependencies:
   express:
     specifier: ^4.21.2
     version: 4.21.2
+  flatted:
+    specifier: ^3.3.2
+    version: 3.3.2
   globals:
     specifier: ^15.14.0
     version: 15.14.0
