@@ -23,7 +23,7 @@ const websocketServer = new Server(httpServer, {
     origin: ["https://tex.poemhub.top", "*"],
     credentials: true,
     allowedHeaders: ["*"],
-    methods: ["GET", "HEAD", "OPTIONS"],
+    methods: ["GET", "HEAD", "OPTIONS","POST"],
   },
 });
 
