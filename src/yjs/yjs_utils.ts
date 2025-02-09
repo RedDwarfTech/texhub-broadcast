@@ -4,17 +4,12 @@ import { WSSharedDoc } from "./ws_share_doc.js";
 import { persistence } from "../storage/leveldb.js";
 // @ts-ignore
 import encoding from "lib0/dist/encoding.cjs";
-// @ts-ignore
-import decoding from "lib0/dist/decoding.cjs";
 import { send } from "../websocket/conn/ws_action.js";
 import { callbackRequest, getContent } from "./ydoc_callback.js";
 // @ts-ignore
 import syncProtocol from "y-protocols/dist/sync.cjs";
 // @ts-ignore
 import * as Y from "yjs";
-// @ts-ignore
-import pkg from "y-websocket";
-const { WebsocketProvider } = pkg;
 
 const CALLBACK_URL = process.env.CALLBACK_URL
   ? new URL(process.env.CALLBACK_URL)
@@ -97,20 +92,5 @@ export const initTpl = (docId: string, projectId: string, initContext: any) => {
   };
   const ydoc = new Y.Doc(docOpt);
   const ytext = ydoc.getText(docId);
-  // https://github.com/node-fetch/node-fetch/issues/1624
-  const wsProvider = new WebsocketProvider("ws://127.0.0.1:1234", docId, ydoc, {
-    WebSocketPolyfill: require("ws"),
-  });
-  wsProvider.on("status", (event: any) => {
-    if (event.status === "connected") {
-      console.log("connected");
-      if (wsProvider.ws) {
-        console.log("ws");
-        if (initContext && initContext.length > 0) {
-          console.log("insert:");
-          ytext.insert(0, initContext);
-        }
-      }
-    }
-  });
+  
 };
