@@ -13,7 +13,8 @@ import syncProtocol from "y-protocols/dist/sync.cjs";
 // @ts-ignore
 import Y from "yjs";
 // @ts-ignore
-import { WebsocketProvider } from "y-websocket";
+import pkg from "y-websocket";
+const { WebsocketProvider } = pkg;
 
 const CALLBACK_URL = process.env.CALLBACK_URL
   ? new URL(process.env.CALLBACK_URL)
@@ -88,8 +89,6 @@ export const updateHandler = (
     send(doc, conn, message);
   });
 };
-
-
 
 export const initTpl = (docId: string, projectId: string, initContext: any) => {
   let docOpt = {
