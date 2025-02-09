@@ -1,12 +1,12 @@
 // @ts-ignore
 import { setIfUndefined } from "lib0/dist/map.cjs";
 import { WSSharedDoc } from "./ws_share_doc.js";
-import { persistence } from "../storage/leveldb";
+import { persistence } from "../storage/leveldb.js";
 // @ts-ignore
 import encoding from "lib0/dist/encoding.cjs";
 // @ts-ignore
 import decoding from "lib0/dist/decoding.cjs";
-import { send } from "../websocket/conn/ws_action";
+import { send } from "../websocket/conn/ws_action.js";
 import { callbackRequest, getContent } from "./ydoc_callback.js";
 // @ts-ignore
 import syncProtocol from "y-protocols/dist/sync.cjs";

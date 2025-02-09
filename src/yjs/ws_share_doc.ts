@@ -7,9 +7,9 @@ import decoding from "lib0/dist/decoding.cjs";
 // @ts-ignore
 import awarenessProtocol from "y-protocols/dist/awareness.cjs";
 import { debounce } from "lodash";
-import { send } from "../websocket/conn/ws_action";
+import { send } from "../websocket/conn/ws_action.js";
 import { callbackHandler, updateHandler } from "./yjs_utils.js";
-import { ChangeReq } from "../model/yjs/ChangeReq";
+import { ChangeReq } from "../model/yjs/ChangeReq.js";
 
 const CALLBACK_URL = process.env.CALLBACK_URL
   ? new URL(process.env.CALLBACK_URL)

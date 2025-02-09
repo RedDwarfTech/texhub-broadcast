@@ -1,17 +1,17 @@
-import { getYDoc, messageSync } from "../../yjs/yjs_utils";
-import { closeConn, messageListener, send } from "../conn/ws_action";
+import { getYDoc, messageSync } from "../../yjs/yjs_utils.js";
+import { closeConn, messageListener, send } from "../conn/ws_action.js";
 // @ts-ignore
 import { createEncoder, toUint8Array,writeVarUint,writeVarUint8Array } from "lib0/dist/encoding.cjs";
 // @ts-ignore
 import decoding from "lib0/dist/decoding.cjs";
 // @ts-ignore
 import syncProtocol from "y-protocols/dist/sync.cjs";
-import { messageAwareness } from "../../yjs/ws_share_doc";
+import { messageAwareness } from "../../yjs/ws_share_doc.js";
 // @ts-ignore
 import awarenessProtocol from "y-protocols/dist/awareness.cjs";
 import { Socket } from "socket.io";
 import http from "http";
-import logger from "../../common/log4js_config";
+import logger from "../../common/log4js_config.js";
 
 export function setupWSConnection(
   conn: Socket,
