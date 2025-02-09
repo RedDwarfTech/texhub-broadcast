@@ -1,6 +1,6 @@
 const persistenceDir = process.env.YPERSISTENCE;
 import express, { Request, Response } from "express";
-import { initTpl } from "../../yjs/yjs_utils";
+import { initTpl } from "../../yjs/yjs_utils.js";
 export const routerDoc = express.Router();
 
 routerDoc.get("/", async (req: Request, res: Response) => {

@@ -13,7 +13,7 @@
     "baseUrl": "./src",
     "paths": {
       "*": ["*"]
-    }
+    },
   },
   "include": ["src/**/*"],
   "files": ["src/app.ts"]
