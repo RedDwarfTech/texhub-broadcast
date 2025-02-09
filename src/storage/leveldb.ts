@@ -3,8 +3,8 @@ const persistenceDir = process.env.YPERSISTENCE;
 import * as Y from "yjs";
 // @ts-ignore
 import { LeveldbPersistence } from "y-leveldb";
-import { throttledFn } from "./appfile";
-import { Persistence } from "../model/yjs/Persistence";
+import { throttledFn } from "./appfile.js";
+import { Persistence } from "../model/yjs/Persistence.js";
 
 export let persistence: Persistence;
 

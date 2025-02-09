@@ -3,10 +3,10 @@ var logger = log4js.getLogger();
 import lodash from "lodash";
 import path from "path";
 import fs from "fs";
-import { updateFullsearch } from "./fulltext";
-import { getFileJsonData } from "../texhub/client/texhub_interop";
-import { FileContent } from "../model/texhub/file_content";
-import { AppResponse } from "../texhub/biz/AppResponse";
+import { updateFullsearch } from "./fulltext.js";
+import { getFileJsonData } from "../texhub/client/texhub_interop.js";
+import { FileContent } from "../model/texhub/file_content.js";
+import { AppResponse } from "../texhub/biz/AppResponse.js";
 
 export const throttledFn = lodash.throttle((docName, ldb) => {
   handleFileSync(docName, ldb);

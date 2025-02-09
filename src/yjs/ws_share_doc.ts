@@ -8,7 +8,7 @@ import decoding from "lib0/dist/decoding.cjs";
 import awarenessProtocol from "y-protocols/dist/awareness.cjs";
 import { debounce } from "lodash";
 import { send } from "../websocket/conn/ws_action";
-import { callbackHandler, updateHandler } from "./yjs_utils";
+import { callbackHandler, updateHandler } from "./yjs_utils.js";
 import { ChangeReq } from "../model/yjs/ChangeReq";
 
 const CALLBACK_URL = process.env.CALLBACK_URL

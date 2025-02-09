@@ -2,11 +2,11 @@ import express from "express";
 import { setupWSConnection } from "./websocket/config/setup.js";
 import { Server, Socket } from "socket.io";
 import http from "http";
-import { routerHealth } from "./controller/health/health_controller";
-import { routerDoc } from "./controller/doc/doc_controller";
-import { routerMetrics } from "./controller/profile/metrics_controller";
-import { routerProfile } from "./controller/profile/profile_controller";
-import logger from "./common/log4js_config";
+import { routerHealth } from "./controller/health/health_controller.js";
+import { routerDoc } from "./controller/doc/doc_controller.js";
+import { routerMetrics } from "./controller/profile/metrics_controller.js";
+import { routerProfile } from "./controller/profile/profile_controller.js";
+import logger from "./common/log4js_config.js";
 const PORT = 1234;
 const app = express();
 

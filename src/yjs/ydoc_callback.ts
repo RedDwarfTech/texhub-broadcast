@@ -1,5 +1,5 @@
 import http, { RequestOptions } from "http";
-import { WSSharedDoc } from "./ws_share_doc";
+import { WSSharedDoc } from "./ws_share_doc.js";
 import _ from "lodash";
 
 const CALLBACK_URL = process.env.CALLBACK_URL
