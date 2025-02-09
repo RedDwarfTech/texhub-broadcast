@@ -25,6 +25,7 @@ const websocketServer = new Server(httpServer, {
     allowedHeaders: ["*"],
     methods: ["GET", "HEAD", "OPTIONS","POST"],
   },
+  path: "/socket.io/"
 });
 
 websocketServer.on("connection", (socket: Socket) => {
