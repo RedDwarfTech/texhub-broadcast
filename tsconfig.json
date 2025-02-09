@@ -1,15 +1,15 @@
 {
     "compilerOptions": {
       "target": "ES2020",
-      "module": "NodeNext",
-      "moduleResolution": "NodeNext",
+      "module": "esnext",
+      "moduleResolution": "bundler",
       "outDir": "./dist",
       "rootDir": "./src",
       "strict": true,
       "esModuleInterop": true,
       "skipLibCheck": true,
       "forceConsistentCasingInFileNames": true,
-      "declaration": true
+      "declaration": true,
     },
     "include": ["src/**/*"],
     "files": ["src/app.ts"]
