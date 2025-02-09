@@ -10,8 +10,6 @@ const CALLBACK_OBJECTS = process.env.CALLBACK_OBJECTS
   ? JSON.parse(process.env.CALLBACK_OBJECTS)
   : {};
 
-exports.isCallbackSet = !!CALLBACK_URL;
-
 /**
  * @param {URL} url
  * @param {number} timeout
