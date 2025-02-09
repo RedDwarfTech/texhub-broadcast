@@ -1,5 +1,5 @@
 import express from "express";
-import { setupWSConnection } from "./websocket/config/setup";
+import { setupWSConnection } from "./websocket/config/setup.js";
 import { Server, Socket } from "socket.io";
 import http from "http";
 import { routerHealth } from "./controller/health/health_controller";
