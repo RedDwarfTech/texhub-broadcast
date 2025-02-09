@@ -11,7 +11,7 @@ import { callbackRequest, getContent } from "./ydoc_callback.js";
 // @ts-ignore
 import syncProtocol from "y-protocols/dist/sync.cjs";
 // @ts-ignore
-import Y from "yjs";
+import * as Y from "yjs";
 // @ts-ignore
 import pkg from "y-websocket";
 const { WebsocketProvider } = pkg;
