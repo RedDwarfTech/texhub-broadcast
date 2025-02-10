@@ -319,11 +319,7 @@ export class SocketIOClientProvider extends Observable<string> {
     this.options = options;
     this.maxBackoffTime = maxBackoffTime;
     this.bcChannel = serverUrl + "/" + roomname;
-    this.url =
-      serverUrl +
-      "/" +
-      roomname +
-      (encodedParams.length === 0 ? "" : "?" + encodedParams);
+    this.url = serverUrl + "/" + options?.path + (encodedParams.length === 0 ? "" : "?" + encodedParams);
     this.roomname = roomname; 
     this.doc = doc;
     this._WS = SocketPolyfill;
