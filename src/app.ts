@@ -7,6 +7,7 @@ import { routerDoc } from "./controller/doc/doc_controller.js";
 import { routerMetrics } from "./controller/profile/metrics_controller.js";
 import { routerProfile } from "./controller/profile/profile_controller.js";
 import logger from "./common/log4js_config.js";
+import { toJSON } from "flatted";
 const PORT = 1234;
 const app = express();
 
@@ -23,9 +24,9 @@ const websocketServer = new Server(httpServer, {
     origin: ["https://tex.poemhub.top", "*"],
     credentials: true,
     allowedHeaders: ["*"],
-    methods: ["GET", "HEAD", "OPTIONS","POST"],
+    methods: ["GET", "HEAD", "OPTIONS", "POST"],
   },
-  path: "/socket.io/"
+  path: "/socket.io/",
 });
 
 websocketServer.on("connection", (socket: Socket) => {
@@ -42,5 +43,6 @@ websocketServer.engine.on("connection_error", (err: any) => {
   logger.error("engine error:" + err.message); // the error message, for example "Session ID unknown"
   logger.error("engine error:" + err.context); // some additional error context
   logger.error(typeof err);
+  logger.error(toJSON(err));
 });
 httpServer.listen(PORT);
