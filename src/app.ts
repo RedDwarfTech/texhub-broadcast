@@ -7,6 +7,7 @@ import { routerDoc } from "./controller/doc/doc_controller.js";
 import { routerMetrics } from "./controller/profile/metrics_controller.js";
 import { routerProfile } from "./controller/profile/profile_controller.js";
 import logger from "./common/log4js_config.js";
+import { instrument } from "@socket.io/admin-ui";
 import { toJSON } from "flatted";
 const PORT = 1234;
 const app = express();
@@ -27,6 +28,10 @@ const websocketServer = new Server(httpServer, {
     methods: ["GET", "HEAD", "OPTIONS", "POST"],
   },
   path: "/socket.io/",
+});
+
+instrument(websocketServer, {
+  auth: false,
 });
 
 websocketServer.on("connection", (socket: Socket) => {

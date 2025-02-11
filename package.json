@@ -5,7 +5,7 @@
   "main": "./dist/app.js",
   "module": "./dist/app.js",
   "types": "./dist/app.d.ts",
-  "type":"module",
+  "type": "module",
   "exports": {
     "./dist/websocket/conn/socket_io_client_provider": "./dist/websocket/conn/socket_io_client_provider.js",
     ".": {
@@ -26,6 +26,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@socket.io/admin-ui": "^0.5.1",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "flatted": "^3.3.2",
