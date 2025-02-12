@@ -35,6 +35,14 @@ instrument(websocketServer, {
   mode: "development",
 });
 
+let texhubNs = websocketServer.of("/texhub");
+
+texhubNs.on("connection", (socket: Socket) => {
+  console.log("someone connected");
+});
+
+texhubNs.emit("hi", "everyone!");
+
 websocketServer.on("connection", (socket: Socket) => {
   if (logger.isDebugEnabled()) {
     logger.debug("connection....");
