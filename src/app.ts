@@ -31,7 +31,7 @@ const websocketServer = new Server(httpServer, {
     allowedHeaders: ["*"],
     methods: ["GET", "HEAD", "OPTIONS", "POST"],
   },
-  path: "/socket.io/",
+  path: "/sync",
 });
 
 instrument(websocketServer, {
