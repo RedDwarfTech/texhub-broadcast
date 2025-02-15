@@ -1,7 +1,7 @@
 import { Socket } from "socket.io";
-import { websocketServer } from "src/app.js";
-import logger from "src/common/log4js_config.js";
-import { setupWSConnection } from "src/websocket/config/setup.js";
+import { websocketServer } from "../../../app.js";
+import logger from "../../../common/log4js_config.js";
+import { setupWSConnection } from "../../../websocket/config/setup.js";
 
 export const init_texconn = () => {
   let texhubNs = websocketServer.of("/texhub");
