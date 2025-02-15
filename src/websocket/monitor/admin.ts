@@ -1,7 +1,9 @@
 import { instrument } from "@socket.io/admin-ui";
-import { websocketServer } from "src/app";
+import { websocketServer } from "../../app";
 
-instrument(websocketServer, {
-  auth: false,
-  mode: "development",
-});
+export const init_monitor = () => {
+  instrument(websocketServer, {
+    auth: false,
+    mode: "development",
+  });
+};
