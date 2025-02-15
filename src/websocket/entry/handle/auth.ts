@@ -9,7 +9,7 @@ const JWT_SIGN_KEY = process.env.JWT_SIGN_KEY || "key-missing";
 const WEBSOCKET_AUTH_FAILED = 4000;
 const WEBSOCKET_AUTH_TOKEN_EXPIRE = 4001;
 
-export const handleAuthCheck = () => {
+export const handleMiddlewareAuthCheck = () => {
   websocketServer.engine.use((socket: Socket, next: (err?: any) => void) => {
     if (!socket.handshake) {
       logger.error("auth token is missing:" + toJSON(socket.handshake));

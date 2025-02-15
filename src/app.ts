@@ -2,6 +2,7 @@ import express from "express";
 import { Server } from "socket.io";
 import http from "http";
 import { initialize } from "./websocket/entry/init.js";
+import { handleMiddlewareAuthCheck } from "./websocket/entry/handle/auth.js";
 const PORT = 1234;
 export const app = express();
 var httpServer = http.createServer(app);
@@ -20,5 +21,8 @@ export const websocketServer = new Server(httpServer, {
   },
   path: "/sync",
 });
+
+handleMiddlewareAuthCheck();
+
 initialize();
 httpServer.listen(PORT);
