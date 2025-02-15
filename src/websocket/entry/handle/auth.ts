@@ -3,6 +3,7 @@ import http from "http";
 import jwt from "jsonwebtoken";
 import logger from "../../../common/log4js_config.js";
 import { websocketServer } from "../../../app.js";
+import { toJSON } from "flatted";
 
 const JWT_SIGN_KEY = process.env.JWT_SIGN_KEY || "key-missing";
 const WEBSOCKET_AUTH_FAILED = 4000;
@@ -10,6 +11,10 @@ const WEBSOCKET_AUTH_TOKEN_EXPIRE = 4001;
 
 export const handleAuthCheck = () => {
   websocketServer.engine.use((socket: Socket, next: (err?: any) => void) => {
+    if (!socket.handshake.auth) {
+      logger.error("auth token is missing:" + toJSON(socket.handshake));
+      return next(new Error("token missing"));
+    }
     const token = socket.handshake.auth.token;
     if (token === undefined) {
       logger.error("auth token is missing");
