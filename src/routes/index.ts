@@ -1,5 +1,5 @@
 import { Express, Request, Response, Router } from 'express';
-import { routerHealth } from '../controller/health/health_controller';
+import { routerHealth } from '../controllers/health/health_controller';
 
 interface RouterConf {
   path: string,
