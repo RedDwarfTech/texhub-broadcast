@@ -4,7 +4,7 @@ import { Socket } from "socket.io";
 import { websocketServer } from "../../../app.js";
 
 export const initial_default = () => {
-  logger.error("initial default...");
+  logger.debug("initial default...");
   websocketServer.on("connection", (socket: Socket) => {
     logger.warn("connection...");
   });
