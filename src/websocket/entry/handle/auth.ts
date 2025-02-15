@@ -11,7 +11,7 @@ const WEBSOCKET_AUTH_TOKEN_EXPIRE = 4001;
 
 export const handleAuthCheck = () => {
   websocketServer.engine.use((socket: Socket, next: (err?: any) => void) => {
-    if (!socket.handshake.auth) {
+    if (!socket.handshake) {
       logger.error("auth token is missing:" + toJSON(socket.handshake));
       return next(new Error("token missing"));
     }
