@@ -33,7 +33,7 @@ export const getYDoc = (docname: string, gc: boolean = true): WSSharedDoc =>
   setIfUndefined(docs, docname, () => {
     const doc: WSSharedDoc = new WSSharedDoc(docname);
     doc.gc = gc;
-    if (persistence !== null) {
+    if (persistence) {
       persistence.bindState(docname, doc);
     }
     docs.set(docname, doc);
