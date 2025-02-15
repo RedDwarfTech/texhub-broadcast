@@ -1,9 +1,12 @@
 import express from "express";
 import { Server } from "socket.io";
 import http from "http";
+import { initialize } from "./websocket/entry/init";
 const PORT = 1234;
 export const app = express();
 var httpServer = http.createServer(app);
+
+initialize();
 
 // websocket
 export const websocketServer = new Server(httpServer, {
