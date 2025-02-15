@@ -10,6 +10,7 @@ import { debounce } from "lodash";
 import { send } from "../websocket/conn/ws_action.js";
 import { callbackHandler, updateHandler } from "./yjs_utils.js";
 import { ChangeReq } from "../model/yjs/ChangeReq.js";
+import { Socket } from "socket.io";
 
 const CALLBACK_URL = process.env.CALLBACK_URL
   ? new URL(process.env.CALLBACK_URL)
@@ -25,7 +26,7 @@ const JWT_SIGN_KEY = process.env.JWT_SIGN_KEY || "key-missing";
 
 export class WSSharedDoc extends Y.Doc {
   name: string;
-  conns: Map<Object, Set<number>>;
+  conns: Map<Socket, Set<number>>;
   awareness: any;
   /**
    * @param {string} name
@@ -47,7 +48,7 @@ export class WSSharedDoc extends Y.Doc {
      * @param {{ added: Array<number>, updated: Array<number>, removed: Array<number> }} changes
      * @param {Object | null} conn Origin is the connection that made the change
      */
-    const awarenessChangeHandler = (req: ChangeReq, conn:Object | null) => {
+    const awarenessChangeHandler = (req: ChangeReq, conn:Socket | null) => {
       const changedClients = req.added.concat(req.updated, req.removed);
       if (conn !== null) {
         const connControlledIDs =
