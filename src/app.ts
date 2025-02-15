@@ -6,8 +6,6 @@ const PORT = 1234;
 export const app = express();
 var httpServer = http.createServer(app);
 
-initialize();
-
 // websocket
 export const websocketServer = new Server(httpServer, {
   cors: {
@@ -22,5 +20,5 @@ export const websocketServer = new Server(httpServer, {
   },
   path: "/sync",
 });
-
+initialize();
 httpServer.listen(PORT);
