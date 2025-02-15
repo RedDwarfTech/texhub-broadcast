@@ -12,6 +12,7 @@ export const init_texconn = () => {
       logger.debug("connection....");
     }
     logger.info("connection:" + toJSON(socket));
+    // handeAuth(socket.request, socket);
     setupWSConnection(socket, socket.request);
   });
 
