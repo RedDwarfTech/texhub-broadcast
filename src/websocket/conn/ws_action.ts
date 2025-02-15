@@ -69,11 +69,6 @@ export const send = (doc: WSSharedDoc, conn: Socket, m: Uint8Array) => {
   }
 };
 
-/**
- * @param {any} conn
- * @param {WSSharedDoc} doc
- * @param {Uint8Array} message
- */
 export const messageListener = (
   conn: Socket,
   doc: WSSharedDoc,
