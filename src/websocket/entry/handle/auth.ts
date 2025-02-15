@@ -1,8 +1,8 @@
 import { Socket } from "socket.io";
 import http from "http";
 import jwt from "jsonwebtoken";
-import logger from "../../../common/log4js_config";
-import { websocketServer } from "src/app";
+import logger from "../../../common/log4js_config.js";
+import { websocketServer } from "../../../app.js";
 
 const JWT_SIGN_KEY = process.env.JWT_SIGN_KEY || "key-missing";
 const WEBSOCKET_AUTH_FAILED = 4000;
