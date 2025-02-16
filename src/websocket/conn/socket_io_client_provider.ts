@@ -164,6 +164,7 @@ const setupWS = (provider: SocketIOClientProvider) => {
     provider._synced = false;
 
     websocket.on("message", (event) => {
+      console.log("received message:"+ event.data);
       provider.wsLastMessageReceived = time.getUnixTime();
       const encoder = readMessage(provider, new Uint8Array(event.data), true);
       if (encoding.length(encoder) > 1) {
