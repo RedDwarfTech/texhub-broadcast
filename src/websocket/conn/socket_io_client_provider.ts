@@ -162,15 +162,15 @@ const setupWS = (provider: SocketIOClientProvider) => {
     provider.wsconnected = false;
     provider._synced = false;
 
-    websocket.on("message", (event) => {
+    websocket.on("message", (data) => {
       debugger
-      console.log("received message:" + toJSON(event));
+      console.log("received message:" + toJSON(data));
       provider.wsLastMessageReceived = time.getUnixTime();
-      const encoder = readMessage(provider, new Uint8Array(event.data), true);
+      const encoder = readMessage(provider, new Uint8Array(data), true);
       if (encoding.length(encoder) > 1) {
         websocket.send(encoding.toUint8Array(encoder));
       }
-      provider.emit("message", [event, provider]);
+      provider.emit("message", [data, provider]);
     });
     websocket.on("error", (event) => {
       provider.emit("connection-error", [event, provider]);

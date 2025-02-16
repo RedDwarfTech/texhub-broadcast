@@ -20,7 +20,7 @@ const CALLBACK_OBJECTS = process.env.CALLBACK_OBJECTS
   : {};
 
 export const docs = new Map<string, WSSharedDoc>();
-export const messageSync = 0;
+export const messageSync: number = 0;
 
 /**
  * Gets a Y.Doc by name, whether in memory or on disk
@@ -92,5 +92,4 @@ export const initTpl = (docId: string, projectId: string, initContext: any) => {
   };
   const ydoc = new Y.Doc(docOpt);
   const ytext = ydoc.getText(docId);
-  
 };

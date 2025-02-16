@@ -12,8 +12,6 @@ export const init_texconn = () => {
       logger.debug("connection....");
     }
     logger.info("connection:" + toJSON(socket));
-    websocketServer.emit('hello', 'world');
-    socket.broadcast.emit('hi');
     setupWSConnection(socket, socket.request);
   });
 

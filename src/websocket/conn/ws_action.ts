@@ -54,9 +54,6 @@ export const sendWithType = (doc: WSSharedDoc, conn: Socket, m: Uint8Array) => {
 export const send = (doc: WSSharedDoc, conn: Socket, m: Uint8Array) => {
   try {
     if (conn.connected) {
-      logger.debug("send message:" + m);
-      conn.send("hello");
-      conn.emit("message", "d");
       // https://stackoverflow.com/questions/16518153/get-connection-status-on-socket-io-client
       conn.send(m);
     } else {
