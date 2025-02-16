@@ -391,6 +391,7 @@ export class SocketIOClientProvider extends Observable<string> {
      * @param {any} _origin
      */
     this._awarenessUpdateHandler = ({ added, updated, removed }, _origin) => {
+      console.log("trigger update...");
       const changedClients = added.concat(updated).concat(removed);
       const encoder = encoding.createEncoder();
       encoding.writeVarUint(encoder, messageAwareness);
