@@ -8,13 +8,13 @@ import {
   createEncoder,
   toUint8Array,
   writeVarUint,
-  writeVarUint8Array
+  writeVarUint8Array,
   // @ts-ignore
 } from "lib0/dist/encoding.cjs";
 import {
   createDecoder,
   readVarUint,
-  readVarUint8Array
+  readVarUint8Array,
   // @ts-ignore
 } from "lib0/dist/decoding.cjs";
 // @ts-ignore
@@ -34,6 +34,7 @@ import { io, ManagerOptions, Socket, SocketOptions } from "socket.io-client";
 import { math } from "lib0";
 import { WsParam } from "../../model/texhub/ws_param";
 import { MySocket } from "../../types/textypes";
+import { toJSON } from "flatted";
 
 export const messageSync = 0;
 export const messageQueryAwareness = 3;
@@ -118,13 +119,11 @@ const messageReconnectTimeout = 30000;
 const permissionDeniedHandler = (provider: any, reason: any) =>
   console.warn(`Permission denied to access ${provider.url}.\n${reason}`);
 
-/**
- * @param {WebsocketProvider} provider
- * @param {Uint8Array} buf
- * @param {boolean} emitSynced
- * @return {encoding.Encoder}
- */
-const readMessage = (provider: any, buf: any, emitSynced: any) => {
+const readMessage = (
+  provider: SocketIOClientProvider,
+  buf: Uint8Array,
+  emitSynced: boolean
+) => {
   const decoder = createDecoder(buf);
   const encoder = createEncoder();
   const messageType = readVarUint(decoder);
@@ -164,7 +163,8 @@ const setupWS = (provider: SocketIOClientProvider) => {
     provider._synced = false;
 
     websocket.on("message", (event) => {
-      console.log("received message:"+ event.data);
+      debugger
+      console.log("received message:" + toJSON(event));
       provider.wsLastMessageReceived = time.getUnixTime();
       const encoder = readMessage(provider, new Uint8Array(event.data), true);
       if (encoding.length(encoder) > 1) {
@@ -300,7 +300,7 @@ export class SocketIOClientProvider extends Observable<string> {
     serverUrl: string,
     roomname: string,
     doc: Y.Doc,
-    options?:Partial<ManagerOptions & SocketOptions>,
+    options?: Partial<ManagerOptions & SocketOptions>,
     {
       connect = true,
       awareness = new awarenessProtocol.Awareness(doc),
@@ -320,8 +320,9 @@ export class SocketIOClientProvider extends Observable<string> {
     this.options = options;
     this.maxBackoffTime = maxBackoffTime;
     this.bcChannel = serverUrl + "/" + roomname;
-    this.url = serverUrl + (encodedParams.length === 0 ? "" : "?" + encodedParams);
-    this.roomname = roomname; 
+    this.url =
+      serverUrl + (encodedParams.length === 0 ? "" : "?" + encodedParams);
+    this.roomname = roomname;
     this.doc = doc;
     this._WS = SocketPolyfill;
     this.awareness = awareness;
@@ -472,28 +473,30 @@ export class SocketIOClientProvider extends Observable<string> {
     );
   }
 
-  disconnectBc () {
+  disconnectBc() {
     // broadcast message with local awareness state set to null (indicating disconnect)
-    const encoder = encoding.createEncoder()
-    encoding.writeVarUint(encoder, messageAwareness)
+    const encoder = encoding.createEncoder();
+    encoding.writeVarUint(encoder, messageAwareness);
     encoding.writeVarUint8Array(
       encoder,
-      awarenessProtocol.encodeAwarenessUpdate(this.awareness, [
-        this.doc.clientID
-      ], new Map())
-    )
-    broadcastMessage(this, encoding.toUint8Array(encoder))
+      awarenessProtocol.encodeAwarenessUpdate(
+        this.awareness,
+        [this.doc.clientID],
+        new Map()
+      )
+    );
+    broadcastMessage(this, encoding.toUint8Array(encoder));
     if (this.bcconnected) {
-      bc.unsubscribe(this.bcChannel, this._bcSubscriber)
-      this.bcconnected = false
+      bc.unsubscribe(this.bcChannel, this._bcSubscriber);
+      this.bcconnected = false;
     }
   }
 
-  disconnect () {
-    this.shouldConnect = false
-    this.disconnectBc()
+  disconnect() {
+    this.shouldConnect = false;
+    this.disconnectBc();
     if (this.ws !== null && this.ws) {
-      this.ws.disconnect()
+      this.ws.disconnect();
     }
   }
 
