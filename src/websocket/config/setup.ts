@@ -1,7 +1,12 @@
 import { getYDoc, messageSync } from "../../yjs/yjs_utils.js";
 import { closeConn, messageListener, send } from "../conn/ws_action.js";
-// @ts-ignore
-import { createEncoder, toUint8Array,writeVarUint,writeVarUint8Array } from "lib0/dist/encoding.cjs";
+import {
+  createEncoder,
+  toUint8Array,
+  writeVarUint,
+  writeVarUint8Array,
+  // @ts-ignore
+} from "lib0/dist/encoding.cjs";
 // @ts-ignore
 import decoding from "lib0/dist/decoding.cjs";
 // @ts-ignore
@@ -16,12 +21,16 @@ import logger from "../../common/log4js_config.js";
 export function setupWSConnection(
   conn: Socket,
   req: http.IncomingMessage,
-  { docName = req.url!.slice(1).split("?")[0], gc = true } = {}
+  { gc = true } = {}
 ) {
   // handleAuth(req, conn);
   // conn.binaryType = "arraybuffer";
+  const docId = new URL(
+    req.url!,
+    `http://${req.headers.host}`
+  ).searchParams.get("docId");
   // get doc, initialize if it does not exist yet
-  const doc = getYDoc(docName, gc);
+  const doc = getYDoc(docId!, gc);
   doc.conns.set(conn, new Set());
   // listen and reply to events
   conn.on("message", (message) => {
@@ -38,7 +47,7 @@ export function setupWSConnection(
           ",wasClean:" +
           wasClean +
           ",the doc:" +
-          docName
+          docId
       );
     }
     closeConn(doc, conn);
