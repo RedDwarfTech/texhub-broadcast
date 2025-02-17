@@ -140,7 +140,7 @@ const readMessage = (
  * @param {WebsocketProvider} provider
  * @param {ArrayBuffer} buf
  */
-const broadcastMessage = (provider: SocketIOClientProvider, buf: any) => {
+const broadcastMessage = (provider: SocketIOClientProvider, buf: ArrayBuffer) => {
   const ws = provider.ws;
   if (provider.wsconnected && ws && ws.connected) {
     ws.send(buf);
@@ -231,7 +231,7 @@ const setupWS = (provider: SocketIOClientProvider) => {
         provider
       );
     });
-    websocket.on("open", () => {
+    websocket.on("connect", () => {
       provider.wsLastMessageReceived = time.getUnixTime();
       provider.wsconnecting = false;
       provider.wsconnected = true;
