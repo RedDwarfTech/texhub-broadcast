@@ -48,7 +48,7 @@ export const getYDoc = (docname: string, gc: boolean = true): WSSharedDoc =>
 export const callbackHandler = (
   update: Uint8Array,
   origin: any,
-  doc: WSSharedDoc
+  doc: any
 ) => {
   const room = doc.name;
   const dataToSend = {
@@ -66,24 +66,20 @@ export const callbackHandler = (
   callbackRequest(CALLBACK_URL!, Number(CALLBACK_TIMEOUT), dataToSend);
 };
 
+
 /**
  * @param {Uint8Array} update
- * @param {any} origin
+ * @param {any} _origin
  * @param {WSSharedDoc} doc
+ * @param {any} _tr
  */
-export const updateHandler = (
-  update: Uint8Array<ArrayBufferLike>,
-  origin: any,
-  doc: WSSharedDoc
-) => {
-  const encoder = encoding.createEncoder();
-  encoding.writeVarUint(encoder, messageSync);
-  syncProtocol.writeUpdate(encoder, update);
-  const message = encoding.toUint8Array(encoder);
-  doc.conns.forEach((_, conn) => {
-    send(doc, conn, message);
-  });
-};
+export const updateHandler = (update:any, _origin:any, doc:any, _tr:any) => {
+  const encoder = encoding.createEncoder()
+  encoding.writeVarUint(encoder, messageSync)
+  syncProtocol.writeUpdate(encoder, update)
+  const message = encoding.toUint8Array(encoder)
+  doc.conns.forEach((_:any, conn:any) => send(doc, conn, message))
+}
 
 export const initTpl = (docId: string, projectId: string, initContext: any) => {
   let docOpt = {

@@ -140,7 +140,10 @@ const readMessage = (
  * @param {WebsocketProvider} provider
  * @param {ArrayBuffer} buf
  */
-const broadcastMessage = (provider: SocketIOClientProvider, buf: ArrayBuffer) => {
+const broadcastMessage = (
+  provider: SocketIOClientProvider,
+  buf: ArrayBuffer
+) => {
   const ws = provider.ws;
   if (provider.wsconnected && ws && ws.connected) {
     ws.send(buf);
@@ -163,7 +166,7 @@ const setupWS = (provider: SocketIOClientProvider) => {
     provider._synced = false;
 
     websocket.on("message", (data) => {
-      debugger
+      debugger;
       console.log("received message:" + toJSON(data));
       provider.wsLastMessageReceived = time.getUnixTime();
       const encoder = readMessage(provider, new Uint8Array(data), true);
@@ -377,7 +380,7 @@ export class SocketIOClientProvider extends Observable<string> {
      * @param {Uint8Array} update
      * @param {any} origin
      */
-    this._updateHandler = (update, origin) => {
+    this._updateHandler = (update: Uint8Array, origin: any) => {
       if (origin !== this) {
         const encoder = encoding.createEncoder();
         encoding.writeVarUint(encoder, messageSync);
@@ -390,7 +393,18 @@ export class SocketIOClientProvider extends Observable<string> {
      * @param {any} changed
      * @param {any} _origin
      */
-    this._awarenessUpdateHandler = ({ added, updated, removed }, _origin) => {
+    this._awarenessUpdateHandler = (
+      {
+        added,
+        updated,
+        removed,
+      }: {
+        added: Array<number>;
+        updated: Array<number>;
+        removed: Array<number>;
+      },
+      _origin: any
+    ) => {
       console.log("trigger update...");
       const changedClients = added.concat(updated).concat(removed);
       const encoder = encoding.createEncoder();
@@ -401,6 +415,7 @@ export class SocketIOClientProvider extends Observable<string> {
       );
       broadcastMessage(this, encoding.toUint8Array(encoder));
     };
+    awareness.on("update", this._awarenessUpdateHandler);
     this._unloadHandler = () => {
       awarenessProtocol.removeAwarenessStates(
         this.awareness,
@@ -413,7 +428,7 @@ export class SocketIOClientProvider extends Observable<string> {
     } else if (typeof process !== "undefined") {
       process.on("exit", this._unloadHandler);
     }
-    awareness.on("update", this._awarenessUpdateHandler);
+
     this._checkInterval = /** @type {any} */ setInterval(() => {
       if (
         this.wsconnected &&

@@ -1,7 +1,7 @@
 // @ts-ignore
 import awarenessProtocol from "y-protocols/dist/awareness.cjs";
 import { docs, messageSync } from "../../yjs/yjs_utils.js";
-import { messageAwareness, WSSharedDoc } from "../../yjs/ws_share_doc.js";
+import { WSSharedDoc } from "../../yjs/ws_share_doc.js";
 import log4js from "log4js";
 import { persistence } from "../../storage/leveldb.js";
 import { Socket } from "socket.io";
@@ -12,6 +12,7 @@ import encoding from "lib0/dist/encoding.cjs";
 import decoding from "lib0/dist/decoding.cjs";
 // @ts-ignore
 import syncProtocol from "y-protocols/dist/sync.cjs";
+import { SyncMessageType } from "../../model/texhub/sync_msg_type.js";
 
 const wsReadyStateOpen = 1;
 
@@ -78,7 +79,7 @@ export const messageListener = (
     const decoder = decoding.createDecoder(message);
     const messageType: number = decoding.readVarUint(decoder);
     switch (messageType) {
-      case messageSync:
+      case SyncMessageType.MessageSync:
         encoding.writeVarUint(encoder, messageSync);
         syncProtocol.readSyncMessage(decoder, encoder, doc, conn);
 
@@ -89,7 +90,7 @@ export const messageListener = (
           send(doc, conn, encoding.toUint8Array(encoder));
         }
         break;
-      case messageAwareness: {
+      case SyncMessageType.MessageAwareness: {
         awarenessProtocol.applyAwarenessUpdate(
           doc.awareness,
           decoding.readVarUint8Array(decoder),
@@ -97,6 +98,9 @@ export const messageListener = (
         );
         break;
       }
+      default:
+        logger.error("unknown message type", messageType);
+        break;
     }
   } catch (err) {
     logger.error("message listener error," + err);

@@ -38,7 +38,7 @@ export class WSSharedDoc extends Y.Doc {
      * Maps from conn to set of controlled user ids. Delete all user ids from awareness when this conn is closed
      * @type {Map<Object, Set<number>>}
      */
-    this.conns = new Map<any, Set<number>>();
+    this.conns = new Map<Socket, Set<number>>();
     /**
      * @type {awarenessProtocol.Awareness}
      */
@@ -75,14 +75,14 @@ export class WSSharedDoc extends Y.Doc {
       });
     };
     this.awareness.on("update", awarenessChangeHandler);
-    //this.on("update", updateHandler);
+    this.on("update", updateHandler);
     if (isCallbackSet) {
-      //this.on(
-      //  "update",
-      //  debounce(callbackHandler, CALLBACK_DEBOUNCE_WAIT, {
-      //    maxWait: CALLBACK_DEBOUNCE_MAXWAIT,
-      //  })
-      //);
+      this.on(
+        "update",
+        debounce(callbackHandler, CALLBACK_DEBOUNCE_WAIT, {
+          maxWait: CALLBACK_DEBOUNCE_MAXWAIT,
+        })
+      );
     }
   }
 }

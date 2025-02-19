@@ -14,6 +14,4 @@ export const init_texconn = () => {
     logger.info("connection:" + toJSON(socket));
     setupWSConnection(socket, socket.request);
   });
-
-  texhubNs.emit("hi", "everyone!");
 };

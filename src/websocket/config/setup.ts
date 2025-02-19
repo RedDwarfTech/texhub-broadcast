@@ -1,5 +1,5 @@
 import { getYDoc, messageSync } from "../../yjs/yjs_utils.js";
-import { closeConn, messageListener, send } from "../conn/ws_action.js";
+import { closeConn, send } from "../conn/ws_action.js";
 import {
   createEncoder,
   toUint8Array,
@@ -8,15 +8,14 @@ import {
   // @ts-ignore
 } from "lib0/dist/encoding.cjs";
 // @ts-ignore
-import decoding from "lib0/dist/decoding.cjs";
-// @ts-ignore
 import syncProtocol from "y-protocols/dist/sync.cjs";
-import { messageAwareness } from "../../yjs/ws_share_doc.js";
+import { messageAwareness, WSSharedDoc } from "../../yjs/ws_share_doc.js";
 // @ts-ignore
 import awarenessProtocol from "y-protocols/dist/awareness.cjs";
 import { Socket } from "socket.io";
 import http from "http";
 import logger from "../../common/log4js_config.js";
+import { ws_msg_handle } from "../conn/event/message_handler.js";
 
 export function setupWSConnection(
   conn: Socket,
@@ -30,12 +29,11 @@ export function setupWSConnection(
     `http://${req.headers.host}`
   ).searchParams.get("docId");
   // get doc, initialize if it does not exist yet
-  const doc = getYDoc(docId!, gc);
+  const doc: WSSharedDoc = getYDoc(docId!, gc);
   doc.conns.set(conn, new Set());
   // listen and reply to events
-  conn.on("message", (message) => {
-    logger.info("received message:" + message);
-    messageListener(conn, doc, new Uint8Array(message));
+  conn.on("message", (message: Uint8Array) => {
+    ws_msg_handle(message, conn, doc);
   });
   conn.on("close", (code, reason, wasClean) => {
     if (code !== 1000 && code !== 4001) {
