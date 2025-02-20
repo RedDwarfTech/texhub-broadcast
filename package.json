@@ -19,7 +19,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint --fix",
     "dev": "vite-node src/app.ts",
-    "build": "npx tspc && tsc-alias",
+    "build": "tsc && tsc-alias",
     "dist": "npx tsc"
   },
   "keywords": [],
