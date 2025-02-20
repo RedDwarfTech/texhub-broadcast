@@ -6,7 +6,7 @@ import { createEncoder, writeVarUint, writeVarUint8Array, toUint8Array } from "l
 import decoding from "lib0/dist/decoding.cjs";
 // @ts-ignore
 import awarenessProtocol from "y-protocols/dist/awareness.cjs";
-import { debounce } from "lodash";
+import debounce from "lodash";
 import { send } from "../websocket/conn/ws_action.js";
 import { callbackHandler, updateHandler } from "./yjs_utils.js";
 import { ChangeReq } from "../model/yjs/ChangeReq.js";
