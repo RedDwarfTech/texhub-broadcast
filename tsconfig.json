@@ -12,10 +12,15 @@
     "declaration": true,
     "baseUrl": ".",
     "paths": {
-      "@controllers/*": ["src/controllers/*"]
+      "@controllers/*": ["src/controllers/*"],
+      "@websocket/*": ["src/websocket/*"]
     },
     "sourceMap": true
   },
   "include": ["src/**/*"],
-  "files": ["src/app.ts"]
+  "files": ["src/app.ts"],
+  "ts-node": {
+    "require": ["tsconfig-paths/register"]
+  },
+  "plugins": [{ "transform": "typescript-transform-paths" }]
 }
