@@ -77,12 +77,12 @@ export class WSSharedDoc extends Y.Doc {
     this.awareness.on("update", awarenessChangeHandler);
     this.on("update", updateHandler);
     if (isCallbackSet) {
-      this.on(
-        "update",
-        debounce(callbackHandler, CALLBACK_DEBOUNCE_WAIT, {
-          maxWait: CALLBACK_DEBOUNCE_MAXWAIT,
-        })
-      );
+      //this.on(
+      //  "update",
+      //  debounce(callbackHandler, CALLBACK_DEBOUNCE_WAIT, {
+      //    maxWait: CALLBACK_DEBOUNCE_MAXWAIT,
+      //  })
+      //);
     }
   }
 }
