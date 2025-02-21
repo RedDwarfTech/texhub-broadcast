@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "texhub-broadcast",
+      "address": "10.0.0.249",
+      "port": 9090,
+      "localRoot": "${workspaceFolder}",
+      "remoteRoot": "/home/node/app/"
+    }
+  ]
+}
