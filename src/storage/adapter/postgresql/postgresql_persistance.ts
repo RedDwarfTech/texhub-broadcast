@@ -17,35 +17,15 @@ import { dbConfig } from "./db_config.js";
 import { PREFERRED_TRIM_SIZE } from "./postgresql_const.js";
 
 export class PostgresqlPersistance {
-  tr: Promise<unknown>;
-  transact: (f: any) => Promise<unknown>;
   pool: pg.Pool;
 
   constructor({ level = defaultLevel, levelOptions = {} } = {}) {
     const pool = new Pool(dbConfig);
     this.pool = pool;
-    this.tr = promise.resolve();
-
-    this.transact = (f) => {
-      const currTr = this.tr;
-      this.tr = (async () => {
-        await currTr;
-        let res = /** @type {any} */ null;
-        try {
-          res = await f(pool);
-        } catch (err) {
-          /* istanbul ignore next */
-          console.warn("Error during y-leveldb transaction", err);
-        }
-        return res;
-      })();
-      return this.tr;
-    };
   }
 
   getYDoc(docName: string) {
-    return this.transact(async (db: any) => {
-      const updates = await getPgUpdates(db, docName);
+      const updates = getPgUpdates(this.pool, docName);
       const ydoc = new Y.Doc();
       ydoc.transact(() => {
         for (let i = 0; i < updates.length; i++) {
@@ -53,46 +33,42 @@ export class PostgresqlPersistance {
         }
       });
       if (updates.length > PREFERRED_TRIM_SIZE) {
-        await flushDocument(
-          db,
+        flushDocument(
+          this.pool,
           docName,
           Y.encodeStateAsUpdate(ydoc),
           Y.encodeStateVector(ydoc)
         );
       }
       return ydoc;
-    });
   }
 
   flushDocument(docName: string) {
-    return this.transact(async (db: any) => {
-      const updates = await getPgUpdates(db, docName);
+      const updates = getPgUpdates(this.pool, docName);
       const { update, sv } = mergeUpdates(updates);
-      await flushDocument(db, docName, update, sv);
-    });
+      flushDocument(this.pool, docName, update, sv);
   }
 
-  getStateVector(docName: any) {
-    return this.transact(async (db: any) => {
-      const { clock, sv } = await readStateVector(db, docName);
+  async getStateVector(docName: any) {
+      const { clock, sv } = await readStateVector(this.pool, docName);
       let curClock = -1;
       if (sv !== null) {
-        curClock = await getCurrentUpdateClock(db, docName);
+        curClock = getCurrentUpdateClock(this.pool, docName);
       }
       if (sv !== null && clock === curClock) {
         return sv;
       } else {
         // current state vector is outdated
-        const updates = await getPgUpdates(db, docName);
+        const updates = getPgUpdates(this.pool, docName);
         const { update, sv } = mergeUpdates(updates);
-        await flushDocument(db, docName, update, sv);
+         flushDocument(this.pool, docName, update, sv);
         return sv;
       }
-    });
+
   }
 
   storeUpdate(docName: string, update: Uint8Array) {
-    return this.transact((db:any) => storeUpdate(db, docName, update));
+    return  storeUpdate(this.pool, docName, update);
   }
 
   async getDiff(docName: any, stateVector: any) {

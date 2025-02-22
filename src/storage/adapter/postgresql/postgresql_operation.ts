@@ -7,7 +7,7 @@ import pg from "pg";
 import logger from "../../../common/log4js_config.js";
 
 export const getPgUpdates = (
-  db: any,
+  db: pg.Pool,
   docName: string,
   opts = { values: true, keys: false, reverse: false, limit: 1 }
 ) =>
@@ -17,18 +17,18 @@ export const getPgUpdates = (
     ...opts,
   });
 
-export const getPgBulkData = (db: any, opts: any): any =>
-  promise.create((resolve, reject) => {
-    /**
-     * @type {Array<any>} result
-     */
-    const result: Array<any> = [];
-
-    db.createReadStream(opts)
-      .on("data", /** @param {any} data */ (data: any) => result.push(data))
-      .on("end", () => resolve(result))
-      .on("error", reject);
-  });
+export const getPgBulkData = (db: pg.Pool, opts: any): any => {
+  try {
+    const sql = "select * from tex_sync";
+    const res = db.query(sql);
+    res.then((data) => {
+      logger.warn(data);
+    });
+  } catch (err) {
+    console.error("Query error:", err);
+    throw err;
+  }
+};
 
 const createDocumentUpdateKey = (docName: string, clock: any) => [
   "v1",
@@ -178,10 +178,10 @@ export const readStateVector = async (db: any, docName: string) => {
     // no state vector created yet or no document exists
     return { sv: null, clock: -1 };
   }
-  return decodeLeveldbStateVector(buf);
+  return decodePgStateVector(buf);
 };
 
-const decodeLeveldbStateVector = (buf: any) => {
+const decodePgStateVector = (buf: any) => {
   const decoder = decoding.createDecoder(buf);
   const clock = decoding.readVarUint(decoder);
   const sv = decoding.readVarUint8Array(decoder);
