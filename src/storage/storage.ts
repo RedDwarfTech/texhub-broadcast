@@ -13,6 +13,7 @@ export let persistencePostgresql: Persistence;
 if (typeof persistenceDir === "string") {
   console.info('Persisting documents to "' + persistenceDir + '"');
   const ldb = new LeveldbPersistence(persistenceDir);
+  const postgresqlDb = new PostgresqlPersistance();
   persistence = {
     provider: ldb,
     bindState: async (docName: string, ydoc: Y.Doc) => {
@@ -22,6 +23,7 @@ if (typeof persistenceDir === "string") {
       Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(persistedYdoc));
       ydoc.on("update", (update) => {
         ldb.storeUpdate(docName, update);
+        postgresqlDb.storeUpdate(docName, newUpdates);
         if (persistedYdoc) {
           throttledFn(docName, ldb);
         }
@@ -31,7 +33,6 @@ if (typeof persistenceDir === "string") {
   };
 
   // postgresql
-  const postgresqlDb = new PostgresqlPersistance();
   persistencePostgresql = {
     provider: postgresqlDb,
     bindState: async (docName: string, ydoc: Y.Doc) => {
