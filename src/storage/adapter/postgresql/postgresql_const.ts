@@ -6,6 +6,8 @@ import { readUint32BigEndian } from "lib0/decoding.js";
 const YEncodingString = 0;
 const YEncodingUint32 = 1;
 
+export const PREFERRED_TRIM_SIZE = 500
+
 export const valueEncoding = {
   buffer: true,
   type: "y-value",

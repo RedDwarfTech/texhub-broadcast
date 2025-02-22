@@ -2,24 +2,26 @@ import * as Y from "yjs";
 import * as promise from "lib0/promise.js";
 import * as binary from "lib0/binary.js";
 import * as encoding from "lib0/encoding.js";
+import * as decoding from "lib0/decoding.js";
 
-export const getLevelUpdates = (
+export const getPgUpdates = (
   db: any,
   docName: string,
   opts = { values: true, keys: false, reverse: false, limit: 1 }
 ) =>
-  getLevelBulkData(db, {
+  getPgBulkData(db, {
     gte: createDocumentUpdateKey(docName, 0),
     lt: createDocumentUpdateKey(docName, binary.BITS32),
     ...opts,
   });
 
-export const getLevelBulkData = (db: any, opts: any): any =>
+export const getPgBulkData = (db: any, opts: any): any =>
   promise.create((resolve, reject) => {
     /**
      * @type {Array<any>} result
      */
     const result: Array<any> = [];
+
     db.createReadStream(opts)
       .on("data", /** @param {any} data */ (data: any) => result.push(data))
       .on("end", () => resolve(result))
@@ -40,7 +42,8 @@ const createDocumentMetaKey = (docName: string, metaKey: string) => [
   metaKey,
 ];
 
-const createDocumentStateVectorKey = (docName: string) => ["v1_sv", docName];
+const createDocumentStateVectorKey = (docName: string): string =>
+  "v1_sv" + docName;
 
 const createDocumentMetaEndKey = (docName: string) => ["v1", docName, "metb"];
 
@@ -66,7 +69,7 @@ export const flushDocument = async (
   return clock;
 };
 
-const storeUpdate = async (db: any, docName: string, update: any) => {
+export const storeUpdate = async (db: any, docName: string, update: any) => {
   const clock = await getCurrentUpdateClock(db, docName);
   if (clock === -1) {
     // make sure that a state vector is aways written, so we can search for available documents
@@ -114,7 +117,7 @@ const levelPut = async (db: any, key: any, val: any) =>
   db.put(key, Buffer.from(val));
 
 export const getCurrentUpdateClock = (db: any, docName: string) =>
-  getLevelUpdates(db, docName, {
+  getPgUpdates(db, docName, {
     keys: true,
     values: false,
     reverse: true,
@@ -144,7 +147,7 @@ const clearRange = async (db: any, gte: any, lt: any) => {
   if (db.supports.clear) {
     await db.clear({ gte, lt });
   } else {
-    const keys: any = await getLevelBulkData(db, {
+    const keys: any = await getPgBulkData(db, {
       values: false,
       keys: true,
       gte,
@@ -153,4 +156,20 @@ const clearRange = async (db: any, gte: any, lt: any) => {
     const ops = keys.map((key: any) => ({ type: "del", key }));
     await db.batch(ops);
   }
+};
+
+export const readStateVector = async (db: any, docName: string) => {
+  const buf = await levelGet(db, createDocumentStateVectorKey(docName));
+  if (buf === null) {
+    // no state vector created yet or no document exists
+    return { sv: null, clock: -1 };
+  }
+  return decodeLeveldbStateVector(buf);
+};
+
+const decodeLeveldbStateVector = (buf: any) => {
+  const decoder = decoding.createDecoder(buf);
+  const clock = decoding.readVarUint(decoder);
+  const sv = decoding.readVarUint8Array(decoder);
+  return { sv, clock };
 };
