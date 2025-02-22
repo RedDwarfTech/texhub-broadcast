@@ -6,9 +6,8 @@ import {
   flushDocument,
   getLevelUpdates,
   mergeUpdates,
-} from "./postgresql_operation";
-import { keyEncoding, valueEncoding } from "./postgresql_const";
-import { dbConfig } from "./db_config";
+} from "./postgresql_operation.js";
+import { dbConfig } from "./db_config.js";
 
 export class PostgresqlPersistance {
   tr: Promise<unknown>;
@@ -16,12 +15,10 @@ export class PostgresqlPersistance {
   pool: Pool;
 
   constructor(
-    location: string,
     { level = defaultLevel, levelOptions = {} } = {}
   ) {
     const pool = new Pool(dbConfig);
     this.pool = pool;
-    const db = level(location, { ...levelOptions, valueEncoding, keyEncoding });
     this.tr = promise.resolve();
 
     this.transact = (f) => {
@@ -30,7 +27,7 @@ export class PostgresqlPersistance {
         await currTr;
         let res = /** @type {any} */ null;
         try {
-          res = await f(db);
+          res = await f(pool);
         } catch (err) {
           /* istanbul ignore next */
           console.warn("Error during y-leveldb transaction", err);

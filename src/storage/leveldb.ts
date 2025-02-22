@@ -8,11 +8,11 @@ import { Persistence } from "../model/yjs/Persistence.js";
 import { PostgresqlPersistance } from "./adapter/postgresql/postgresql_persistance.js";
 
 export let persistence: Persistence;
+export let persistencePostgresql: Persistence;
 
 if (typeof persistenceDir === "string") {
   console.info('Persisting documents to "' + persistenceDir + '"');
   const ldb = new LeveldbPersistence(persistenceDir);
-  const postgresql = new PostgresqlPersistance(persistenceDir);
   persistence = {
     provider: ldb,
     bindState: async (docName: string, ydoc: Y.Doc) => {
@@ -29,4 +29,8 @@ if (typeof persistenceDir === "string") {
     },
     writeState: async (docName: string, ydoc: Y.Doc) => {},
   };
+
+  // postgresql
+  const postgresql = new PostgresqlPersistance();
+
 }

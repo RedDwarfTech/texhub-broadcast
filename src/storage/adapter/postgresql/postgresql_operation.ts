@@ -2,7 +2,6 @@ import * as Y from "yjs";
 import * as promise from "lib0/promise.js";
 import * as binary from "lib0/binary.js";
 import * as encoding from "lib0/encoding.js";
-import * as decoding from "lib0/decoding.js";
 
 export const getLevelUpdates = (
   db: any,
