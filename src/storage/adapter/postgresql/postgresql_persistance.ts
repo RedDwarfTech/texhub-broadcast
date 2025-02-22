@@ -1,7 +1,8 @@
 import * as promise from "lib0/promise.js";
 // @ts-ignore
 import defaultLevel from "level";
-import { Pool } from "pg";
+import pg from "pg";
+const { Pool } = pg;
 // @ts-ignore
 import * as Y from "yjs";
 import {
@@ -18,7 +19,7 @@ import { PREFERRED_TRIM_SIZE } from "./postgresql_const.js";
 export class PostgresqlPersistance {
   tr: Promise<unknown>;
   transact: (f: any) => Promise<unknown>;
-  pool: Pool;
+  pool: pg.Pool;
 
   constructor({ level = defaultLevel, levelOptions = {} } = {}) {
     const pool = new Pool(dbConfig);
