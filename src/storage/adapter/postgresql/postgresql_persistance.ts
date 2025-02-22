@@ -91,7 +91,7 @@ export class PostgresqlPersistance {
     });
   }
 
-  storeUpdate(docName: string, update: any) {
+  storeUpdate(docName: string, update: Uint8Array) {
     return this.transact((db:any) => storeUpdate(db, docName, update));
   }
 

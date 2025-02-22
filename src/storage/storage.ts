@@ -36,9 +36,12 @@ if (typeof persistenceDir === "string") {
     provider: postgresqlDb,
     bindState: async (docName: string, ydoc: Y.Doc) => {
       const persistedYdoc: any = await postgresqlDb.getYDoc(docName);
-      const newUpdates = Y.encodeStateAsUpdate(ydoc);
+      const newUpdates: Uint8Array = Y.encodeStateAsUpdate(ydoc);
       postgresqlDb.storeUpdate(docName, newUpdates);
-      Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(persistedYdoc));
+      // Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(persistedYdoc));
+      ydoc.on("update", (update) => {
+        postgresqlDb.storeUpdate(docName, newUpdates);
+      });
     },
     writeState: async (docName: string, ydoc: Y.Doc) => {},
   };

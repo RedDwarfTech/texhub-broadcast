@@ -3,6 +3,8 @@ import * as promise from "lib0/promise.js";
 import * as binary from "lib0/binary.js";
 import * as encoding from "lib0/encoding.js";
 import * as decoding from "lib0/decoding.js";
+import pg from "pg";
+import logger from "../../../common/log4js_config.js";
 
 export const getPgUpdates = (
   db: any,
@@ -69,7 +71,11 @@ export const flushDocument = async (
   return clock;
 };
 
-export const storeUpdate = async (db: any, docName: string, update: any) => {
+export const storeUpdate = async (
+  db: any,
+  docName: string,
+  update: Uint8Array
+) => {
   const clock = await getCurrentUpdateClock(db, docName);
   if (clock === -1) {
     // make sure that a state vector is aways written, so we can search for available documents
@@ -78,7 +84,7 @@ export const storeUpdate = async (db: any, docName: string, update: any) => {
     const sv = Y.encodeStateVector(ydoc);
     await writeStateVector(db, docName, sv, 0);
   }
-  await levelPut(db, createDocumentUpdateKey(docName, clock + 1), update);
+  await pgPut(db, createDocumentUpdateKey(docName, clock + 1), update);
   return clock + 1;
 };
 
@@ -91,7 +97,7 @@ const writeStateVector = async (
   const encoder = encoding.createEncoder();
   encoding.writeVarUint(encoder, clock);
   encoding.writeVarUint8Array(encoder, sv);
-  await levelPut(
+  await pgPut(
     db,
     createDocumentStateVectorKey(docName),
     encoding.toUint8Array(encoder)
@@ -113,8 +119,16 @@ const levelGet = async (db: any, key: string) => {
   return res;
 };
 
-const levelPut = async (db: any, key: any, val: any) =>
-  db.put(key, Buffer.from(val));
+const pgPut = async (db: pg.Pool, key: any, val: any) => {
+  try {
+    const query = "INSERT INTO your_table (column1, column2) VALUES ($1, $2)";
+    const values = ["value1", "value2"];
+    const res = await db.query(query, values);
+    logger.log("Insert result:", res);
+  } catch (err: any) {
+    logger.error("Insert error:", err.stack);
+  }
+};
 
 export const getCurrentUpdateClock = (db: any, docName: string) =>
   getPgUpdates(db, docName, {

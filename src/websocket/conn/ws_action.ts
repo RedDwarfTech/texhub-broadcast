@@ -3,7 +3,7 @@ import awarenessProtocol from "y-protocols/dist/awareness.cjs";
 import { docs, messageSync } from "../../yjs/yjs_utils.js";
 import { WSSharedDoc } from "../../yjs/ws_share_doc.js";
 import log4js from "log4js";
-import { persistence } from "../../storage/leveldb.js";
+import { persistence } from "../../storage/storage.js";
 import { Socket } from "socket.io";
 var logger = log4js.getLogger();
 // @ts-ignore
