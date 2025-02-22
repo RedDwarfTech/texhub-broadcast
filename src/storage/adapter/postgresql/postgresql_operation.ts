@@ -120,7 +120,7 @@ const levelGet = async (db: any, key: Array<string|number>) => {
 const pgPut = async (db: pg.Pool, key: Array<string | number>, val: any) => {
   try {
     const query = "INSERT INTO tex_sync (key, value) VALUES ($1, $2)";
-    const values = [key, val];
+    const values = [key, Buffer.from(val)];
     const res = await db.query(query, values);
     logger.log("Insert result:", res);
   } catch (err: any) {
