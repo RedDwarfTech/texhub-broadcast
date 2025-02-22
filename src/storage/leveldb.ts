@@ -5,12 +5,14 @@ import * as Y from "yjs";
 import { LeveldbPersistence } from "y-leveldb";
 import { throttledFn } from "./appfile.js";
 import { Persistence } from "../model/yjs/Persistence.js";
+import { PostgresqlPersistance } from "./adapter/postgresql/postgresql_persistance.js";
 
 export let persistence: Persistence;
 
 if (typeof persistenceDir === "string") {
   console.info('Persisting documents to "' + persistenceDir + '"');
   const ldb = new LeveldbPersistence(persistenceDir);
+  const postgresql = new PostgresqlPersistance(persistenceDir);
   persistence = {
     provider: ldb,
     bindState: async (docName: string, ydoc: Y.Doc) => {
