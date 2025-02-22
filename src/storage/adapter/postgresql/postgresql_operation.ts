@@ -10,20 +10,22 @@ export const getPgUpdates = (
   db: pg.Pool,
   docName: string,
   opts = { values: true, keys: false, reverse: false, limit: 1 }
-) =>
-  getPgBulkData(db, {
+): Array<Buffer> => {
+  return getPgBulkData(db, {
     gte: createDocumentUpdateKey(docName, 0),
     lt: createDocumentUpdateKey(docName, binary.BITS32),
     ...opts,
   });
+};
 
-export const getPgBulkData = (db: pg.Pool, opts: any): any => {
+export const getPgBulkData = (
+  db: pg.Pool,
+  opts: any
+): Array<Buffer> => {
   try {
     const sql = "select * from tex_sync";
     const res = db.query(sql);
-    res.then((data) => {
-      logger.warn(data);
-    });
+    return [];
   } catch (err) {
     console.error("Query error:", err);
     throw err;
@@ -130,19 +132,15 @@ const pgPut = async (db: pg.Pool, key: any, val: any) => {
   }
 };
 
-export const getCurrentUpdateClock = (db: any, docName: string) =>
-  getPgUpdates(db, docName, {
+export const getCurrentUpdateClock = async (db: any, docName: string) =>{
+  const result  = getPgUpdates(db, docName, {
     keys: true,
     values: false,
     reverse: true,
     limit: 1,
-  }).then((keys: any) => {
-    if (keys.length === 0) {
-      return -1;
-    } else {
-      return keys[0][3];
-    }
-  });
+  })
+  return 1;
+}
 
 const clearUpdatesRange = async (
   db: any,

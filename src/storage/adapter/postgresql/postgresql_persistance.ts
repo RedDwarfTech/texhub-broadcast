@@ -25,7 +25,7 @@ export class PostgresqlPersistance {
   }
 
   getYDoc(docName: string) {
-      const updates = getPgUpdates(this.pool, docName);
+      const updates: Array<Buffer> = getPgUpdates(this.pool, docName);
       const ydoc = new Y.Doc();
       ydoc.transact(() => {
         for (let i = 0; i < updates.length; i++) {
@@ -49,11 +49,11 @@ export class PostgresqlPersistance {
       flushDocument(this.pool, docName, update, sv);
   }
 
-  async getStateVector(docName: any) {
+  async getStateVector(docName: string) {
       const { clock, sv } = await readStateVector(this.pool, docName);
       let curClock = -1;
       if (sv !== null) {
-        curClock = getCurrentUpdateClock(this.pool, docName);
+        curClock = await getCurrentUpdateClock(this.pool, docName);
       }
       if (sv !== null && clock === curClock) {
         return sv;

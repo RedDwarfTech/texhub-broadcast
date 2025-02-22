@@ -36,7 +36,7 @@ if (typeof persistenceDir === "string") {
   persistencePostgresql = {
     provider: postgresqlDb,
     bindState: async (docName: string, ydoc: Y.Doc) => {
-      const persistedYdoc: any = await postgresqlDb.getYDoc(docName);
+      const persistedYdoc: Y.Doc = await postgresqlDb.getYDoc(docName);
       const newUpdates: Uint8Array = Y.encodeStateAsUpdate(ydoc);
       postgresqlDb.storeUpdate(docName, newUpdates);
       // Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(persistedYdoc));
