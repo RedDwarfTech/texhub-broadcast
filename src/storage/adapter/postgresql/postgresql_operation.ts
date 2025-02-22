@@ -18,10 +18,7 @@ export const getPgUpdates = (
   });
 };
 
-export const getPgBulkData = (
-  db: pg.Pool,
-  opts: any
-): Array<Buffer> => {
+export const getPgBulkData = (db: pg.Pool, opts: any): Array<Buffer> => {
   try {
     const sql = "select * from tex_sync";
     const res = db.query(sql);
@@ -46,8 +43,7 @@ const createDocumentMetaKey = (docName: string, metaKey: string) => [
   metaKey,
 ];
 
-const createDocumentStateVectorKey = (docName: string): string =>
-  "v1_sv" + docName;
+const createDocumentStateVectorKey = (docName: string) => ["v1_sv", docName];
 
 const createDocumentMetaEndKey = (docName: string) => ["v1", docName, "metb"];
 
@@ -106,7 +102,7 @@ const writeStateVector = async (
   );
 };
 
-const levelGet = async (db: any, key: string) => {
+const levelGet = async (db: any, key: Array<string|number>) => {
   let res;
   try {
     res = await db.get(key);
@@ -121,10 +117,10 @@ const levelGet = async (db: any, key: string) => {
   return res;
 };
 
-const pgPut = async (db: pg.Pool, key: any, val: any) => {
+const pgPut = async (db: pg.Pool, key: Array<string | number>, val: any) => {
   try {
     const query = "INSERT INTO tex_sync (key, value) VALUES ($1, $2)";
-    const values = ["value1", "value2"];
+    const values = [key, val];
     const res = await db.query(query, values);
     logger.log("Insert result:", res);
   } catch (err: any) {
@@ -132,15 +128,15 @@ const pgPut = async (db: pg.Pool, key: any, val: any) => {
   }
 };
 
-export const getCurrentUpdateClock = async (db: any, docName: string) =>{
-  const result  = getPgUpdates(db, docName, {
+export const getCurrentUpdateClock = async (db: any, docName: string) => {
+  const result = getPgUpdates(db, docName, {
     keys: true,
     values: false,
     reverse: true,
     limit: 1,
-  })
+  });
   return 1;
-}
+};
 
 const clearUpdatesRange = async (
   db: any,
