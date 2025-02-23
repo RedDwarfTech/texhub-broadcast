@@ -176,7 +176,7 @@ const pgPut = async (
     const values = [
       JSON.stringify(array),
       Buffer.from(val),
-      text,
+      text.replaceAll('','').replaceAll('0x00','').replaceAll(/\u0000/g, ''),
       version,
       contentType,
       docName,
