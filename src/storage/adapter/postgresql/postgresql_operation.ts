@@ -171,7 +171,7 @@ const pgPut = async (
     const values = [
       JSON.stringify(key),
       Buffer.from(val),
-      text,
+      "text",
       version,
       contentType,
       docName,
