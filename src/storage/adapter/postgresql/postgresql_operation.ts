@@ -122,6 +122,9 @@ const pgPut = async (db: pg.Pool, key: Array<string | number>, val: Uint8Array) 
     const query = "INSERT INTO tex_sync (key, value, plain_value) VALUES ($1, $2, $3)";
     const decoder = new TextDecoder("utf-8");
     const text = decoder.decode(val);
+    if(text && text.length > 0){
+      text.replace("0x00","null");
+    }
     const values = [key, Buffer.from(val), text];
     const res = await db.query(query, values);
     logger.log("Insert result:", res);
