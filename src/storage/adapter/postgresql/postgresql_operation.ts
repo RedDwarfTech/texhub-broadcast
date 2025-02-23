@@ -121,7 +121,7 @@ const pgPut = async (
 ) => {
   try {
     const query =
-      "INSERT INTO tex_sync (key, value, plain_value, version, content_type, doc_name) VALUES ($1, $2, $3, $4, $5, $6)";
+      "INSERT INTO tex_sync (key, value, plain_value, version, content_type, doc_name, clock) VALUES ($1, $2, $3, $4, $5, $6, $7)";
     const decoder = new TextDecoder("utf-8");
     let text = decoder.decode(val);
     if (text && text.trim().length > 0) {
