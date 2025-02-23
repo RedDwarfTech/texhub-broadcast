@@ -194,7 +194,11 @@ export const getCurrentUpdateClock = async (
     reverse: true,
     limit: 1,
   });
-  return result[0].clock;
+  if (result && result.length > 0) {
+    return result[0].clock;
+  } else {
+    return -1;
+  }
 };
 
 const clearUpdatesRange = async (
@@ -214,12 +218,16 @@ const clearRange = async (db: any, gte: any, lt: any) => {
   if (db.supports.clear) {
     await db.clear({ gte, lt });
   } else {
-    const keys = await getPgBulkData(db, {
-      values: false,
-      keys: true,
-      gte,
-      lt,
-    },"").map(item=>item.key);
+    const keys = await getPgBulkData(
+      db,
+      {
+        values: false,
+        keys: true,
+        gte,
+        lt,
+      },
+      ""
+    ).map((item) => item.key);
     const ops = keys.map((key: any) => ({ type: "del", key }));
     await db.batch(ops);
   }
