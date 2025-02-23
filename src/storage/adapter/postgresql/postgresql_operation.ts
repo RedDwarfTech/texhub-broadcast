@@ -181,7 +181,6 @@ const pgPut = async (
       docName,
       clock,
     ];
-    logger.log("Insert values:", values);
     const res: pg.QueryResult<any> = await db.query(query, values);
   } catch (err: any) {
     logger.error("Insert error:", err.stack);
