@@ -171,8 +171,9 @@ const pgPut = async (
     let docName = key.get("docName") ? key.get("docName") : "default";
     let clock = key.get("clock") ? key.get("clock") : -1;
     let mapValues = key.values();
+    const array = Array.from(mapValues);
     const values = [
-      mapValues,
+      JSON.stringify(array),
       Buffer.from(val),
       "text",
       version,
