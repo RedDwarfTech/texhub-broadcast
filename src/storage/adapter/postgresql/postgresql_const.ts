@@ -6,7 +6,7 @@ import { readUint32BigEndian } from "lib0/decoding.js";
 const YEncodingString = 0;
 const YEncodingUint32 = 1;
 
-export const PREFERRED_TRIM_SIZE = 500
+export const PREFERRED_TRIM_SIZE = 500;
 
 export const valueEncoding = {
   buffer: true,
@@ -54,18 +54,19 @@ export const keyEncoding = {
   },
 };
 
-export const createDocumentStateVectorKeyMap = (docName: string) => {
+export const createDocumentStateVectorKeyMap = (docName: string, clock: number) => {
   let keyMap = new Map<string, string>();
-  keyMap.set("version","v1_sv");
-  keyMap.set("docName",docName);
+  keyMap.set("version", "v1_sv");
+  keyMap.set("docName", docName);
+  keyMap.set("clock", clock.toString());
   return keyMap;
-}
+};
 
-export const createDocumentUpdateKey = (docName: string, clock: any) => {
+export const createDocumentUpdateKey = (docName: string, clock: number) => {
   let keyMap = new Map<string, string>();
-  keyMap.set("version","v1");
-  keyMap.set("docName",docName);
-  keyMap.set("contentType","update");
-  keyMap.set("clock",clock);
+  keyMap.set("version", "v1");
+  keyMap.set("docName", docName);
+  keyMap.set("contentType", "update");
+  keyMap.set("clock", clock.toString());
   return keyMap;
-}
+};

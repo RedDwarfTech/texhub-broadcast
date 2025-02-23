@@ -129,7 +129,7 @@ const writeStateVector = async (
   encoding.writeVarUint8Array(encoder, sv);
   await pgPut(
     db,
-    createDocumentStateVectorKeyMap(docName),
+    createDocumentStateVectorKeyMap(docName, clock),
     encoding.toUint8Array(encoder)
   );
 };
