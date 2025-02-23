@@ -5,6 +5,10 @@ import * as encoding from "lib0/encoding.js";
 import * as decoding from "lib0/decoding.js";
 import pg from "pg";
 import logger from "../../../common/log4js_config.js";
+import {
+  createDocumentStateVectorKeyMap,
+  createDocumentUpdateKey,
+} from "./postgresql_const.js";
 
 export const getPgUpdates = (
   db: pg.Pool,
@@ -28,13 +32,6 @@ export const getPgBulkData = (db: pg.Pool, opts: any): Array<Buffer> => {
     throw err;
   }
 };
-
-const createDocumentUpdateKey = (docName: string, clock: any) => [
-  "v1",
-  docName,
-  "update",
-  clock,
-];
 
 const createDocumentMetaKey = (docName: string, metaKey: string) => [
   "v1",
@@ -97,7 +94,7 @@ const writeStateVector = async (
   encoding.writeVarUint8Array(encoder, sv);
   await pgPut(
     db,
-    createDocumentStateVectorKey(docName),
+    createDocumentStateVectorKeyMap(docName),
     encoding.toUint8Array(encoder)
   );
 };
@@ -119,12 +116,12 @@ const levelGet = async (db: any, key: Array<string | number>) => {
 
 const pgPut = async (
   db: pg.Pool,
-  key: Array<string | number>,
+  key: Map<string, string>,
   val: Uint8Array
 ) => {
   try {
     const query =
-      "INSERT INTO tex_sync (key, value, plain_value) VALUES ($1, $2, $3)";
+      "INSERT INTO tex_sync (key, value, plain_value, version, content_type, doc_name) VALUES ($1, $2, $3, $4, $5, $6)";
     const decoder = new TextDecoder("utf-8");
     let text = decoder.decode(val);
     if (text && text.trim().length > 0) {
@@ -132,7 +129,21 @@ const pgPut = async (
     } else {
       text = "unknown";
     }
-    const values = [key, Buffer.from(val), "text"];
+    let version = key.get("version") ? "default" : key.get("version");
+    let contentType = key.get("contentType")
+      ? "default"
+      : key.get("contentType");
+    let docName = key.get("docName") ? "default" : key.get("docName");
+    let clock = key.get("clock") ? -1 : key.get("docName");
+    const values = [
+      JSON.stringify(key),
+      Buffer.from(val),
+      text,
+      version,
+      contentType,
+      docName,
+      clock,
+    ];
     logger.log("Insert values:", values);
     const res: pg.QueryResult<any> = await db.query(query, values);
   } catch (err: any) {

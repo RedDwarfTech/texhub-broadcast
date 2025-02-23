@@ -53,3 +53,19 @@ export const keyEncoding = {
     return key;
   },
 };
+
+export const createDocumentStateVectorKeyMap = (docName: string) => {
+  let keyMap = new Map<string, string>();
+  keyMap.set("version","v1_sv");
+  keyMap.set("docName",docName);
+  return keyMap;
+}
+
+export const createDocumentUpdateKey = (docName: string, clock: any) => {
+  let keyMap = new Map<string, string>();
+  keyMap.set("version","v1");
+  keyMap.set("docName",docName);
+  keyMap.set("contentType","update");
+  keyMap.set("clock",clock);
+  return keyMap;
+}
