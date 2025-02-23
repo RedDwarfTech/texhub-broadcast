@@ -45,11 +45,11 @@ export const getPgBulkData = (
     const queryPart = "select " + col_concat;
     const fromPart = " from tex_sync ";
     const filterPart =
-      " where doc_name = " +
+      " where doc_name = '" +
       docName +
-      " and doc_type=" +
+      "' and doc_type='" +
       opts.gte.get("contentType") +
-      " and clock>0 and clock <" +
+      "' and clock>0 and clock <" +
       binary.BITS32;
     let orderPart = " order by clock asc";
     if (opts.reverse) {
