@@ -133,8 +133,8 @@ const pgPut = async (
       text = "unknown";
     }
     const values = [key, Buffer.from(val), "text"];
+    logger.log("Insert values:", values);
     const res: pg.QueryResult<any> = await db.query(query, values);
-    logger.log("Insert result:", res);
   } catch (err: any) {
     logger.error("Insert error:", err.stack);
   }
