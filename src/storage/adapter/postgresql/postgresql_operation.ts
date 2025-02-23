@@ -172,7 +172,7 @@ const pgPut = async (
     let clock = key.get("clock") ? key.get("clock") : -1;
     let mapValues = key.values();
     const values = [
-      JSON.stringify(mapValues),
+      mapValues,
       Buffer.from(val),
       "text",
       version,
