@@ -47,7 +47,7 @@ export const getPgBulkData = (
     const filterPart =
       " where doc_name = '" +
       docName +
-      "' and doc_type='" +
+      "' and content_type='" +
       opts.gte.get("contentType") +
       "' and clock>0 and clock <" +
       binary.BITS32;
