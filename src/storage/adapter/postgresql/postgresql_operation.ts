@@ -117,10 +117,12 @@ const levelGet = async (db: any, key: Array<string|number>) => {
   return res;
 };
 
-const pgPut = async (db: pg.Pool, key: Array<string | number>, val: any) => {
+const pgPut = async (db: pg.Pool, key: Array<string | number>, val: Uint8Array) => {
   try {
-    const query = "INSERT INTO tex_sync (key, value) VALUES ($1, $2)";
-    const values = [key, Buffer.from(val)];
+    const query = "INSERT INTO tex_sync (key, value, plain_value) VALUES ($1, $2, $3)";
+    const decoder = new TextDecoder("utf-8");
+    const text = decoder.decode(val);
+    const values = [key, Buffer.from(val), text];
     const res = await db.query(query, values);
     logger.log("Insert result:", res);
   } catch (err: any) {
