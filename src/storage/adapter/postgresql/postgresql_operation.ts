@@ -9,23 +9,58 @@ import {
   createDocumentStateVectorKeyMap,
   createDocumentUpdateKey,
 } from "./postgresql_const.js";
+import { TeXSync } from "../../../model/yjs/storage/sync/tex_sync.js";
 
 export const getPgUpdates = (
   db: pg.Pool,
   docName: string,
   opts = { values: true, keys: false, reverse: false, limit: 1 }
-): Array<Buffer> => {
-  return getPgBulkData(db, {
-    gte: createDocumentUpdateKey(docName, 0),
-    lt: createDocumentUpdateKey(docName, binary.BITS32),
-    ...opts,
-  });
+): any[] => {
+  return getPgBulkData(
+    db,
+    {
+      gte: createDocumentUpdateKey(docName, 0),
+      lt: createDocumentUpdateKey(docName, binary.BITS32),
+      ...opts,
+    },
+    docName
+  );
 };
 
-export const getPgBulkData = (db: pg.Pool, opts: any): Array<Buffer> => {
+export const getPgBulkData = (
+  db: pg.Pool,
+  opts: any,
+  docName: string
+): TeXSync[] => {
   try {
-    const sql = "select * from tex_sync";
-    const res = db.query(sql);
+    let col = [];
+    col.push("id");
+    if (opts.values) {
+      col.push("value");
+    }
+    if (opts.keys) {
+      col.push("key");
+    }
+    let col_concat = col.join(",");
+    const queryPart = "select " + col_concat;
+    const fromPart = " from tex_sync ";
+    const filterPart =
+      " where doc_name = " +
+      docName +
+      " and doc_type=" +
+      opts.gte.get("contentType") +
+      " and clock>0 and clock <" +
+      binary.BITS32;
+    let orderPart = " order by clock asc";
+    if (opts.reverse) {
+      orderPart = " order by clock desc";
+    }
+    const sql =
+      queryPart + fromPart + filterPart + orderPart + " limit" + opts.limit;
+    db.query(sql).then((data) => {
+      let colValues = data.rows;
+      return colValues;
+    });
     return [];
   } catch (err) {
     console.error("Query error:", err);
@@ -125,14 +160,12 @@ const pgPut = async (
     const decoder = new TextDecoder("utf-8");
     let text = decoder.decode(val);
     if (text && text.trim().length > 0) {
-      text.replace("0x00", "null");
+      text.replace("\x00", "null");
     } else {
       text = "unknown";
     }
-    let version = key.get("version") ? key.get("version") : "default";
-    let contentType = key.get("contentType")
-      ? key.get("contentType")
-      : "default";
+    let version = key.get("version") || "default";
+    let contentType = key.get("contentType") || "default";
     let docName = key.get("docName") ? key.get("docName") : "default";
     let clock = key.get("clock") ? key.get("clock") : -1;
     const values = [
@@ -151,14 +184,17 @@ const pgPut = async (
   }
 };
 
-export const getCurrentUpdateClock = async (db: any, docName: string) => {
-  const result = getPgUpdates(db, docName, {
+export const getCurrentUpdateClock = async (
+  db: any,
+  docName: string
+): Promise<number> => {
+  const result: any[] = getPgUpdates(db, docName, {
     keys: true,
     values: false,
     reverse: true,
     limit: 1,
   });
-  return 1;
+  return result[0].clock;
 };
 
 const clearUpdatesRange = async (
@@ -178,12 +214,12 @@ const clearRange = async (db: any, gte: any, lt: any) => {
   if (db.supports.clear) {
     await db.clear({ gte, lt });
   } else {
-    const keys: any = await getPgBulkData(db, {
+    const keys = await getPgBulkData(db, {
       values: false,
       keys: true,
       gte,
       lt,
-    });
+    },"").map(item=>item.key);
     const ops = keys.map((key: any) => ({ type: "del", key }));
     await db.batch(ops);
   }
