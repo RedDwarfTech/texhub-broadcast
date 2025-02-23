@@ -56,7 +56,7 @@ export const getPgBulkData = (
       orderPart = " order by clock desc";
     }
     const sql =
-      queryPart + fromPart + filterPart + orderPart + " limit" + opts.limit;
+      queryPart + fromPart + filterPart + orderPart + " limit " + opts.limit;
     db.query(sql).then((data) => {
       let colValues = data.rows;
       return colValues;
