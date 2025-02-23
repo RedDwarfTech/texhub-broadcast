@@ -125,7 +125,7 @@ const pgPut = async (db: pg.Pool, key: Array<string | number>, val: Uint8Array) 
     if(text && text.length > 0){
       text.replace("0x00","null");
     }
-    const values = [key, Buffer.from(val), text];
+    const values = [key, Buffer.from(val), 'text'];
     const res = await db.query(query, values);
     logger.log("Insert result:", res);
   } catch (err: any) {
