@@ -129,12 +129,12 @@ const pgPut = async (
     } else {
       text = "unknown";
     }
-    let version = key.get("version") ? "default" : key.get("version");
+    let version = key.get("version") ? key.get("version") : "default";
     let contentType = key.get("contentType")
-      ? "default"
-      : key.get("contentType");
-    let docName = key.get("docName") ? "default" : key.get("docName");
-    let clock = key.get("clock") ? -1 : key.get("docName");
+      ? key.get("contentType")
+      : "default";
+    let docName = key.get("docName") ? key.get("docName") : "default";
+    let clock = key.get("clock") ? key.get("clock") : -1;
     const values = [
       JSON.stringify(key),
       Buffer.from(val),
