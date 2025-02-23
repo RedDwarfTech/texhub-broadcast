@@ -102,7 +102,7 @@ export const flushDocument = async (
 };
 
 export const storeUpdate = async (
-  db: any,
+  db: pg.Pool,
   docName: string,
   update: Uint8Array
 ) => {
@@ -119,10 +119,10 @@ export const storeUpdate = async (
 };
 
 const writeStateVector = async (
-  db: any,
+  db: pg.Pool,
   docName: string,
   sv: any,
-  clock: any
+  clock: number
 ) => {
   const encoder = encoding.createEncoder();
   encoding.writeVarUint(encoder, clock);
