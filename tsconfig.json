@@ -15,6 +15,9 @@
       "@controllers/*": ["src/controllers/*"],
       "@websocket/*": ["src/websocket/*"]
     },
+    "lib": [
+      "ES2021.String"
+    ],
     "sourceMap": true
   },
   "include": ["src/**/*"],

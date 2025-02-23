@@ -158,12 +158,12 @@ const pgPut = async (
     const query =
       "INSERT INTO tex_sync (key, value, plain_value, version, content_type, doc_name, clock) VALUES ($1, $2, $3, $4, $5, $6, $7)";
     const decoder = new TextDecoder("utf-8");
-    let text = decoder.decode(val);
+    let text: string = decoder.decode(val);
     let trimed = text.trim();
     let length = trimed.length;
     if (text && length > 0) {
-      text.replace(/\0/g, '')
-      text.replace("\x00", "");
+      let n = text.replaceAll('',"soh symbol");
+      text = n;
     } else {
       text = "unknown";
     }
