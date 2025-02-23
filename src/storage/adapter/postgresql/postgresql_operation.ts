@@ -162,7 +162,8 @@ const pgPut = async (
     let trimed = text.trim();
     let length = trimed.length;
     if (text && length > 0) {
-      text.replace("\x00", "null");
+      text.replace(/\0/g, '')
+      text.replace("\x00", "");
     } else {
       text = "unknown";
     }
@@ -175,7 +176,7 @@ const pgPut = async (
     const values = [
       JSON.stringify(array),
       Buffer.from(val),
-      "text",
+      text,
       version,
       contentType,
       docName,
