@@ -162,7 +162,7 @@ const pgPut = async (
     let trimed = text.trim();
     let length = trimed.length;
     if (text && length > 0) {
-      let n = text.replaceAll('',"soh symbol");
+      let n = text.replaceAll("", "soh symbol");
       text = n;
     } else {
       text = "unknown";
@@ -173,10 +173,15 @@ const pgPut = async (
     let clock = key.get("clock") ? key.get("clock") : -1;
     let mapValues = key.values();
     const array = Array.from(mapValues);
+    let replacedText = text
+      .replaceAll("", "")
+      .replaceAll("0x00", "")
+      .replaceAll(/\u0000/g, "");
+    logger.warn("text:" + replacedText);
     const values = [
       JSON.stringify(array),
       Buffer.from(val),
-      text.replaceAll('','').replaceAll('0x00','').replaceAll(/\u0000/g, ''),
+      replacedText,
       version,
       contentType,
       docName,
