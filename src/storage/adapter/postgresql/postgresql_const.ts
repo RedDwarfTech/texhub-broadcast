@@ -70,3 +70,12 @@ export const createDocumentUpdateKey = (docName: string, clock: number) => {
   keyMap.set("clock", clock.toString());
   return keyMap;
 };
+
+const createDocumentMetaEndKey = (docName: string) => ["v1", docName, "metb"];
+
+const createDocumentMetaKey = (docName: string, metaKey: string) => [
+  "v1",
+  docName,
+  "meta",
+  metaKey,
+];

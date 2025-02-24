@@ -1,5 +1,4 @@
 import * as Y from "yjs";
-import * as promise from "lib0/promise.js";
 import * as binary from "lib0/binary.js";
 import * as encoding from "lib0/encoding.js";
 import * as decoding from "lib0/decoding.js";
@@ -49,7 +48,7 @@ export const getPgBulkData = (
       docName +
       "' and content_type='" +
       opts.gte.get("contentType") +
-      "' and clock>0 and clock <" +
+      "' and clock>=0 and clock <" +
       binary.BITS32;
     let orderPart = " order by clock asc";
     if (opts.reverse) {
@@ -68,16 +67,7 @@ export const getPgBulkData = (
   }
 };
 
-const createDocumentMetaKey = (docName: string, metaKey: string) => [
-  "v1",
-  docName,
-  "meta",
-  metaKey,
-];
-
 const createDocumentStateVectorKey = (docName: string) => ["v1_sv", docName];
-
-const createDocumentMetaEndKey = (docName: string) => ["v1", docName, "metb"];
 
 export const mergeUpdates = (updates: any) => {
   const ydoc = new Y.Doc();
@@ -187,7 +177,7 @@ const pgPut = async (
 };
 
 export const getCurrentUpdateClock = async (
-  db: any,
+  db: pg.Pool,
   docName: string
 ): Promise<number> => {
   const result: any[] = getPgUpdates(db, docName, {
