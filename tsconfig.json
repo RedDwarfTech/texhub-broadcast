@@ -16,6 +16,7 @@
       "@websocket/*": ["src/websocket/*"]
     },
     "lib": [
+      "DOM",
       "ES2021.String"
     ],
     "sourceMap": true
