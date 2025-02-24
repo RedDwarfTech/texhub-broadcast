@@ -34,6 +34,7 @@ export const getPgBulkData = async (
   try {
     let col = [];
     col.push("id");
+    col.push("clock");
     if (opts.values) {
       col.push("value");
     }
