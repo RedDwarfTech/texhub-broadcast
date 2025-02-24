@@ -1,4 +1,3 @@
-import * as promise from "lib0/promise.js";
 // @ts-ignore
 import defaultLevel from "level";
 import pg from "pg";
@@ -15,6 +14,7 @@ import {
 } from "./postgresql_operation.js";
 import { dbConfig } from "./db_config.js";
 import { PREFERRED_TRIM_SIZE } from "./postgresql_const.js";
+import { TeXSync } from "../../../model/yjs/storage/sync/tex_sync.js";
 
 export class PostgresqlPersistance {
   pool: pg.Pool;
@@ -24,12 +24,12 @@ export class PostgresqlPersistance {
     this.pool = pool;
   }
 
-  getYDoc(docName: string) {
-      const updates: Array<Buffer> = getPgUpdates(this.pool, docName);
+  async getYDoc(docName: string) {
+      const updates: Array<TeXSync> = await getPgUpdates(this.pool, docName);
       const ydoc = new Y.Doc();
       ydoc.transact(() => {
         for (let i = 0; i < updates.length; i++) {
-          Y.applyUpdate(ydoc, updates[i]);
+          Y.applyUpdate(ydoc, updates[i].value);
         }
       });
       if (updates.length > PREFERRED_TRIM_SIZE) {

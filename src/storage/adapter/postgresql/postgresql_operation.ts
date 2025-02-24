@@ -2,7 +2,7 @@ import * as Y from "yjs";
 import * as binary from "lib0/binary.js";
 import * as encoding from "lib0/encoding.js";
 import * as decoding from "lib0/decoding.js";
-import pg from "pg";
+import pg, { QueryResult } from "pg";
 import logger from "../../../common/log4js_config.js";
 import {
   createDocumentStateVectorKeyMap,
@@ -10,12 +10,12 @@ import {
 } from "./postgresql_const.js";
 import { TeXSync } from "../../../model/yjs/storage/sync/tex_sync.js";
 
-export const getPgUpdates = (
+export const getPgUpdates = async (
   db: pg.Pool,
   docName: string,
   opts = { values: true, keys: false, reverse: false, limit: 1 }
-): any[] => {
-  return getPgBulkData(
+) => {
+  return await getPgBulkData(
     db,
     {
       gte: createDocumentUpdateKey(docName, 0),
@@ -26,11 +26,11 @@ export const getPgUpdates = (
   );
 };
 
-export const getPgBulkData = (
+export const getPgBulkData = async (
   db: pg.Pool,
   opts: any,
   docName: string
-): TeXSync[] => {
+) => {
   try {
     let col = [];
     col.push("id");
@@ -56,11 +56,8 @@ export const getPgBulkData = (
     }
     const sql =
       queryPart + fromPart + filterPart + orderPart + " limit " + opts.limit;
-    db.query(sql).then((data) => {
-      let colValues = data.rows;
-      return colValues;
-    });
-    return [];
+    let result: QueryResult<TeXSync> = await db.query(sql);
+    return result.rows;
   } catch (err) {
     console.error("Query error:", err);
     throw err;
@@ -180,7 +177,7 @@ export const getCurrentUpdateClock = async (
   db: pg.Pool,
   docName: string
 ): Promise<number> => {
-  const result: any[] = getPgUpdates(db, docName, {
+  const result: any[] = await getPgUpdates(db, docName, {
     keys: true,
     values: false,
     reverse: true,
@@ -210,7 +207,7 @@ const clearRange = async (db: any, gte: any, lt: any) => {
   if (db.supports.clear) {
     await db.clear({ gte, lt });
   } else {
-    const keys = await getPgBulkData(
+    const keys = (await getPgBulkData(
       db,
       {
         values: false,
@@ -219,7 +216,7 @@ const clearRange = async (db: any, gte: any, lt: any) => {
         lt,
       },
       ""
-    ).map((item) => item.key);
+    )).map((item) => item.key);
     const ops = keys.map((key: any) => ({ type: "del", key }));
     await db.batch(ops);
   }
