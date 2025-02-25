@@ -1,7 +1,7 @@
 // @ts-ignore
 import { setIfUndefined } from "lib0/dist/map.cjs";
 import { WSSharedDoc } from "./ws_share_doc.js";
-import { persistence } from "../storage/storage.js";
+import { persistencePostgresql } from "../storage/storage.js";
 // @ts-ignore
 import encoding from "lib0/dist/encoding.cjs";
 import { send } from "../websocket/conn/ws_action.js";
@@ -33,8 +33,8 @@ export const getYDoc = (docname: string, gc: boolean = true): WSSharedDoc =>
   setIfUndefined(docs, docname, () => {
     const doc: WSSharedDoc = new WSSharedDoc(docname);
     doc.gc = gc;
-    if (persistence) {
-      persistence.bindState(docname, doc);
+    if (persistencePostgresql) {
+      persistencePostgresql.bindState(docname, doc);
     }
     docs.set(docname, doc);
     return doc;

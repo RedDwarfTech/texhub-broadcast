@@ -3,7 +3,7 @@ import awarenessProtocol from "y-protocols/dist/awareness.cjs";
 import { docs, messageSync } from "../../yjs/yjs_utils.js";
 import { WSSharedDoc } from "../../yjs/ws_share_doc.js";
 import log4js from "log4js";
-import { persistence } from "../../storage/storage.js";
+import { persistencePostgresql } from "../../storage/storage.js";
 import { Socket } from "socket.io";
 var logger = log4js.getLogger();
 // @ts-ignore
@@ -25,9 +25,9 @@ export const closeConn = (doc: WSSharedDoc, conn: Socket) => {
       Array.from(controlledIds!),
       null
     );
-    if (doc.conns.size === 0 && persistence !== null) {
+    if (doc.conns.size === 0 && persistencePostgresql !== null) {
       // if persisted, we store state and destroy ydocument
-      persistence.writeState(doc.name, doc).then(() => {
+      persistencePostgresql.writeState(doc.name, doc).then(() => {
         doc.destroy();
       });
       docs.delete(doc.name);

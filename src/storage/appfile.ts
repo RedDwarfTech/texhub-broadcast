@@ -7,12 +7,16 @@ import { updateFullsearch } from "./fulltext.js";
 import { getFileJsonData } from "../texhub/client/texhub_interop.js";
 import { FileContent } from "../model/texhub/file_content.js";
 import { AppResponse } from "../texhub/biz/AppResponse.js";
+import { PostgresqlPersistance } from "./adapter/postgresql/postgresql_persistance.js";
 
-export const throttledFn = lodash.throttle((docName, ldb) => {
-  handleFileSync(docName, ldb);
-}, 2000);
+export const throttledFn = lodash.throttle(
+  (docName: string, ldb: PostgresqlPersistance) => {
+    handleFileSync(docName, ldb);
+  },
+  2000
+);
 
-const handleFileSync = async (docName: string, ldb: any) => {
+const handleFileSync = async (docName: string, ldb: PostgresqlPersistance) => {
   try {
     /**
      * https://discuss.yjs.dev/t/how-to-get-the-document-text-the-decode-content-not-binary-content-in-y-websocket/2033/1
