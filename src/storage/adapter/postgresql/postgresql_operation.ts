@@ -154,7 +154,7 @@ const pgPut = async (
   try {
     const query = `INSERT INTO tex_sync (key, value, plain_value, version, content_type, doc_name, clock) 
       VALUES ($1, $2, $3, $4, $5, $6, $7) 
-      ON CONFLICT (tex_sync_unique) DO UPDATE
+      ON CONFLICT (key) DO UPDATE
       SET value = $2, plain_value=$3`;
     const decoder = new TextDecoder("utf-8");
     let text: string = decoder.decode(val);
