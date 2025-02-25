@@ -169,7 +169,6 @@ const pgPut = async (
       .replaceAll("", "")
       .replaceAll("0x00", "")
       .replaceAll(/\u0000/g, "");
-    logger.warn("text:" + replacedText);
     const values = [
       JSON.stringify(array),
       Buffer.from(val),
