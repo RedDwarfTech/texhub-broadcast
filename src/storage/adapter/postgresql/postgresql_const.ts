@@ -79,3 +79,11 @@ const createDocumentMetaKey = (docName: string, metaKey: string) => [
   "meta",
   metaKey,
 ];
+
+export const createDocumentStateVectorKey = (docName: string) => ["v1_sv", docName];
+export const createSimpleDocumentStateVectorKeyMap = (docName: string) => {
+  let keyMap = new Map<string, string>();
+  keyMap.set("version", "v1_sv");
+  keyMap.set("docName", docName);
+  return keyMap;
+};

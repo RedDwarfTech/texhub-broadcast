@@ -7,6 +7,7 @@ import logger from "../../../common/log4js_config.js";
 import {
   createDocumentStateVectorKeyMap,
   createDocumentUpdateKey,
+  createSimpleDocumentStateVectorKeyMap,
 } from "./postgresql_const.js";
 import { TeXSync } from "../../../model/yjs/storage/sync/tex_sync.js";
 
@@ -65,8 +66,6 @@ export const getPgBulkData = async (
   }
 };
 
-const createDocumentStateVectorKey = (docName: string) => ["v1_sv", docName];
-
 export const mergeUpdates = (updates: any) => {
   const ydoc = new Y.Doc();
   ydoc.transact(() => {
@@ -122,19 +121,29 @@ const writeStateVector = async (
   );
 };
 
-const pgGet = async (db: any, key: Array<string | number>) => {
-  let res;
+const pgGet = async (
+  db: pg.Pool,
+  key: Map<string, string>
+): Promise<Uint8Array<ArrayBufferLike>> => {
+  let res: QueryResult<TeXSync>;
   try {
-    res = await db.get(key);
+    let sql = `select value from tex_sync where key = $1`;
+    let mapValues = key.values();
+    const array = Array.from(mapValues);
+    const values = [JSON.stringify(array)];
+    res = await db.query(sql, values);
+    if (res.rowCount === 0) {
+      return new Uint8Array();
+    }
+    return res.rows[0].value;
   } catch (err) {
     /* istanbul ignore else */
     if (err) {
-      return null;
+      return new Uint8Array();
     } else {
       throw err;
     }
   }
-  return res;
 };
 
 const pgPut = async (
@@ -143,7 +152,7 @@ const pgPut = async (
   val: Uint8Array
 ) => {
   try {
-    const query =`INSERT INTO tex_sync (key, value, plain_value, version, content_type, doc_name, clock) 
+    const query = `INSERT INTO tex_sync (key, value, plain_value, version, content_type, doc_name, clock) 
       VALUES ($1, $2, $3, $4, $5, $6, $7) 
       ON CONFLICT (tex_sync_unique) DO UPDATE
       SET value = $2, plain_value=$3`;
@@ -210,23 +219,28 @@ const clearRange = async (db: any, gte: any, lt: any) => {
   if (db.supports.clear) {
     await db.clear({ gte, lt });
   } else {
-    const keys = (await getPgBulkData(
-      db,
-      {
-        values: false,
-        keys: true,
-        gte,
-        lt,
-      },
-      ""
-    )).map((item) => item.key);
+    const keys = (
+      await getPgBulkData(
+        db,
+        {
+          values: false,
+          keys: true,
+          gte,
+          lt,
+        },
+        ""
+      )
+    ).map((item) => item.key);
     const ops = keys.map((key: any) => ({ type: "del", key }));
     await db.batch(ops);
   }
 };
 
-export const readStateVector = async (db: any, docName: string) => {
-  const buf = await pgGet(db, createDocumentStateVectorKey(docName));
+export const readStateVector = async (db: pg.Pool, docName: string) => {
+  const buf: Uint8Array = await pgGet(
+    db,
+    createSimpleDocumentStateVectorKeyMap(docName)
+  );
   if (buf === null) {
     // no state vector created yet or no document exists
     return { sv: null, clock: -1 };
@@ -234,7 +248,7 @@ export const readStateVector = async (db: any, docName: string) => {
   return decodePgStateVector(buf);
 };
 
-const decodePgStateVector = (buf: any) => {
+const decodePgStateVector = (buf: Uint8Array) => {
   const decoder = decoding.createDecoder(buf);
   const clock = decoding.readVarUint(decoder);
   const sv = decoding.readVarUint8Array(decoder);
