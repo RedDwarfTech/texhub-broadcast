@@ -122,7 +122,7 @@ const writeStateVector = async (
   );
 };
 
-const levelGet = async (db: any, key: Array<string | number>) => {
+const pgGet = async (db: any, key: Array<string | number>) => {
   let res;
   try {
     res = await db.get(key);
@@ -143,8 +143,10 @@ const pgPut = async (
   val: Uint8Array
 ) => {
   try {
-    const query =
-      "INSERT INTO tex_sync (key, value, plain_value, version, content_type, doc_name, clock) VALUES ($1, $2, $3, $4, $5, $6, $7)";
+    const query =`INSERT INTO tex_sync (key, value, plain_value, version, content_type, doc_name, clock) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7) 
+      ON CONFLICT (tex_sync_unique) DO UPDATE
+      SET value = $2, plain_value=$3`;
     const decoder = new TextDecoder("utf-8");
     let text: string = decoder.decode(val);
     let version = key.get("version") || "default";
@@ -224,7 +226,7 @@ const clearRange = async (db: any, gte: any, lt: any) => {
 };
 
 export const readStateVector = async (db: any, docName: string) => {
-  const buf = await levelGet(db, createDocumentStateVectorKey(docName));
+  const buf = await pgGet(db, createDocumentStateVectorKey(docName));
   if (buf === null) {
     // no state vector created yet or no document exists
     return { sv: null, clock: -1 };
