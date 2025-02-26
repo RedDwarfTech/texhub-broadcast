@@ -1,5 +1,6 @@
-const LeveldbPersistence = require("y-leveldb").LeveldbPersistence;
 const persistenceDir = process.env.YPERSISTENCE;
+// @ts-ignore
+import { LeveldbPersistence } from "y-leveldb";
 const ldb = new LeveldbPersistence(persistenceDir);
 
 // 遍历所有 key 的函数
