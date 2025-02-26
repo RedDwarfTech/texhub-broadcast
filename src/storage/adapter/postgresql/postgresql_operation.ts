@@ -101,8 +101,17 @@ export const storeUpdate = async (
     const sv = Y.encodeStateVector(ydoc);
     await writeStateVector(db, docName, sv, 0);
   }
-  await pgPut(db, createDocumentUpdateKey(docName, clock + 1), update);
+  await pgPut(db, createDocumentUpdateKey(docName, clock + 1), update, "ws");
   return clock + 1;
+};
+
+export const storeUpdateBySrc = async (
+  db: pg.Pool,
+  docName: string,
+  update: Uint8Array,
+  clock: number
+) => {
+  await pgPut(db, createDocumentUpdateKey(docName, clock + 1), update, "leveldb");
 };
 
 const writeStateVector = async (
@@ -117,7 +126,8 @@ const writeStateVector = async (
   await pgPut(
     db,
     createDocumentStateVectorKeyMap(docName, clock),
-    encoding.toUint8Array(encoder)
+    encoding.toUint8Array(encoder),
+    "ws"
   );
 };
 
@@ -149,11 +159,12 @@ const pgGet = async (
 const pgPut = async (
   db: pg.Pool,
   key: Map<string, string>,
-  val: Uint8Array
+  val: Uint8Array,
+  source: string
 ) => {
   try {
-    const query = `INSERT INTO tex_sync (key, value, plain_value, version, content_type, doc_name, clock) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7) 
+    const query = `INSERT INTO tex_sync (key, value, plain_value, version, content_type, doc_name, clock, source) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
       ON CONFLICT (key) DO UPDATE
       SET value = $2, plain_value=$3`;
     const decoder = new TextDecoder("utf-8");
@@ -177,6 +188,7 @@ const pgPut = async (
       contentType,
       docName,
       clock,
+      "websocket"
     ];
     const res: pg.QueryResult<any> = await db.query(query, values);
   } catch (err: any) {
