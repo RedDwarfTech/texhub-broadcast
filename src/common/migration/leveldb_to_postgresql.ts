@@ -17,6 +17,7 @@ export async function iterateAllKeys(): Promise<void> {
       if (err) return console.log("Ooops!", err); // likely the key was not found
       // Ta da!
       console.log("name=" + value);
+      postgresqlDb.storeUpdateWithSource(key, value, 1);
     });
   });
 
