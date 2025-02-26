@@ -1,5 +1,5 @@
 // @ts-ignore
-import { levelup } from "levelup";
+import levelup from "levelup";
 // @ts-ignore
 import leveldown from "leveldown";
 const persistenceDir = process.env.YPERSISTENCE;
