@@ -13,11 +13,11 @@ export async function iterateAllKeys(): Promise<void> {
     console.log("Key:", key.toString());
     const utf16Decoder = new TextDecoder("UTF-8");
     console.log("decode", utf16Decoder.decode(key));
-    db.get(key, function (err: any, value: any) {
+    db.get(key, async function (err: any, value: any) {
       if (err) return console.log("Ooops!", err); // likely the key was not found
       // Ta da!
       console.log("name=" + value);
-      postgresqlDb.storeUpdateWithSource(key, value, 1);
+      await postgresqlDb.storeUpdateWithSource(key, value, 1);
     });
   });
 

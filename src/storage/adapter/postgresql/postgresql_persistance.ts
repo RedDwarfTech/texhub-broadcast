@@ -71,12 +71,12 @@ export class PostgresqlPersistance {
     return storeUpdate(this.pool, docName, update);
   }
 
-  storeUpdateWithSource(
+  async storeUpdateWithSource(
     docName: string,
     update: Uint8Array,
     clock: number
   ) {
-    return storeUpdateBySrc(this.pool, docName, update, clock);
+    return await storeUpdateBySrc(this.pool, docName, update, clock);
   }
 
   async getDiff(docName: any, stateVector: any) {
