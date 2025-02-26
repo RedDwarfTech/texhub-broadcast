@@ -26,6 +26,12 @@ dependencies:
   level:
     specifier: ^9.0.0
     version: 9.0.0
+  leveldown:
+    specifier: ^6.1.1
+    version: 6.1.1
+  levelup:
+    specifier: ^5.1.1
+    version: 5.1.1
   lib0:
     specifier: ^0.2.99
     version: 0.2.99
@@ -1014,6 +1020,19 @@ packages:
       xtend: 4.0.2
     dev: false
 
+  /abstract-leveldown@7.2.0:
+    resolution: {integrity: sha512-DnhQwcFEaYsvYDnACLZhMmCWd3rkOeEvglpa4q5i/5Jlm3UIsWaxVzuXvDLFCSCWRO3yy2/+V/G7FusFgejnfQ==}
+    engines: {node: '>=10'}
+    deprecated: Superseded by abstract-level (https://github.com/Level/community#faq)
+    dependencies:
+      buffer: 6.0.3
+      catering: 2.1.1
+      is-buffer: 2.0.5
+      level-concat-iterator: 3.1.0
+      level-supports: 2.1.0
+      queue-microtask: 1.2.3
+    dev: false
+
   /accepts@1.3.8:
     resolution: {integrity: sha512-PYAthTa2m2VKxuvSD3DPC/Gy+U+sOA1LAuT8mkmRuvw+NACSaeXEQ+NHcVF7rONl6qcaxV3Uuemwawk+7+SJLw==}
     engines: {node: '>= 0.6'}
@@ -1221,6 +1240,11 @@ packages:
     engines: {node: '>=6'}
     dev: true
 
+  /catering@2.1.1:
+    resolution: {integrity: sha512-K7Qy8O9p76sL3/3m7/zLKbRkyOlSZAgzEaLhyj2mXS8PsCud2Eo4hAb8aLtZqHh0QGqLcb9dlJSu6lHRVENm1w==}
+    engines: {node: '>=6'}
+    dev: false
+
   /chai@5.1.2:
     resolution: {integrity: sha512-aGtmf24DW6MLHHG5gCx4zaI3uBq3KRtxeVs0DjFH6Z0rDNbsvTxFASFvdj79pxjxZ8/5u3PIiN3IwEIQkiiuPw==}
     engines: {node: '>=12'}
@@ -1400,6 +1424,15 @@ packages:
     deprecated: Superseded by abstract-level (https://github.com/Level/community#faq)
     dependencies:
       abstract-leveldown: 6.2.3
+      inherits: 2.0.4
+    dev: false
+
+  /deferred-leveldown@7.0.0:
+    resolution: {integrity: sha512-QKN8NtuS3BC6m0B8vAnBls44tX1WXAFATUsJlruyAYbZpysWV3siH6o/i3g9DCHauzodksO60bdj5NazNbjCmg==}
+    engines: {node: '>=10'}
+    deprecated: Superseded by abstract-level (https://github.com/Level/community#faq)
+    dependencies:
+      abstract-leveldown: 7.2.0
       inherits: 2.0.4
     dev: false
 
@@ -2129,11 +2162,23 @@ packages:
     engines: {node: '>=6'}
     dev: false
 
+  /level-concat-iterator@3.1.0:
+    resolution: {integrity: sha512-BWRCMHBxbIqPxJ8vHOvKUsaO0v1sLYZtjN3K2iZJsRBYtp+ONsY6Jfi6hy9K3+zolgQRryhIn2NRZjZnWJ9NmQ==}
+    engines: {node: '>=10'}
+    dependencies:
+      catering: 2.1.1
+    dev: false
+
   /level-errors@2.0.1:
     resolution: {integrity: sha512-UVprBJXite4gPS+3VznfgDSU8PTRuVX0NXwoWW50KLxd2yw4Y1t2JUR5In1itQnudZqRMT9DlAM3Q//9NCjCFw==}
     engines: {node: '>=6'}
     dependencies:
       errno: 0.1.8
+    dev: false
+
+  /level-errors@3.0.1:
+    resolution: {integrity: sha512-tqTL2DxzPDzpwl0iV5+rBCv65HWbHp6eutluHNcVIftKZlQN//b6GEnZDM2CvGZvzGYMwyPtYppYnydBQd2SMQ==}
+    engines: {node: '>=10'}
     dev: false
 
   /level-iterator-stream@4.0.2:
@@ -2143,6 +2188,14 @@ packages:
       inherits: 2.0.4
       readable-stream: 3.6.2
       xtend: 4.0.2
+    dev: false
+
+  /level-iterator-stream@5.0.0:
+    resolution: {integrity: sha512-wnb1+o+CVFUDdiSMR/ZymE2prPs3cjVLlXuDeSq9Zb8o032XrabGEXcTCsBxprAtseO3qvFeGzh6406z9sOTRA==}
+    engines: {node: '>=10'}
+    dependencies:
+      inherits: 2.0.4
+      readable-stream: 3.6.2
     dev: false
 
   /level-js@5.0.2:
@@ -2168,6 +2221,11 @@ packages:
     engines: {node: '>=6'}
     dependencies:
       xtend: 4.0.2
+    dev: false
+
+  /level-supports@2.1.0:
+    resolution: {integrity: sha512-E486g1NCjW5cF78KGPrMDRBYzPuueMZ6VBXHT6gC7A8UYWGiM14fGgp+s/L1oFfDWSPV/+SFkYCmZ0SiESkRKA==}
+    engines: {node: '>=10'}
     dev: false
 
   /level-supports@6.2.0:
@@ -2212,6 +2270,17 @@ packages:
       node-gyp-build: 4.1.1
     dev: false
 
+  /leveldown@6.1.1:
+    resolution: {integrity: sha512-88c+E+Eizn4CkQOBHwqlCJaTNEjGpaEIikn1S+cINc5E9HEvJ77bqY4JY/HxT5u0caWqsc3P3DcFIKBI1vHt+A==}
+    engines: {node: '>=10.12.0'}
+    deprecated: Superseded by classic-level (https://github.com/Level/community#faq)
+    requiresBuild: true
+    dependencies:
+      abstract-leveldown: 7.2.0
+      napi-macros: 2.0.0
+      node-gyp-build: 4.8.4
+    dev: false
+
   /levelup@4.4.0:
     resolution: {integrity: sha512-94++VFO3qN95cM/d6eBXvd894oJE0w3cInq9USsyQzzoJxmiYzPAocNcuGCPGGjoXqDVJcr3C1jzt1TSjyaiLQ==}
     engines: {node: '>=6'}
@@ -2222,6 +2291,19 @@ packages:
       level-iterator-stream: 4.0.2
       level-supports: 1.0.1
       xtend: 4.0.2
+    dev: false
+
+  /levelup@5.1.1:
+    resolution: {integrity: sha512-0mFCcHcEebOwsQuk00WJwjLI6oCjbBuEYdh/RaRqhjnyVlzqf41T1NnDtCedumZ56qyIh8euLFDqV1KfzTAVhg==}
+    engines: {node: '>=10'}
+    deprecated: Superseded by abstract-level (https://github.com/Level/community#faq)
+    dependencies:
+      catering: 2.1.1
+      deferred-leveldown: 7.0.0
+      level-errors: 3.0.1
+      level-iterator-stream: 5.0.0
+      level-supports: 2.1.0
+      queue-microtask: 1.2.3
     dev: false
 
   /levn@0.4.1:
@@ -2754,7 +2836,6 @@ packages:
 
   /queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
-    dev: true
 
   /range-parser@1.2.1:
     resolution: {integrity: sha512-Hrgsx+orqoygnmhFbKaHE6c296J+HTAQXoxEF6gNupROmmGJRoyzfG3ccAveqCBrwr/2yxQ5BVd/GTl5agOwSg==}

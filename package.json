@@ -33,6 +33,8 @@
     "globals": "^15.14.0",
     "jsonwebtoken": "^9.0.2",
     "level": "^9.0.0",
+    "leveldown": "^6.1.1",
+    "levelup": "^5.1.1",
     "lib0": "^0.2.99",
     "lodash": "^4.17.21",
     "log4js": "^6.9.1",
