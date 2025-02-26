@@ -197,15 +197,16 @@ export const getCurrentUpdateClock = async (
   if (result && result.length > 0) {
     return result[0].clock;
   } else {
+    // the document does not exist yet.
     return -1;
   }
 };
 
 const clearUpdatesRange = async (
-  db: any,
+  db: pg.Pool,
   docName: string,
-  from: any,
-  to: any
+  from: number,
+  to: number
 ) =>
   clearRange(
     db,
