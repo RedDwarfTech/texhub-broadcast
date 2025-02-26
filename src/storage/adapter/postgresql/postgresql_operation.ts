@@ -188,7 +188,7 @@ const pgPut = async (
       contentType,
       docName,
       clock,
-      "websocket"
+      source
     ];
     const res: pg.QueryResult<any> = await db.query(query, values);
   } catch (err: any) {
