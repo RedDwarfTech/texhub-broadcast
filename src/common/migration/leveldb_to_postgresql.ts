@@ -2,7 +2,7 @@
 import levelup from "levelup";
 // @ts-ignore
 import leveldown from "leveldown";
-import { PostgresqlPersistance } from "../../storage/adapter/postgresql/postgresql_persistance";
+import { PostgresqlPersistance } from "../../storage/adapter/postgresql/postgresql_persistance.js";
 const persistenceDir = process.env.YPERSISTENCE;
 var db = levelup(leveldown(persistenceDir));
 const postgresqlDb: PostgresqlPersistance = new PostgresqlPersistance();
