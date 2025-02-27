@@ -8,7 +8,7 @@ const persistenceDir = process.env.YPERSISTENCE;
 var db = levelup(leveldown(persistenceDir));
 const postgresqlDb: PostgresqlPersistance = new PostgresqlPersistance();
 
-export async function iterateAllKeys(): Promise<void> {
+export function iterateAllKeys() {
   const keyStream = db.createKeyStream();
   keyStream.on("data", (key: string) => {
     db.get(key, async function (err: any, value: any) {

@@ -15,13 +15,7 @@ export const initialize = () => {
     const worker = new Worker(new URL(import.meta.url));
     worker.on("message", (message) => {
       logger.info("Message from worker:", message);
-      iterateAllKeys()
-        .then(() => {
-          console.log("Iteration completed.");
-        })
-        .catch((err: Error) => {
-          console.error("Error during iteration:", err);
-        });
+      iterateAllKeys();
     });
     worker.postMessage("Hello from main thread!");
   }
