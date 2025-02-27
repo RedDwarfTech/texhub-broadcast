@@ -15,7 +15,7 @@ export async function iterateAllKeys(): Promise<void> {
       if (err) return logger.error("Ooops!", err);
       const keyString = key.toString();
       logger.info("key: " + keyString);
-      let replacedText = key
+      let replacedText = keyString
       .replaceAll("", "")
       .replaceAll("0x00", "")
       .replaceAll(/\u0000/g, "");
