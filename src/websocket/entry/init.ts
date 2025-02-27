@@ -1,4 +1,4 @@
-import logger from "src/common/log4js_config.js";
+import logger from "../../common/log4js_config.js";
 import { iterateAllKeys } from "../../common/migration/leveldb_to_postgresql.js";
 import { init_monitor } from "../monitor/admin.js";
 import { init_routes } from "../route/sys_route.js";
