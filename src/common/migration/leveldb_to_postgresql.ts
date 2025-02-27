@@ -10,9 +10,11 @@ const postgresqlDb: PostgresqlPersistance = new PostgresqlPersistance();
 
 export async function iterateAllKeys(): Promise<void> {
   const keyStream = db.createKeyStream();
-  keyStream.on("data", (key: any) => {
+  keyStream.on("data", (key: string) => {
     db.get(key, async function (err: any, value: any) {
       if (err) return logger.error("Ooops!", err);
+      const keyString = key.toString();
+      logger.info("key: " + keyString);
       let replacedText = key
       .replaceAll("", "")
       .replaceAll("0x00", "")
