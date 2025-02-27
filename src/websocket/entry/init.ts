@@ -12,8 +12,7 @@ export const initialize = () => {
   init_texconn();
   init_monitor();
   if (isMainThread) {
-    // 主线程
-    const worker = new Worker(new URL(import.meta.url)); // 创建子线程
+    const worker = new Worker(new URL(import.meta.url));
     worker.on("message", (message) => {
       logger.info("Message from worker:", message);
       iterateAllKeys()

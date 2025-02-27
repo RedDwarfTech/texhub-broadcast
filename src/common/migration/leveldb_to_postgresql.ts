@@ -15,10 +15,13 @@ export async function iterateAllKeys(): Promise<void> {
       if (err) return logger.error("Ooops!", err);
       const keyString = key.toString();
       let replacedText = keyString
-      .replaceAll("", "")
-      .replaceAll("0x00", "")
-      .replaceAll(/\u0000/g, "");
-      await postgresqlDb.storeUpdateWithSource(replacedText, value, 1);
+        .replaceAll("", "")
+        .replaceAll("0x00", "")
+        .replaceAll(/\u0000/g, "");
+      let keyMap: Map<string, string> = new Map<string, string>();
+      keyMap.set("version", replacedText.split(",")[0]);
+      keyMap.set("docName", replacedText.split(",")[1]);
+      await postgresqlDb.storeUpdateWithSource(value, keyMap);
     });
   });
 

@@ -107,11 +107,10 @@ export const storeUpdate = async (
 
 export const storeUpdateBySrc = async (
   db: pg.Pool,
-  docName: string,
-  update: Uint8Array,
-  clock: number
+  keyMap: Map<string, string>,
+  update: Uint8Array
 ) => {
-  await pgPut(db, createDocumentUpdateKey(docName, clock + 1), update, "leveldb");
+  await pgPut(db, keyMap, update, "leveldb");
 };
 
 const writeStateVector = async (
