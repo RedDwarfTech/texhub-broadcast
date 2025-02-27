@@ -13,7 +13,11 @@ export async function iterateAllKeys(): Promise<void> {
   keyStream.on("data", (key: any) => {
     db.get(key, async function (err: any, value: any) {
       if (err) return logger.error("Ooops!", err);
-      await postgresqlDb.storeUpdateWithSource(key, value, 1);
+      let replacedText = key
+      .replaceAll("", "")
+      .replaceAll("0x00", "")
+      .replaceAll(/\u0000/g, "");
+      await postgresqlDb.storeUpdateWithSource(replacedText, value, 1);
     });
   });
 
