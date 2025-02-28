@@ -19,8 +19,8 @@ export function iterateAllKeys() {
         .replaceAll("0x00", "")
         .replaceAll(/\u0000/g, "");
       let keyMap: Map<string, string> = new Map<string, string>();
-      keyMap.set("version", replacedText.split(",")[0]);
-      keyMap.set("docName", replacedText.split(",")[1]);
+      keyMap.set("version", replacedText.split(" ")[0]);
+      keyMap.set("docName", replacedText.split(" ")[1]);
       await postgresqlDb.storeUpdateWithSource(value, keyMap);
     });
   });
