@@ -2,7 +2,8 @@ import { Worker } from "node:worker_threads";
 
 export const runWorker = (workerData: any) => {
     return new Promise((resolve, reject) => {
-        const worker = new Worker('./sync_to_pg.js', { workerData });
+        const workerURL = new URL('./sync_to_pg.js', import.meta.url);
+        const worker = new Worker(workerURL, { workerData });
         worker.on('message', resolve);
         worker.on('error', reject);
         worker.on('exit', (code) => {
