@@ -16,26 +16,12 @@ export function iterateAllKeys() {
     db.get(key, async function (err: any, value: any) {
       if (err) return logger.error("Ooops!", err);
       const keyString = key.toString();
-      let replacedText = keyString
-        .replaceAll("", "")
-        .replaceAll("0x00", "")
-        .replaceAll(/\u0000/g, "");
       const controlChars = ["\u0002", "\u0001", "\u0006", "\u0000", "\u0005"];
-      const parts = splitByControlChars(keyString, controlChars);
+      const parts: string[] = splitByControlChars(keyString, controlChars);
       if (parts.length > 2) {
-        let keyMap: Map<string, string> = new Map<string, string>();
-        keyMap.set("version", parts[0]);
-        keyMap.set("docName", parts[1]);
-        keyMap.set("contentType", parts[2]);
-        if (parts[3]) {
-          let clock = parseInt(parts[3], 16);
-          keyMap.set("clock", isNaN(clock) ? "0" : clock.toString());
-          await postgresqlDb.storeUpdateWithSource(value, keyMap);
-        } else {
-          let clock = 0;
-          keyMap.set("clock", "0");
-          await postgresqlDb.storeUpdateWithSource(value, keyMap);
-        }
+        handleGt2Keys(parts, value);
+      } else {
+        logger.info("less than 2", parts);
       }
     });
   });
@@ -47,6 +33,21 @@ export function iterateAllKeys() {
   keyStream.on("error", (err: Error) => {
     console.error("Error:", err);
   });
+}
+
+async function handleGt2Keys(parts: string[], value: any) {
+  let keyMap: Map<string, string> = new Map<string, string>();
+  keyMap.set("version", parts[0]);
+  keyMap.set("docName", parts[1]);
+  keyMap.set("contentType", parts[2]);
+  if (parts[3]) {
+    let clock = parseInt(parts[3], 16);
+    keyMap.set("clock", isNaN(clock) ? "0" : clock.toString());
+    await postgresqlDb.storeUpdateWithSource(value, keyMap);
+  } else {
+    keyMap.set("clock", "0");
+    await postgresqlDb.storeUpdateWithSource(value, keyMap);
+  }
 }
 
 function splitByControlChars(str: string, controlChars: string[]): string[] {
