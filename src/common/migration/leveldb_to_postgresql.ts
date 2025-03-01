@@ -27,11 +27,11 @@ export function iterateAllKeys() {
   });
 
   keyStream.on("end", () => {
-    console.log("All keys have been iterated.");
+    logger.info("All keys have been iterated.");
   });
 
   keyStream.on("error", (err: Error) => {
-    console.error("Error:", err);
+    logger.info("Error:", err);
   });
 }
 
@@ -42,6 +42,9 @@ async function handleGt2Keys(parts: string[], value: any) {
   keyMap.set("contentType", parts[2]);
   if (parts[3]) {
     let clock = parseInt(parts[3], 16);
+    if (isNaN(clock)) {
+      logger.error("parse clock failed" + parts[3] + ", part:" + parts);
+    }
     keyMap.set("clock", isNaN(clock) ? "0" : clock.toString());
     await postgresqlDb.storeUpdateWithSource(value, keyMap);
   } else {
