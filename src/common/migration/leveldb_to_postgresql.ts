@@ -19,11 +19,11 @@ export function iterateAllKeys() {
         .replaceAll("0x00", "")
         .replaceAll(/\u0000/g, "");
       const controlChars = ["\u0002", "\u0001", "\u0006"];
-      //const parts = splitByControlChars(keyString, controlChars).filter((part) => part !== '');
+      const parts = splitByControlChars(keyString, controlChars).filter((part) => part !== '');
 
       let keyMap: Map<string, string> = new Map<string, string>();
-      //keyMap.set("version", parts[0]);
-      //keyMap.set("docName", parts[1]);
+      keyMap.set("version", parts[0]);
+      keyMap.set("docName", parts[1]);
       await postgresqlDb.storeUpdateWithSource(value, keyMap);
     });
   });
@@ -35,4 +35,28 @@ export function iterateAllKeys() {
   keyStream.on("error", (err: Error) => {
     console.error("Error:", err);
   });
+}
+
+function splitByControlChars(str: string, controlChars: string[]): string[] {
+  const controlCharSet = new Set(controlChars);
+  const result: string[] = [];
+  let current = "";
+
+  for (let i = 0; i < str.length; i++) {
+    const char = str[i];
+    if (controlCharSet.has(char)) {
+      if (current) {
+        result.push(current);
+        current = "";
+      }
+    } else {
+      current += char;
+    }
+  }
+
+  if (current) {
+    result.push(current);
+  }
+
+  return result;
 }
