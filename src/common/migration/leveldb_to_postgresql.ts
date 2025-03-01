@@ -2,9 +2,11 @@
 import levelup from "levelup";
 // @ts-ignore
 import leveldown from "leveldown";
+const leveldbPath = "/Users/xiaoqiangjiang/apps/texhub/yjs-storage-socketio";
 import { PostgresqlPersistance } from "../../storage/adapter/postgresql/postgresql_persistance.js";
 import logger from "../log4js_config.js";
-const persistenceDir = "/Users/xiaoqiangjiang/apps/texhub/yjs-storage-socketio"; //process.env.YPERSISTENCE;
+const persistenceDir =
+  process.env.APP_ENV == "development" ? leveldbPath : process.env.YPERSISTENCE;
 var db = levelup(leveldown(persistenceDir));
 const postgresqlDb: PostgresqlPersistance = new PostgresqlPersistance();
 
