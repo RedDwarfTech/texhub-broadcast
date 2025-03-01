@@ -4,7 +4,7 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Debug Node.js file",
+      "name": "local debug",
       "program": "${workspaceFolder}/src/app.ts",
       "preLaunchTask": "tsc: build - tsconfig.json",
       "outFiles": ["${workspaceFolder}/dist/**/*.js"]
@@ -12,7 +12,7 @@
     {
       "type": "node",
       "request": "attach",
-      "name": "texhub-broadcast",
+      "name": "texhub-broadcast-remote",
       "address": "10.97.246.200",
       "port": 9090,
       "localRoot": "${workspaceFolder}",
