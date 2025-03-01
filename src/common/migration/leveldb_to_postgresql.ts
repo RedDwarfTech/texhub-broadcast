@@ -18,13 +18,15 @@ export function iterateAllKeys() {
         .replaceAll("", "")
         .replaceAll("0x00", "")
         .replaceAll(/\u0000/g, "");
-      const controlChars = ["\u0002", "\u0001", "\u0006"];
-      const parts = splitByControlChars(keyString, controlChars).filter((part) => part !== '');
-
-      let keyMap: Map<string, string> = new Map<string, string>();
-      keyMap.set("version", parts[0]);
-      keyMap.set("docName", parts[1]);
-      await postgresqlDb.storeUpdateWithSource(value, keyMap);
+      const controlChars = ["\u0002", "\u0001", "\u0006", "\u0000"];
+      const parts = splitByControlChars(keyString, controlChars);
+      if (parts.length > 2) {
+        let keyMap: Map<string, string> = new Map<string, string>();
+        keyMap.set("version", parts[0]);
+        keyMap.set("docName", parts[1]);
+        keyMap.set("contentType", parts[2]);
+        await postgresqlDb.storeUpdateWithSource(value, keyMap);
+      }
     });
   });
 
