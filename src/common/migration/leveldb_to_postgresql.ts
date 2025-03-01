@@ -20,7 +20,7 @@ export function iterateAllKeys() {
         .replaceAll("", "")
         .replaceAll("0x00", "")
         .replaceAll(/\u0000/g, "");
-      const controlChars = ["\u0002", "\u0001", "\u0006", "\u0000"];
+      const controlChars = ["\u0002", "\u0001", "\u0006", "\u0000", "\u0005"];
       const parts = splitByControlChars(keyString, controlChars);
       if (parts.length > 2) {
         let keyMap: Map<string, string> = new Map<string, string>();
@@ -29,7 +29,7 @@ export function iterateAllKeys() {
         keyMap.set("contentType", parts[2]);
         if (parts[3]) {
           let clock = parseInt(parts[3], 16);
-          keyMap.set("clock", clock.toString());
+          keyMap.set("clock", isNaN(clock) ? "0" : clock.toString());
           await postgresqlDb.storeUpdateWithSource(value, keyMap);
         } else {
           let clock = 0;
