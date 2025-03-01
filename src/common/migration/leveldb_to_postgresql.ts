@@ -27,7 +27,15 @@ export function iterateAllKeys() {
         keyMap.set("version", parts[0]);
         keyMap.set("docName", parts[1]);
         keyMap.set("contentType", parts[2]);
-        await postgresqlDb.storeUpdateWithSource(value, keyMap);
+        if (parts[3]) {
+          let clock = parseInt(parts[3], 16);
+          keyMap.set("clock", clock.toString());
+          await postgresqlDb.storeUpdateWithSource(value, keyMap);
+        } else {
+          let clock = 0;
+          keyMap.set("clock", "0");
+          await postgresqlDb.storeUpdateWithSource(value, keyMap);
+        }
       }
     });
   });
