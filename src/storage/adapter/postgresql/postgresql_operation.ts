@@ -169,7 +169,7 @@ const pgPutKey = async (
   originalKey: any[]
 ) => {
   try {
-    const query = `INSERT INTO tex_keys (key) 
+    const query = `INSERT INTO tex_keys (key, origin_key) 
       VALUES ($1,$2) `;
     const values = [
       JSON.stringify(key),
