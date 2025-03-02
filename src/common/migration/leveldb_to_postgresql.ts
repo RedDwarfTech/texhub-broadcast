@@ -15,25 +15,34 @@ var db = levelup(leveldown(persistenceDir));
 const postgresqlDb: PostgresqlPersistance = new PostgresqlPersistance();
 
 export function iterateAllKeys() {
+  var keyCount = 0;
   const keyStream = db.createKeyStream();
   keyStream.on("data", (key: any) => {
+    keyCount = keyCount + 1;
     db.get(key, async function (err: any, value: any) {
-      if (err) return logger.error("Ooops!", err);
+      if (err) {
+        return logger.error("Ooops!", err);
+      }
       let partsOrigin: any[] = keyEncoding.decode(key);
       let decodeValue = valueEncoding.decode(value);
+
       //const keyString = key.toString();
       const controlChars = ["\u0002", "\u0001", "\u0006", "\u0000", "\u0005"];
       //const parts: string[] = splitByControlChars(keyString, controlChars);
       let parts = partsOrigin.filter((i) => !controlChars.includes(i));
       if (parts.length > 2) {
+        const decoder = new TextDecoder("utf-8");
+        const text = decoder.decode(decodeValue);
+        const text1 = decoder.decode(value);
         handleGt2Keys(parts, decodeValue);
       } else {
         logger.info("less than 2", parts);
       }
     });
   });
-
+  
   keyStream.on("end", () => {
+    logger.info(keyCount);
     logger.info("All keys have been iterated.");
   });
 
@@ -47,7 +56,11 @@ async function handleGt2Keys(parts: any[], value: any) {
   keyMap.set("version", parts[0]);
   keyMap.set("docName", parts[1]);
   keyMap.set("contentType", parts[2]);
-  if (parts[3]) {
+  let clock = parts[3];
+  if(parts[0] !== "v1"){
+    logger.error("value not eqaul");
+  }
+  if (clock || Number(clock) === 0) {
     let clock = parseInt(parts[3], 16);
     if (isNaN(clock)) {
       logger.error("parse clock failed" + parts[3] + ", part:" + parts);
@@ -55,6 +68,7 @@ async function handleGt2Keys(parts: any[], value: any) {
     keyMap.set("clock", isNaN(clock) ? "0" : clock.toString());
     await postgresqlDb.storeUpdateWithSource(value, keyMap);
   } else {
+    logger.error("part is null");
     keyMap.set("clock", "0");
     await postgresqlDb.storeUpdateWithSource(value, keyMap);
   }
