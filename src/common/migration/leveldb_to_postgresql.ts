@@ -17,13 +17,13 @@ const postgresqlDb: PostgresqlPersistance = new PostgresqlPersistance();
 export function iterateAllKeys() {
   var keyCount = 0;
   const keyStream = db.createKeyStream();
-  keyStream.on("data", (key: any) => {
+  keyStream.on("data", async (key: any) => {
     keyCount = keyCount + 1;
     let partsOrigin: any[] = keyEncoding.decode(key);
     const controlChars = ["\u0002", "\u0001", "\u0006", "\u0000", "\u0005"];
 
     let parts = partsOrigin.filter((i) => !controlChars.includes(i));
-    postgresqlDb.insertKeys(parts);
+    await postgresqlDb.insertKeys(parts);
     db.get(key, async function (err: any, value: any) {
       if (err) {
         return logger.error("Ooops!", err);
