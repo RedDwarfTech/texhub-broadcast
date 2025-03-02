@@ -28,7 +28,7 @@ export function iterateAllKeys() {
     const controlChars = ["\u0002", "\u0001", "\u0006", "\u0000", "\u0005"];
 
     let parts = partsOrigin.filter((i) => !controlChars.includes(i));
-    await postgresqlDb.insertKeys(partsOrigin);
+    await postgresqlDb.insertKeys(partsOrigin, partsOrigin);
     db.get(key, async function (err: any, value: any) {
       if (err) {
         return logger.error("Ooops!", err);

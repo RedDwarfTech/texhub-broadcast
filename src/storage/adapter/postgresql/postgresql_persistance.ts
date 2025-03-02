@@ -80,9 +80,10 @@ export class PostgresqlPersistance {
   }
 
   async insertKeys(
-    keyMap: any[]
+    keyMap: any[],
+    originalKey: any[]
   ) {
-    return await insertKey(this.pool, keyMap);
+    return await insertKey(this.pool, keyMap, originalKey);
   }
 
   async getDiff(docName: any, stateVector: any) {

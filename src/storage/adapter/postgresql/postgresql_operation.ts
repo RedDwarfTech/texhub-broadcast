@@ -115,9 +115,10 @@ export const storeUpdateBySrc = async (
 
 export const insertKey = async (
   db: pg.Pool,
-  keyMap: any[]
+  keyMap: any[],
+  originalKey: any[]
 ) => {
-  await pgPutKey(db, keyMap);
+  await pgPutKey(db, keyMap, originalKey);
 };
 
 const writeStateVector = async (
@@ -164,13 +165,15 @@ const pgGet = async (
 
 const pgPutKey = async (
   db: pg.Pool,
-  key:  any[]
+  key:  any[],
+  originalKey: any[]
 ) => {
   try {
     const query = `INSERT INTO tex_keys (key) 
-      VALUES ($1) `;
+      VALUES ($1,$2) `;
     const values = [
-      JSON.stringify(key)
+      JSON.stringify(key),
+      JSON.stringify(originalKey),
     ];
     const res: pg.QueryResult<any> = await db.query(query, values);
   } catch (err: any) {
