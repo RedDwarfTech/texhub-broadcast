@@ -113,6 +113,13 @@ export const storeUpdateBySrc = async (
   await pgPut(db, keyMap, update, "leveldb");
 };
 
+export const insertKey = async (
+  db: pg.Pool,
+  keyMap: any[]
+) => {
+  await pgPutKey(db, keyMap);
+};
+
 const writeStateVector = async (
   db: pg.Pool,
   docName: string,
@@ -152,6 +159,22 @@ const pgGet = async (
     } else {
       throw err;
     }
+  }
+};
+
+const pgPutKey = async (
+  db: pg.Pool,
+  key:  any[]
+) => {
+  try {
+    const query = `INSERT INTO tex_keys (key) 
+      VALUES ($1) `;
+    const values = [
+      JSON.stringify(key)
+    ];
+    const res: pg.QueryResult<any> = await db.query(query, values);
+  } catch (err: any) {
+    logger.error("Insert keys error:", err.stack);
   }
 };
 

@@ -8,6 +8,7 @@ import {
   flushDocument,
   getCurrentUpdateClock,
   getPgUpdates,
+  insertKey,
   mergeUpdates,
   readStateVector,
   storeUpdate,
@@ -76,6 +77,12 @@ export class PostgresqlPersistance {
     keyMap: Map<string, string>
   ) {
     return await storeUpdateBySrc(this.pool, keyMap, update);
+  }
+
+  async insertKeys(
+    keyMap: any[]
+  ) {
+    return await insertKey(this.pool, keyMap);
   }
 
   async getDiff(docName: any, stateVector: any) {
