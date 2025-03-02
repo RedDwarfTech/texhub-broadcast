@@ -16,14 +16,19 @@ const postgresqlDb: PostgresqlPersistance = new PostgresqlPersistance();
 
 export function iterateAllKeys() {
   var keyCount = 0;
+  var ar = new Set();
   const keyStream = db.createKeyStream();
   keyStream.on("data", async (key: any) => {
     keyCount = keyCount + 1;
+    if(ar.has(key)){
+      logger.error("key already exists");
+    }
+    ar.add(key);
     let partsOrigin: any[] = keyEncoding.decode(key);
     const controlChars = ["\u0002", "\u0001", "\u0006", "\u0000", "\u0005"];
 
     let parts = partsOrigin.filter((i) => !controlChars.includes(i));
-    await postgresqlDb.insertKeys(parts);
+    await postgresqlDb.insertKeys(partsOrigin);
     db.get(key, async function (err: any, value: any) {
       if (err) {
         return logger.error("Ooops!", err);
@@ -48,6 +53,7 @@ export function iterateAllKeys() {
   
   keyStream.on("end", () => {
     logger.info(keyCount);
+    logger.info(ar.size);
     logger.info("All keys have been iterated.");
   });
 
