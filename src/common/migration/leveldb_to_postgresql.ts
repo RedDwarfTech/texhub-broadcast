@@ -5,6 +5,7 @@ import leveldown from "leveldown";
 const leveldbPath = "/Users/xiaoqiangjiang/apps/texhub/yjs-storage-socketio";
 import { PostgresqlPersistance } from "../../storage/adapter/postgresql/postgresql_persistance.js";
 import logger from "../log4js_config.js";
+import { keyEncoding } from "../../storage/adapter/postgresql/postgresql_const.js";
 const persistenceDir =
   process.env.APP_ENV == "development" ? leveldbPath : process.env.YPERSISTENCE;
 var db = levelup(leveldown(persistenceDir));
@@ -12,12 +13,14 @@ const postgresqlDb: PostgresqlPersistance = new PostgresqlPersistance();
 
 export function iterateAllKeys() {
   const keyStream = db.createKeyStream();
-  keyStream.on("data", (key: string) => {
+  keyStream.on("data", (key: any) => {
     db.get(key, async function (err: any, value: any) {
       if (err) return logger.error("Ooops!", err);
-      const keyString = key.toString();
+      let partsOrigin: any[] = keyEncoding.decode(key);
+      //const keyString = key.toString();
       const controlChars = ["\u0002", "\u0001", "\u0006", "\u0000", "\u0005"];
-      const parts: string[] = splitByControlChars(keyString, controlChars);
+      //const parts: string[] = splitByControlChars(keyString, controlChars);
+      let parts = partsOrigin.filter(i=>!controlChars.includes(i));
       if (parts.length > 2) {
         handleGt2Keys(parts, value);
       } else {
@@ -35,7 +38,7 @@ export function iterateAllKeys() {
   });
 }
 
-async function handleGt2Keys(parts: string[], value: any) {
+async function handleGt2Keys(parts: any[], value: any) {
   let keyMap: Map<string, string> = new Map<string, string>();
   keyMap.set("version", parts[0]);
   keyMap.set("docName", parts[1]);
