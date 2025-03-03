@@ -1,5 +1,5 @@
-import express, { Request, Response } from "express";
-export const routerProfile = express.Router();
+import express, { Request, Response, Router } from "express";
+export const routerProfile: Router = express.Router();
 import fs from 'fs';
 import v8 from 'v8';
 

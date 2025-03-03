@@ -6,9 +6,8 @@ import {
   writeVarUint,
   writeVarUint8Array,
   toUint8Array,
+  // @ts-ignore
 } from "lib0/dist/encoding.cjs";
-// @ts-ignore
-import decoding from "lib0/dist/decoding.cjs";
 // @ts-ignore
 import awarenessProtocol from "y-protocols/dist/awareness.cjs";
 import debounce from "lodash";
