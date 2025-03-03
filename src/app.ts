@@ -7,7 +7,10 @@ import { handleMiddlewareAuthCheck } from "./websocket/entry/handle/auth.js";
 const PORT = 1234;
 export const app = express();
 var httpServer = http.createServer(app);
-
+"_moduleAliases": {
+  "@": ".",//这个@就表示根目录
+  "api": "./api",//你也可以自定义一个标记，比如用api指定根目录下面的api文件夹，其他的都可以直接来指定
+}
 // websocket
 export const websocketServer: Server = new Server(httpServer, {
   cors: {
