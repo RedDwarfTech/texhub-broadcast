@@ -5,8 +5,10 @@ import * as decoding from "lib0/decoding.js";
 import pg, { QueryResult } from "pg";
 import logger from "../../../common/log4js_config.js";
 import {
+  createDocumentStateVectorKey,
   createDocumentStateVectorKeyMap,
   createDocumentUpdateKey,
+  createDocumentUpdateKeyArray,
   createSimpleDocumentStateVectorKeyMap,
 } from "./postgresql_const.js";
 import { TeXSync } from "../../../model/yjs/storage/sync/tex_sync.js";
@@ -101,16 +103,23 @@ export const storeUpdate = async (
     const sv = Y.encodeStateVector(ydoc);
     await writeStateVector(db, docName, sv, 0);
   }
-  await pgPut(db, createDocumentUpdateKey(docName, clock + 1), update, "ws");
+  await pgPut(
+    db,
+    createDocumentUpdateKey(docName, clock + 1),
+    update,
+    "ws",
+    createDocumentUpdateKeyArray(docName, clock + 1),
+  );
   return clock + 1;
 };
 
 export const storeUpdateBySrc = async (
   db: pg.Pool,
   keyMap: Map<string, string>,
-  update: Uint8Array
+  update: Uint8Array,
+  keys: any[]
 ) => {
-  await pgPut(db, keyMap, update, "leveldb");
+  await pgPut(db, keyMap, update, "leveldb", keys);
 };
 
 export const insertKey = async (
@@ -134,7 +143,8 @@ const writeStateVector = async (
     db,
     createDocumentStateVectorKeyMap(docName, clock),
     encoding.toUint8Array(encoder),
-    "ws"
+    "ws",
+    createDocumentStateVectorKey(docName)
   );
 };
 
@@ -163,18 +173,11 @@ const pgGet = async (
   }
 };
 
-const pgPutKey = async (
-  db: pg.Pool,
-  key:  any[],
-  originalKey: any[]
-) => {
+const pgPutKey = async (db: pg.Pool, key: any[], originalKey: any[]) => {
   try {
     const query = `INSERT INTO tex_keys (key, origin_key) 
       VALUES ($1,$2) `;
-    const values = [
-      JSON.stringify(key),
-      JSON.stringify(originalKey),
-    ];
+    const values = [JSON.stringify(key), JSON.stringify(originalKey)];
     const res: pg.QueryResult<any> = await db.query(query, values);
   } catch (err: any) {
     logger.error("Insert keys error:", err.stack);
@@ -185,7 +188,8 @@ const pgPut = async (
   db: pg.Pool,
   key: Map<string, string>,
   val: Uint8Array,
-  source: string
+  source: string,
+  keys: any[]
 ) => {
   try {
     const query = `INSERT INTO tex_sync (key, value, plain_value, version, content_type, doc_name, clock, source) 
@@ -204,14 +208,14 @@ const pgPut = async (
       .replaceAll("0x00", "")
       .replaceAll(/\u0000/g, "");
     const values = [
-      JSON.stringify(array),
+      JSON.stringify(keys),
       Buffer.from(val),
       replacedText,
       version,
       contentType,
       docName,
       clock,
-      source
+      source,
     ];
     const res: pg.QueryResult<any> = await db.query(query, values);
   } catch (err: any) {

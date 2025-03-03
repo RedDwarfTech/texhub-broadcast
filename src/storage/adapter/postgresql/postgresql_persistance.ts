@@ -73,10 +73,11 @@ export class PostgresqlPersistance {
   }
 
   async storeUpdateWithSource(
+    keys: any[],
     update: Uint8Array,
     keyMap: Map<string, string>
   ) {
-    return await storeUpdateBySrc(this.pool, keyMap, update);
+    return await storeUpdateBySrc(this.pool, keyMap, update, keys);
   }
 
   async insertKeys(
