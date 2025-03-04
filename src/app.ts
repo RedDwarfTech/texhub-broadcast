@@ -2,7 +2,7 @@ import express, { Express } from "express";
 import { Server, Socket } from "socket.io";
 import http from "http";
 import "dotenv/config";
-import { initialize } from "@websocket/entry/init.js";
+import { initialize } from "./websocket/entry/init.js";
 import { handleMiddlewareAuthCheck } from "./websocket/entry/handle/auth.js";
 const PORT = 1234;
 export const app: Express = express();
