@@ -1,10 +1,10 @@
 import { parentPort } from "worker_threads";
-import { iterateAllKeys } from "../migration/leveldb_to_postgresql.js";
+import { iterateAllLeveldbKeys } from "../migration/leveldb_to_postgresql.js";
 import logger from "../log4js_config.js";
 
-parentPort!.postMessage(getFibonacciNumber());
+parentPort!.postMessage(doSyncSeperateWay());
 
-function getFibonacciNumber() {
-  logger.info("start sync...");
-  iterateAllKeys();
+function doSyncSeperateWay() {
+  logger.info("start sync from leveldb to postgresql...");
+  iterateAllLeveldbKeys();
 }

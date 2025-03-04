@@ -14,16 +14,9 @@ const persistenceDir =
 var db = levelup(leveldown(persistenceDir));
 const postgresqlDb: PostgresqlPersistance = new PostgresqlPersistance();
 
-export function iterateAllKeys() {
-  var keyCount = 0;
-  var ar = new Set();
+export function iterateAllLeveldbKeys() {
   const keyStream = db.createKeyStream();
   keyStream.on("data", async (key: any) => {
-    keyCount = keyCount + 1;
-    if (ar.has(key)) {
-      logger.error("key already exists");
-    }
-    ar.add(key);
     let partsOrigin: any[] = keyEncoding.decode(key);
     await postgresqlDb.insertKeys(partsOrigin, partsOrigin);
     db.get(key, async function (err: any, value: any) {
@@ -43,13 +36,11 @@ export function iterateAllKeys() {
   });
 
   keyStream.on("end", () => {
-    logger.info(keyCount);
-    logger.info(ar.size);
     logger.info("All keys have been iterated.");
   });
 
   keyStream.on("error", (err: Error) => {
-    logger.info("Error:", err);
+    logger.error("sync data from level db to postgresql Error:", err);
   });
 }
 
