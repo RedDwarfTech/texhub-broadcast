@@ -19,7 +19,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint --fix",
     "dev": "export NODE_ENV=dev && ts-node -r tsconfig-paths/register src/app.ts",
-    "build": "tsc && tsc-alias"
+    "build": "tspc"
   },
   "keywords": [],
   "author": "",

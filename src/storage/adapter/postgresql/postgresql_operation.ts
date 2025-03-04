@@ -151,7 +151,7 @@ const writeStateVector = async (
 const pgGet = async (
   db: pg.Pool,
   key: Map<string, string>
-): Promise<Uint8Array<ArrayBufferLike>> => {
+): Promise<Uint8Array> => {
   let res: QueryResult<TeXSync>;
   try {
     let sql = `select value from tex_sync where key = $1`;
