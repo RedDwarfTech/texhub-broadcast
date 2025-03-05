@@ -98,7 +98,7 @@ export const mergeUpdates = (updates: any) => {
 };
 
 export const flushDocument = async (
-  db: any,
+  db: pg.Pool,
   docName: string,
   stateAsUpdate: any,
   stateVector: any
@@ -302,32 +302,20 @@ const clearUpdatesRange = async (
   docName: string,
   from: number,
   to: number
-) =>
-  clearRange(
-    db,
-    createDocumentUpdateKey(docName, from),
-    createDocumentUpdateKey(docName, to)
-  );
+) => clearRange(db, docName, from, to);
 
-const clearRange = async (db: any, gte: any, lt: any) => {
-  /* istanbul ignore else */
-  if (db.supports.clear) {
-    await db.clear({ gte, lt });
-  } else {
-    const keys = (
-      await getPgBulkData(
-        db,
-        {
-          values: false,
-          keys: true,
-          gte,
-          lt,
-        },
-        ""
-      )
-    ).map((item) => item.key);
-    const ops = keys.map((key: any) => ({ type: "del", key }));
-    await db.batch(ops);
+const clearRange = async (
+  db: pg.Pool,
+  docName: string,
+  from: number,
+  to: number
+) => {
+  try {
+    const query = `delete from tex_sync where doc_name = $1 and content_type=$2 and clock >= $3 and clock < $4`;
+    const values = [docName, "update", from, to];
+    const res: pg.QueryResult<any> = await db.query(query, values);
+  } catch (err) {
+    logger.error("clear error", err);
   }
 };
 
