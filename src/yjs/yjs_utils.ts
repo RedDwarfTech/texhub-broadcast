@@ -10,6 +10,7 @@ import { callbackRequest, getContent } from "./ydoc_callback.js";
 import syncProtocol from "y-protocols/dist/sync.cjs";
 // @ts-ignore
 import * as Y from "yjs";
+import debounce from 'lodash';
 
 const CALLBACK_URL = process.env.CALLBACK_URL
   ? new URL(process.env.CALLBACK_URL)
@@ -48,8 +49,15 @@ export const getYDoc = (docname: string, gc: boolean = true): WSSharedDoc =>
 export const callbackHandler = (
   update: Uint8Array,
   origin: any,
-  doc: any
+  doc: any,
+  t: Y.Transaction
 ) => {
+   debounce(() => {
+    doCallback(doc);
+   });
+};
+
+const doCallback = (doc: WSSharedDoc) =>{
   const room = doc.name;
   const dataToSend = {
     room,
@@ -64,7 +72,7 @@ export const callbackHandler = (
     };
   });
   callbackRequest(CALLBACK_URL!, Number(CALLBACK_TIMEOUT), dataToSend);
-};
+}
 
 
 /**

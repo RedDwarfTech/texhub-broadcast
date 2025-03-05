@@ -1,5 +1,5 @@
-import express from 'express';
-export const routerMetrics = express.Router();
+import express, { Router } from 'express';
+export const routerMetrics: Router = express.Router();
 import client from 'prom-client';
 const collectDefaultMetrics = client.collectDefaultMetrics;
 collectDefaultMetrics({ gcDurationBuckets: [0.1, 0.2, 0.3] });

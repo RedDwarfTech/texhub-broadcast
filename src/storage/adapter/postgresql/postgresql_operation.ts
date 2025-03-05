@@ -5,8 +5,10 @@ import * as decoding from "lib0/decoding.js";
 import pg, { QueryResult } from "pg";
 import logger from "../../../common/log4js_config.js";
 import {
+  createDocumentStateVectorKey,
   createDocumentStateVectorKeyMap,
   createDocumentUpdateKey,
+  createDocumentUpdateKeyArray,
   createSimpleDocumentStateVectorKeyMap,
 } from "./postgresql_const.js";
 import { TeXSync } from "../../../model/yjs/storage/sync/tex_sync.js";
@@ -101,8 +103,31 @@ export const storeUpdate = async (
     const sv = Y.encodeStateVector(ydoc);
     await writeStateVector(db, docName, sv, 0);
   }
-  await pgPut(db, createDocumentUpdateKey(docName, clock + 1), update);
+  await pgPut(
+    db,
+    createDocumentUpdateKey(docName, clock + 1),
+    update,
+    "ws",
+    createDocumentUpdateKeyArray(docName, clock + 1),
+  );
   return clock + 1;
+};
+
+export const storeUpdateBySrc = async (
+  db: pg.Pool,
+  keyMap: Map<string, string>,
+  update: Uint8Array,
+  keys: any[]
+) => {
+  await pgPut(db, keyMap, update, "leveldb", keys);
+};
+
+export const insertKey = async (
+  db: pg.Pool,
+  keyMap: any[],
+  originalKey: any[]
+) => {
+  await pgPutKey(db, keyMap, originalKey);
 };
 
 const writeStateVector = async (
@@ -117,14 +142,16 @@ const writeStateVector = async (
   await pgPut(
     db,
     createDocumentStateVectorKeyMap(docName, clock),
-    encoding.toUint8Array(encoder)
+    encoding.toUint8Array(encoder),
+    "ws",
+    createDocumentStateVectorKey(docName)
   );
 };
 
 const pgGet = async (
   db: pg.Pool,
   key: Map<string, string>
-): Promise<Uint8Array<ArrayBufferLike>> => {
+): Promise<Uint8Array> => {
   let res: QueryResult<TeXSync>;
   try {
     let sql = `select value from tex_sync where key = $1`;
@@ -146,37 +173,49 @@ const pgGet = async (
   }
 };
 
+const pgPutKey = async (db: pg.Pool, key: any[], originalKey: any[]) => {
+  try {
+    const query = `INSERT INTO tex_keys (key, origin_key) 
+      VALUES ($1,$2) `;
+    const values = [JSON.stringify(key), JSON.stringify(originalKey)];
+    const res: pg.QueryResult<any> = await db.query(query, values);
+  } catch (err: any) {
+    logger.error("Insert keys error:", err.stack);
+  }
+};
+
 const pgPut = async (
   db: pg.Pool,
   key: Map<string, string>,
-  val: Uint8Array
+  val: Uint8Array,
+  source: string,
+  keys: any[]
 ) => {
   try {
-    const query = `INSERT INTO tex_sync (key, value, plain_value, version, content_type, doc_name, clock) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7) 
+    const query = `INSERT INTO tex_sync (key, value, plain_value, version, content_type, doc_name, clock, source) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
       ON CONFLICT (key) DO UPDATE
-      SET value = $2, plain_value=$3`;
+      set value = $2, plain_value = $3`;
     const decoder = new TextDecoder("utf-8");
     let text: string = decoder.decode(val);
     let version = key.get("version") || "default";
     let contentType = key.get("contentType") || "default";
     let docName = key.get("docName") ? key.get("docName") : "default";
     let clock = key.get("clock") ? key.get("clock") : -1;
-    let mapValues = key.values();
-    const array = Array.from(mapValues);
     // https://stackoverflow.com/questions/1347646/postgres-error-on-insert-error-invalid-byte-sequence-for-encoding-utf8-0x0
     let replacedText = text
       .replaceAll("", "")
       .replaceAll("0x00", "")
       .replaceAll(/\u0000/g, "");
     const values = [
-      JSON.stringify(array),
+      JSON.stringify(keys),
       Buffer.from(val),
       replacedText,
       version,
       contentType,
       docName,
       clock,
+      source,
     ];
     const res: pg.QueryResult<any> = await db.query(query, values);
   } catch (err: any) {
@@ -197,15 +236,16 @@ export const getCurrentUpdateClock = async (
   if (result && result.length > 0) {
     return result[0].clock;
   } else {
+    // the document does not exist yet.
     return -1;
   }
 };
 
 const clearUpdatesRange = async (
-  db: any,
+  db: pg.Pool,
   docName: string,
-  from: any,
-  to: any
+  from: number,
+  to: number
 ) =>
   clearRange(
     db,

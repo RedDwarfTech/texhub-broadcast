@@ -71,6 +71,10 @@ export const createDocumentUpdateKey = (docName: string, clock: number) => {
   return keyMap;
 };
 
+export const createDocumentUpdateKeyArray = (docName: string, clock: number) => {
+  return ["v1", docName, "update",clock]
+};
+
 const createDocumentMetaEndKey = (docName: string) => ["v1", docName, "metb"];
 
 const createDocumentMetaKey = (docName: string, metaKey: string) => [

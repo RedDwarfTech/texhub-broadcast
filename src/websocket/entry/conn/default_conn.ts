@@ -12,8 +12,7 @@ export const initial_default = () => {
     logger.error("engine error:" + err.req); // the request object
     logger.error("engine error:" + err.code); // the error code, for example 1
     logger.error("engine error:" + err.message); // the error message, for example "Session ID unknown"
-    logger.error("engine error:" + err.context); // some additional error context
     logger.error(typeof err);
-    logger.error(toJSON(err));
+    // logger.error(toJSON(err));
   });
 };

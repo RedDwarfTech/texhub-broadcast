@@ -1,6 +1,6 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, Router } from 'express';
 
-export const routerHealth = express.Router();
+export const routerHealth: Router = express.Router();
 
 routerHealth.get("/healthz", (req: Request, res: Response) => {
   res.send("ok");
