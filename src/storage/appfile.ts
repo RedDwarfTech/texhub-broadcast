@@ -48,6 +48,7 @@ const handleFileSync = async (docName: string, ldb: PostgresqlPersistance) => {
         logger.error("craete directory failed,", error);
       }
     });
+    logger.info("start write:" + text.toString());
     fs.writeFile(path.join(folderPath, fileName), text.toString(), (err) => {
       if (err) {
         logger.error("Failed to write file:", err);

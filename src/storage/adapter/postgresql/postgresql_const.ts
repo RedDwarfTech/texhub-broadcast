@@ -54,7 +54,10 @@ export const keyEncoding = {
   },
 };
 
-export const createDocumentStateVectorKeyMap = (docName: string, clock: number) => {
+export const createDocumentStateVectorKeyMap = (
+  docName: string,
+  clock: number
+) => {
   let keyMap = new Map<string, string>();
   keyMap.set("version", "v1_sv");
   keyMap.set("docName", docName);
@@ -71,8 +74,11 @@ export const createDocumentUpdateKey = (docName: string, clock: number) => {
   return keyMap;
 };
 
-export const createDocumentUpdateKeyArray = (docName: string, clock: number) => {
-  return ["v1", docName, "update",clock]
+export const createDocumentUpdateKeyArray = (
+  docName: string,
+  clock: number
+) => {
+  return ["v1", docName, "update", clock];
 };
 
 const createDocumentMetaEndKey = (docName: string) => ["v1", docName, "metb"];
@@ -84,7 +90,10 @@ const createDocumentMetaKey = (docName: string, metaKey: string) => [
   metaKey,
 ];
 
-export const createDocumentStateVectorKey = (docName: string) => ["v1_sv", docName];
+export const createDocumentStateVectorKey = (docName: string) => [
+  "v1_sv",
+  docName,
+];
 export const createSimpleDocumentStateVectorKeyMap = (docName: string) => {
   let keyMap = new Map<string, string>();
   keyMap.set("version", "v1_sv");
