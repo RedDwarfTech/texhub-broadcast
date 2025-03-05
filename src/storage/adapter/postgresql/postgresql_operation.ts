@@ -13,6 +13,22 @@ import {
 } from "./postgresql_const.js";
 import { TeXSync } from "../../../model/yjs/storage/sync/tex_sync.js";
 
+export const getDocAllUpdates = async (
+  db: pg.Pool,
+  docName: string,
+  opts = { values: true, keys: false, reverse: false }
+) => {
+  return await getPgBulkData(
+    db,
+    {
+      gte: createDocumentUpdateKey(docName, 0),
+      lt: createDocumentUpdateKey(docName, binary.BITS32),
+      ...opts,
+    },
+    docName
+  );
+};
+
 export const getPgUpdates = async (
   db: pg.Pool,
   docName: string,
@@ -58,8 +74,11 @@ export const getPgBulkData = async (
     if (opts.reverse) {
       orderPart = " order by clock desc";
     }
-    const sql =
-      queryPart + fromPart + filterPart + orderPart + " limit " + opts.limit;
+    let limitPart = "";
+    if (opts.limit) {
+      limitPart = " limit " + opts.limit;
+    }
+    const sql = queryPart + fromPart + filterPart + orderPart + limitPart;
     let result: QueryResult<TeXSync> = await db.query(sql);
     return result.rows;
   } catch (err) {
@@ -108,7 +127,7 @@ export const storeUpdate = async (
     createDocumentUpdateKey(docName, clock + 1),
     update,
     "ws",
-    createDocumentUpdateKeyArray(docName, clock + 1),
+    createDocumentUpdateKeyArray(docName, clock + 1)
   );
   return clock + 1;
 };

@@ -7,7 +7,7 @@ import * as Y from "yjs";
 import {
   flushDocument,
   getCurrentUpdateClock,
-  getPgUpdates,
+  getDocAllUpdates,
   insertKey,
   mergeUpdates,
   readStateVector,
@@ -27,7 +27,7 @@ export class PostgresqlPersistance {
   }
 
   async getYDoc(docName: string) {
-    const updates: Array<TeXSync> = await getPgUpdates(this.pool, docName);
+    const updates: Array<TeXSync> = await getDocAllUpdates(this.pool, docName);
     const ydoc = new Y.Doc();
     ydoc.transact(() => {
       for (let i = 0; i < updates.length; i++) {
@@ -46,7 +46,7 @@ export class PostgresqlPersistance {
   }
 
   flushDocument(docName: string) {
-    const updates = getPgUpdates(this.pool, docName);
+    const updates = getDocAllUpdates(this.pool, docName);
     const { update, sv } = mergeUpdates(updates);
     flushDocument(this.pool, docName, update, sv);
   }
@@ -61,7 +61,7 @@ export class PostgresqlPersistance {
       return sv;
     } else {
       // current state vector is outdated
-      const updates = getPgUpdates(this.pool, docName);
+      const updates = getDocAllUpdates(this.pool, docName);
       const { update, sv } = mergeUpdates(updates);
       flushDocument(this.pool, docName, update, sv);
       return sv;
@@ -80,10 +80,7 @@ export class PostgresqlPersistance {
     return await storeUpdateBySrc(this.pool, keyMap, update, keys);
   }
 
-  async insertKeys(
-    keyMap: any[],
-    originalKey: any[]
-  ) {
+  async insertKeys(keyMap: any[], originalKey: any[]) {
     return await insertKey(this.pool, keyMap, originalKey);
   }
 
