@@ -34,7 +34,7 @@ websocketServer.use((socket: Socket, next) => {
   next();
 });
 
-handleMiddlewareAuthCheck(websocketServer);
+// handleMiddlewareAuthCheck(websocketServer);
 
 initialize();
 httpServer.listen(PORT);
