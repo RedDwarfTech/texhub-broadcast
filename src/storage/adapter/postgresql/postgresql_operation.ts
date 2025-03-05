@@ -158,7 +158,7 @@ const writeStateVector = async (
   const encoder = encoding.createEncoder();
   encoding.writeVarUint(encoder, clock);
   encoding.writeVarUint8Array(encoder, sv);
-  await pgPut(
+  await pgPutUpsert(
     db,
     createDocumentStateVectorKeyMap(docName, clock),
     encoding.toUint8Array(encoder),
@@ -237,6 +237,45 @@ const pgPut = async (
     const res: pg.QueryResult<any> = await db.query(query, values);
   } catch (err: any) {
     logger.error("Insert error:" + JSON.stringify(keys), err.stack);
+  }
+};
+
+const pgPutUpsert = async (
+  db: pg.Pool,
+  key: Map<string, string>,
+  val: Uint8Array,
+  source: string,
+  keys: any[]
+) => {
+  try {
+    const query = `INSERT INTO tex_sync (key, value, plain_value, version, content_type, doc_name, clock, source) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+      ON CONFLICT (key) DO UPDATE 
+      SET value = $2, plain_value = $3`;
+    const decoder = new TextDecoder("utf-8");
+    let text: string = decoder.decode(val);
+    let version = key.get("version") || "default";
+    let contentType = key.get("contentType") || "default";
+    let docName = key.get("docName") ? key.get("docName") : "default";
+    let clock = key.get("clock") ? key.get("clock") : -1;
+    // https://stackoverflow.com/questions/1347646/postgres-error-on-insert-error-invalid-byte-sequence-for-encoding-utf8-0x0
+    let replacedText = text
+      .replaceAll("", "")
+      .replaceAll("0x00", "")
+      .replaceAll(/\u0000/g, "");
+    const values = [
+      JSON.stringify(keys),
+      Buffer.from(val),
+      replacedText,
+      version,
+      contentType,
+      docName,
+      clock,
+      source,
+    ];
+    const res: pg.QueryResult<any> = await db.query(query, values);
+  } catch (err: any) {
+    logger.error("Insert pgPutUpsert error:" + JSON.stringify(keys), err.stack);
   }
 };
 
