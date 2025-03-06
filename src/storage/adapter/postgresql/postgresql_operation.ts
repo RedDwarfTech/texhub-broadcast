@@ -12,6 +12,14 @@ import {
   createSimpleDocumentStateVectorKeyMap,
 } from "./postgresql_const.js";
 import { TeXSync } from "../../../model/yjs/storage/sync/tex_sync.js";
+import { createClient } from "redis";
+import { v4 as uuidv4 } from "uuid";
+
+const client = await createClient({
+  url: process.env.REDIS_URL,
+})
+  .on("error", (err) => logger.error("Redis Client Error", err))
+  .connect();
 
 export const getDocAllUpdates = async (
   db: pg.Pool,
@@ -109,27 +117,89 @@ export const flushDocument = async (
   return clock;
 };
 
+const getLock = async (docName: string, uniqueValue: string) => {
+  const lockKey = `lock:${docName + "-update"}`;
+  const expireTime = 5000;
+  // Lua脚本用于原子获取锁
+  const luaScript = `
+    if redis.call('SET', KEYS[1], ARGV[1], 'NX', 'EX', ARGV[2]) then
+      return 1
+    else
+      return 0
+    end
+    `;
+  // 执行Lua脚本
+  const result = await client.eval(luaScript, {
+    keys: [lockKey],
+    arguments: [uniqueValue, `${expireTime}`],
+  });
+  if (result === 1) {
+    console.log(`[s] 已获取锁 ${lockKey}`);
+    return true;
+  } else {
+    console.log(`[x] 无法获取锁 ${lockKey}`);
+    return false;
+  }
+};
+
+/**
+ * 释放锁
+ * @param resourceKey 资源键名
+ * @param uniqueValue 唯一值，用于验证锁的所有者(建议:UUID)
+ * @returns 是否成功释放锁
+ */
+async function unlock(docName: string, uniqueValue: string) {
+  const lockKey = `lock:${docName}`;
+  const luaScript = `
+    if redis.call("GET", KEYS[1]) == ARGV[1] then
+      return redis.call("DEL", KEYS[1])
+    else
+      return 0
+    end
+  `;
+  const result = await client.eval(luaScript, {
+    keys: [lockKey],
+    arguments: [uniqueValue],
+  });
+
+  if (result === 1) {
+    console.log("[s] 锁释放成功");
+  } else {
+    console.log("[x] 锁释放失败，可能锁已经被其他客户端更新");
+  }
+}
+
 export const storeUpdate = async (
   db: pg.Pool,
   docName: string,
   update: Uint8Array
 ) => {
-  const clock = await getCurrentUpdateClock(db, docName);
-  if (clock === -1) {
-    // make sure that a state vector is aways written, so we can search for available documents
-    const ydoc = new Y.Doc();
-    Y.applyUpdate(ydoc, update);
-    const sv = Y.encodeStateVector(ydoc);
-    await writeStateVector(db, docName, sv, 0);
+  const uniqueValue = uuidv4();
+  try {
+    if (await getLock(docName, uniqueValue)) {
+      const clock = await getCurrentUpdateClock(db, docName);
+      if (clock === -1) {
+        // make sure that a state vector is aways written, so we can search for available documents
+        const ydoc = new Y.Doc();
+        Y.applyUpdate(ydoc, update);
+        const sv = Y.encodeStateVector(ydoc);
+        await writeStateVector(db, docName, sv, 0);
+      }
+      await pgPut(
+        db,
+        createDocumentUpdateKey(docName, clock + 1),
+        update,
+        "ws",
+        createDocumentUpdateKeyArray(docName, clock + 1)
+      );
+      return clock + 1;
+    }
+  } catch (error: any) {
+    logger.error(error);
+  } finally {
+    // release lock
+    unlock(docName, uniqueValue);
   }
-  await pgPut(
-    db,
-    createDocumentUpdateKey(docName, clock + 1),
-    update,
-    "ws",
-    createDocumentUpdateKeyArray(docName, clock + 1)
-  );
-  return clock + 1;
 };
 
 export const storeUpdateBySrc = async (
@@ -236,7 +306,10 @@ const pgPut = async (
     ];
     const res: pg.QueryResult<any> = await db.query(query, values);
   } catch (err: any) {
-    logger.error("Insert tex sync record error:" + JSON.stringify(keys) + ",val:" + val, err.stack);
+    logger.error(
+      "Insert tex sync record error:" + JSON.stringify(keys) + ",val:" + val,
+      err.stack
+    );
   }
 };
 
