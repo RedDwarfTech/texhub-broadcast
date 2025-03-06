@@ -236,7 +236,7 @@ const pgPut = async (
     ];
     const res: pg.QueryResult<any> = await db.query(query, values);
   } catch (err: any) {
-    logger.error("Insert error:" + JSON.stringify(keys), err.stack);
+    logger.error("Insert tex sync record error:" + JSON.stringify(keys) + ",val:" + val, err.stack);
   }
 };
 
