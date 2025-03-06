@@ -200,6 +200,7 @@ export const storeUpdate = async (
     // release lock
     unlock(docName, uniqueValue);
   }
+  return 0;
 };
 
 export const storeUpdateBySrc = async (
