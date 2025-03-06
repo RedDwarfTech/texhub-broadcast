@@ -149,7 +149,7 @@ const getLock = async (docName: string, uniqueValue: string) => {
  * @returns 是否成功释放锁
  */
 async function unlock(docName: string, uniqueValue: string) {
-  const lockKey = `lock:${docName}`;
+  const lockKey = `lock:${docName + "-update"}`;
   const luaScript = `
     if redis.call("GET", KEYS[1]) == ARGV[1] then
       return redis.call("DEL", KEYS[1])
