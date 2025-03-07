@@ -117,7 +117,10 @@ export const flushDocument = async (
   return clock;
 };
 
-const getLock = async (docName: string, uniqueValue: string) => {
+const getLock = async (docName: string, uniqueValue: string, times: number) => {
+  if (times > 5) {
+    return false;
+  }
   const lockKey = `lock:${docName + "-update"}`;
   const expireTime = 5000;
   // Lua脚本用于原子获取锁
@@ -134,13 +137,18 @@ const getLock = async (docName: string, uniqueValue: string) => {
     arguments: [uniqueValue, `${expireTime}`],
   });
   if (result === 1) {
-    console.log(`[s] 已获取锁 ${lockKey}`);
+    logger.info(`[s] 已获取锁 ${lockKey}`);
     return true;
   } else {
-    console.log(`[x] 无法获取锁 ${lockKey}`);
-    return false;
+    logger.error(`[x] 无法获取锁 ${lockKey}`);
+    await sleep(3000);
+    return getLock(docName, uniqueValue, times + 1);
   }
 };
+
+function sleep(delay: number) {
+  return new Promise((resolve) => setTimeout(resolve, delay));
+}
 
 /**
  * 释放锁
@@ -176,7 +184,7 @@ export const storeUpdate = async (
 ) => {
   const uniqueValue = uuidv4();
   try {
-    if (await getLock(docName, uniqueValue)) {
+    if (await getLock(docName, uniqueValue, 0)) {
       const clock = await getCurrentUpdateClock(db, docName);
       if (clock === -1) {
         // make sure that a state vector is aways written, so we can search for available documents
