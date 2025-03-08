@@ -69,9 +69,9 @@ export class PostgresqlPersistance {
     }
   }
 
-  storeUpdate(docName: string, update: Uint8Array) {
+  async storeUpdate(docName: string, update: Uint8Array) {
     try{
-      return storeUpdate(this.pool, docName, update);
+      return await storeUpdate(this.pool, docName, update);
     }catch(error){
       logger.error("store update failed", error);
     }
