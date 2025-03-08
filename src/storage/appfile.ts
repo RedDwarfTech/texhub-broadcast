@@ -25,7 +25,12 @@ const handleFileSync = async (docName: string, ldb: PostgresqlPersistance) => {
      */
     const persistedYdoc: Y.Doc = await ldb.getYDoc(docName);
     let text: Y.Text = persistedYdoc.getText(docName);
-    if (!text || !text.toString()) {
+    if(text == null) {
+      logger.error("text is null");
+      return;
+    }
+    if(text == undefined) {
+      logger.error("text is undefined");
       return;
     }
     let fileContent: AppResponse<FileContent> = await getFileJsonData(docName);
