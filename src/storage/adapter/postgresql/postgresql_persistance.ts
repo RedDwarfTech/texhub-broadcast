@@ -27,7 +27,7 @@ export class PostgresqlPersistance {
     this.pool = pool;
   }
 
-  async getYDoc(docName: string) {
+  async getYDoc(docName: string) :Promise<Y.Doc>{
     const updates: Array<TeXSync> = await getDocAllUpdates(this.pool, docName);
     const ydoc = new Y.Doc();
     ydoc.transact(() => {

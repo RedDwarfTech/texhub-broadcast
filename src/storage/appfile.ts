@@ -3,6 +3,8 @@ var logger = log4js.getLogger();
 import lodash from "lodash";
 import path from "path";
 import fs from "fs";
+// @ts-ignore
+import * as Y from "yjs";
 import { updateFullsearch } from "./fulltext.js";
 import { getFileJsonData } from "../texhub/client/texhub_interop.js";
 import { FileContent } from "../model/texhub/file_content.js";
@@ -21,8 +23,8 @@ const handleFileSync = async (docName: string, ldb: PostgresqlPersistance) => {
     /**
      * https://discuss.yjs.dev/t/how-to-get-the-document-text-the-decode-content-not-binary-content-in-y-websocket/2033/1
      */
-    const persistedYdoc = await ldb.getYDoc(docName);
-    let text = persistedYdoc.getText(docName);
+    const persistedYdoc: Y.Doc = await ldb.getYDoc(docName);
+    let text: Y.Text = persistedYdoc.getText(docName);
     if (!text || !text.toString()) {
       return;
     }
