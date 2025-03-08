@@ -337,8 +337,8 @@ const pgPutUpsert = async (
       SET value = $2, plain_value = $3`;
     const decoder = new TextDecoder("utf-8");
     let content = String.fromCharCode(...new Uint8Array(val));
-    let decodedUpdate = Y.decodeUpdateV2(val);
-    logger.info("decoded update:" + decodedUpdate);
+    // let decodedUpdate = Y.decodeUpdateV2(val);
+    logger.info("decoded update:" + content);
     let text: string = decoder.decode(val);
     let version = key.get("version") || "default";
     let contentType = key.get("contentType") || "default";
