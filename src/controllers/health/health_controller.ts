@@ -5,3 +5,7 @@ export const routerHealth: Router = express.Router();
 routerHealth.get("/healthz", (req: Request, res: Response) => {
   res.send("ok");
 });
+
+routerHealth.get("/ready", (req: Request, res: Response) => {
+  res.send("ok");
+});
