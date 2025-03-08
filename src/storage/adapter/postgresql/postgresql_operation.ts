@@ -194,7 +194,7 @@ export const storeUpdate = async (
     const sv = Y.encodeStateVector(ydoc);
     await writeStateVector(db, docName, sv, 0);
   }
-  await pgPutUpsert(
+  await pgPut(
     db,
     createDocumentUpdateKey(docName, clock + 1),
     update,
