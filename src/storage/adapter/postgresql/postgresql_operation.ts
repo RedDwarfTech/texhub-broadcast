@@ -119,6 +119,7 @@ export const flushDocument = async (
 
 const getLock = async (docName: string, uniqueValue: string, times: number) => {
   if (times > 5) {
+    logger.error("could not get lock wih 5 times retry");
     return false;
   }
   const lockKey = `lock:${docName + "-update"}`;
@@ -140,8 +141,8 @@ const getLock = async (docName: string, uniqueValue: string, times: number) => {
     logger.info(`[s] 已获取锁 ${lockKey}`);
     return true;
   } else {
-    logger.error(`[x] 无法获取锁 ${lockKey}`);
-    await sleep(3000);
+    logger.warn(`[x] 无法获取锁 ${lockKey}`);
+    await sleep(1000);
     return getLock(docName, uniqueValue, times + 1);
   }
 };

@@ -4,9 +4,40 @@
     {
       "type": "node",
       "request": "launch",
+      "name": "Launch Server",
+      "protocol": "inspector",
+      "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/ts-node",
+      //"runtimeExecutable": "/Users/xiaoqiangjiang/.nvm/versions/node/v16.14.2/bin/ts-node --esm",
+      "runtimeArgs": ["--esm","-r", "ts-node/register", "-r", "tsconfig-paths/register"],
+      "args": ["src/app.ts"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "env": {
+        "TS_NODE_PROJECT": "tsconfig.json",
+        "TS_NODE_TRANSPILE_ONLY": "true"
+      }
+    },
+    {
+      "type": "node",
+      "request": "launch",
       "name": "local debug",
       "program": "${workspaceFolder}/src/app.ts",
-      "preLaunchTask": "tsc: build - tsconfig.json",
+      //"runtimeExecutable": "${workspaceRoot}/node_modules/.bin/ts-node",
+      //"preLaunchTask": "tsc: build - tsconfig.json",
+      "runtimeArgs": [
+        "-r",
+        "${workspaceFolder}/node_modules/ts-node/register",
+        "-r",
+        "${workspaceFolder}/node_modules/tsconfig-paths/register"
+      ],
+      "args": ["${workspaceFolder}/src/app.ts"],
+      "sourceMaps": true,
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "NODE_ENV": "development",
+        "TS_NODE_PROJECT": "${workspaceFolder}/tsconfig.json"
+      },
       "outFiles": ["${workspaceFolder}/dist/**/*.js"]
     },
     {

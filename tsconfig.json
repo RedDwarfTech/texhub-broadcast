@@ -18,10 +18,10 @@
     "lib": ["DOM", "ES2021.String"],
     "sourceMap": true
   },
-  "include": ["src/**/*"],
+  "include": ["**/*.ts", "**/*.tsx"],
   "files": ["src/app.ts"],
   "ts-node": {
+    "esm": true,
     "require": ["tsconfig-paths/register"]
-  },
-  "plugins": [{ "transform": "typescript-transform-paths" }]
+  }
 }
