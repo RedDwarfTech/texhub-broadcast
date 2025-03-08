@@ -31,8 +31,12 @@ export class PostgresqlPersistance {
     const updates: Array<TeXSync> = await getDocAllUpdates(this.pool, docName);
     const ydoc = new Y.Doc();
     ydoc.transact(() => {
-      for (let i = 0; i < updates.length; i++) {
-        Y.applyUpdate(ydoc, updates[i].value);
+      try {
+        for (let i = 0; i < updates.length; i++) {
+          Y.applyUpdate(ydoc, updates[i].value);
+        }
+      } catch (err) {
+        logger.error("apply update failed", err);
       }
     });
     if (updates.length > PREFERRED_TRIM_SIZE) {
@@ -70,9 +74,9 @@ export class PostgresqlPersistance {
   }
 
   async storeUpdate(docName: string, update: Uint8Array) {
-    try{
+    try {
       return await storeUpdate(this.pool, docName, update);
-    }catch(error){
+    } catch (error) {
       logger.error("store update failed", error);
     }
   }

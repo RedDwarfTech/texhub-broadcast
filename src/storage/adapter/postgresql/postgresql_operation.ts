@@ -345,10 +345,14 @@ const pgPutUpsert = async (
     let docName = key.get("docName") ? key.get("docName") : "default";
     let clock = key.get("clock") ? key.get("clock") : -1;
     // https://stackoverflow.com/questions/1347646/postgres-error-on-insert-error-invalid-byte-sequence-for-encoding-utf8-0x0
+    let replacedText = content
+      .replaceAll("", "")
+      .replaceAll("0x00", "")
+      .replaceAll(/\u0000/g, "");
     const values = [
       JSON.stringify(keys),
       Buffer.from(val),
-      content,
+      replacedText,
       version,
       contentType,
       docName,
