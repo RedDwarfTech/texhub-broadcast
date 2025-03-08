@@ -33,6 +33,7 @@ const handleFileSync = async (docName: string, ldb: PostgresqlPersistance) => {
       );
       return;
     }
+    let textContext = text.toString();
     let projectId = fileContent.result.project_id;
     let fileName = fileContent.result.name;
     let filePath = fileContent.result.file_path;
@@ -48,7 +49,7 @@ const handleFileSync = async (docName: string, ldb: PostgresqlPersistance) => {
         logger.error("craete directory failed,", error);
       }
     });
-    fs.writeFile(path.join(folderPath, fileName), text.toString(), (err) => {
+    fs.writeFile(path.join(folderPath, fileName), textContext, (err) => {
       if (err) {
         logger.error("Failed to write file:", err);
       }
