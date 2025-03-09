@@ -27,13 +27,15 @@ export class PostgresqlPersistance {
     this.pool = pool;
   }
 
-  async getYDoc(docName: string) :Promise<Y.Doc>{
+  async getYDoc(docName: string): Promise<Y.Doc> {
     const updates: Array<TeXSync> = await getDocAllUpdates(this.pool, docName);
     const ydoc = new Y.Doc();
     ydoc.transact(() => {
       try {
         for (let i = 0; i < updates.length; i++) {
-          Y.applyUpdate(ydoc, updates[i].value);
+          let update: TeXSync = updates[i];
+          let updateVal = update.value;
+          Y.applyUpdate(ydoc, updateVal);
         }
       } catch (err) {
         logger.error("apply update failed", err);
