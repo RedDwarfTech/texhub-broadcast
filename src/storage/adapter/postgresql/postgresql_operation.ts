@@ -186,7 +186,9 @@ export const storeUpdate = async (
   const uniqueValue = uuidv4();
   try {
     if (await getLock(docName, uniqueValue, 0)) {
+      console.time("getlock");
       const clock = await getCurrentUpdateClock(db, docName);
+      console.timeEnd("getlock");
       if (clock === -1) {
         // make sure that a state vector is aways written, so we can search for available documents
         const ydoc = new Y.Doc();
