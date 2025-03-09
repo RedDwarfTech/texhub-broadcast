@@ -1,6 +1,6 @@
 const persistenceDir = process.env.YPERSISTENCE;
 // @ts-ignore
-import * as Y from "yjs";
+import { default as Y } from 'yjs';
 import { throttledFn } from "./appfile.js";
 import { Persistence } from "../model/yjs/Persistence.js";
 import { PostgresqlPersistance } from "./adapter/postgresql/postgresql_persistance.js";

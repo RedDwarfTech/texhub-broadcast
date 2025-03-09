@@ -3,7 +3,7 @@ import defaultLevel from "level";
 import pg from "pg";
 const { Pool } = pg;
 // @ts-ignore
-import * as Y from "yjs";
+import { default as Y } from 'yjs';
 import {
   flushDocument,
   getCurrentUpdateClock,
