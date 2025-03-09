@@ -1,10 +1,8 @@
-// @ts-ignore
+import { PostgresqlPersistance } from "../../storage/adapter/postgresql/postgresql_persistance";
 import * as Y from "yjs";
-// @ts-ignore
-import { LeveldbPersistence } from "y-leveldb";
 
 export type Persistence = {
-  provider: LeveldbPersistence;
+  provider: PostgresqlPersistance;
   bindState:  (docName: string, ydoc: Y.Doc) => Promise<void>;
   writeState: (docName: string, ydoc: Y.Doc) => Promise<void>;
 }
