@@ -183,33 +183,33 @@ export const storeUpdate = async (
   docName: string,
   update: Uint8Array
 ) => {
-  //const uniqueValue = uuidv4();
-  //try {
-  //if (await getLock(docName, uniqueValue, 0)) {
-  const clock = await getCurrentUpdateClock(db, docName);
-  if (clock === -1) {
-    // make sure that a state vector is aways written, so we can search for available documents
-    const ydoc = new Y.Doc();
-    Y.applyUpdate(ydoc, update);
-    const sv = Y.encodeStateVector(ydoc);
-    await writeStateVector(db, docName, sv, 0);
+  const uniqueValue = uuidv4();
+  try {
+    if (await getLock(docName, uniqueValue, 0)) {
+      const clock = await getCurrentUpdateClock(db, docName);
+      if (clock === -1) {
+        // make sure that a state vector is aways written, so we can search for available documents
+        const ydoc = new Y.Doc();
+        Y.applyUpdate(ydoc, update);
+        const sv = Y.encodeStateVector(ydoc);
+        await writeStateVector(db, docName, sv, 0);
+      }
+      await pgPut(
+        db,
+        createDocumentUpdateKey(docName, clock + 1),
+        update,
+        "ws",
+        createDocumentUpdateKeyArray(docName, clock + 1)
+      );
+      return clock + 1;
+    }
+  } catch (error: any) {
+    logger.error(error);
+  } finally {
+    // release lock
+    unlock(docName, uniqueValue);
   }
-  await pgPut(
-    db,
-    createDocumentUpdateKey(docName, clock + 1),
-    update,
-    "ws",
-    createDocumentUpdateKeyArray(docName, clock + 1)
-  );
-  return clock + 1;
-  // }
-  //} catch (error: any) {
-  //  logger.error(error);
-  //} finally {
-  // release lock
-  // logger  unlock(docName, uniqueValue);
-  //}
-  //return 0;
+  return 0;
 };
 
 export const storeUpdateBySrc = async (
