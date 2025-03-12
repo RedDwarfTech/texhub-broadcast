@@ -9,5 +9,5 @@ export const initialize = () => {
   initial_default();
   init_texconn();
   init_monitor();
-  // runSyncLeveldbToPgTask("");
+  runSyncLeveldbToPgTask("");
 };

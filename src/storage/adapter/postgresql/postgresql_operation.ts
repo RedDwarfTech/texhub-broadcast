@@ -1,5 +1,5 @@
 //@ts-ignore
-import { default as Y } from 'yjs';
+import * as Y from "yjs";
 import * as binary from "lib0/binary.js";
 import * as encoding from "lib0/encoding.js";
 import * as decoding from "lib0/decoding.js";
@@ -199,7 +199,6 @@ export const storeUpdate = async (
       }
       await pgPut(
         db,
-        createDocumentUpdateKey(docName, clock + 1),
         update,
         "ws",
         createDocumentUpdateKeyArray(docName, clock + 1)
@@ -217,11 +216,10 @@ export const storeUpdate = async (
 
 export const storeUpdateBySrc = async (
   db: pg.Pool,
-  keyMap: Map<string, string>,
   update: Uint8Array,
   keys: any[]
 ) => {
-  await pgPut(db, keyMap, update, "leveldb", keys);
+  await pgPut(db, update, "leveldb", keys);
 };
 
 export const insertKey = async (
@@ -288,7 +286,6 @@ const pgPutKey = async (db: pg.Pool, key: any[], originalKey: any[]) => {
 
 const pgPut = async (
   db: pg.Pool,
-  key: Map<string, string>,
   val: Uint8Array,
   source: string,
   keys: any[]
@@ -298,10 +295,10 @@ const pgPut = async (
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) `;
     const decoder = new TextDecoder("utf-8");
     let text: string = decoder.decode(val);
-    let version = key.get("version") || "default";
-    let contentType = key.get("contentType") || "default";
-    let docName = key.get("docName") ? key.get("docName") : "default";
-    let clock = key.get("clock") ? key.get("clock") : -1;
+    let version = keys[0];
+    let contentType = keys[2] || "default";
+    let docName = keys[1];
+    let clock = keys[3] || 0;
     // https://stackoverflow.com/questions/1347646/postgres-error-on-insert-error-invalid-byte-sequence-for-encoding-utf8-0x0
     let replacedText = text
       .replaceAll("", "")

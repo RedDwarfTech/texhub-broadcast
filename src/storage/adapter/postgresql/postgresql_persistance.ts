@@ -3,7 +3,7 @@ import defaultLevel from "level";
 import pg from "pg";
 const { Pool } = pg;
 // @ts-ignore
-import { default as Y } from 'yjs';
+import * as Y from "yjs";
 import {
   flushDocument,
   getCurrentUpdateClock,
@@ -34,7 +34,7 @@ export class PostgresqlPersistance {
       try {
         for (let i = 0; i < updates.length; i++) {
           let update: TeXSync = updates[i];
-          let updateVal = update.value;
+          let updateVal: Uint8Array = update.value;
           Y.applyUpdate(ydoc, updateVal);
         }
       } catch (err) {
@@ -85,10 +85,9 @@ export class PostgresqlPersistance {
 
   async storeUpdateWithSource(
     keys: any[],
-    update: Uint8Array,
-    keyMap: Map<string, string>
+    update: Uint8Array
   ) {
-    return await storeUpdateBySrc(this.pool, keyMap, update, keys);
+    return await storeUpdateBySrc(this.pool, update, keys);
   }
 
   async insertKeys(keyMap: any[], originalKey: any[]) {

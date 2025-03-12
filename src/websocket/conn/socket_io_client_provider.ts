@@ -1,7 +1,7 @@
 // @ts-ignore
 import { Observable } from "lib0/observable";
 // @ts-ignore
-import { default as Y } from 'yjs';
+import * as Y from "yjs";
 // @ts-ignore
 import * as awarenessProtocol from "y-protocols/awareness";
 import {

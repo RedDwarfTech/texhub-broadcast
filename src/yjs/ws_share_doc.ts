@@ -1,5 +1,5 @@
 // @ts-ignore
-import { default as Y } from 'yjs';
+import * as Y from "yjs";
 // @ts-ignore
 import {
   createEncoder,

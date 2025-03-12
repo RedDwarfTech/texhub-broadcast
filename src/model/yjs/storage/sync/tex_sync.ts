@@ -1,7 +1,7 @@
 export interface TeXSync { 
     id: number; 
     key: any;
-    value: any;
+    value: Uint8Array;
     clock: number;
     doc_name: string;
 }
