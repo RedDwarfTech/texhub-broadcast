@@ -139,7 +139,6 @@ const getLock = async (docName: string, uniqueValue: string, times: number) => {
     arguments: [uniqueValue, `${expireTime}`],
   });
   if (result === 1) {
-    logger.info(`[s] 已获取锁 ${lockKey}`);
     return true;
   } else {
     logger.warn(`[x] 无法获取锁 ${lockKey}`);
@@ -173,9 +172,8 @@ async function unlock(docName: string, uniqueValue: string) {
   });
 
   if (result === 1) {
-    console.log("[s] 锁释放成功");
   } else {
-    console.log("[x] 锁释放失败，可能锁已经被其他客户端更新");
+    logger.error("[x] 锁释放失败，可能锁已经被其他客户端更新");
   }
 }
 

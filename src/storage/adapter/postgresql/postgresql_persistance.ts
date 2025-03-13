@@ -1,5 +1,3 @@
-// @ts-ignore
-import defaultLevel from "level";
 import pg from "pg";
 const { Pool } = pg;
 // @ts-ignore
@@ -22,7 +20,7 @@ import logger from "../../../common/log4js_config.js";
 export class PostgresqlPersistance {
   pool: pg.Pool;
 
-  constructor({ level = defaultLevel, levelOptions = {} } = {}) {
+  constructor() {
     const pool = new Pool(dbConfig);
     this.pool = pool;
   }

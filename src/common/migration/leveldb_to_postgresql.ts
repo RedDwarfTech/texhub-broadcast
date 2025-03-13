@@ -17,8 +17,6 @@ const postgresqlDb: PostgresqlPersistance = new PostgresqlPersistance();
 export function iterateAllLeveldbKeys() {
   const keyStream = db.createKeyStream();
   keyStream.on("data", async (key: any) => {
-    let partsOrigin: any[] = keyEncoding.decode(key);
-    await postgresqlDb.insertKeys(partsOrigin, partsOrigin);
     db.get(key, async function (err: any, value: any) {
       if (err) {
         return logger.error("Ooops!", err);
