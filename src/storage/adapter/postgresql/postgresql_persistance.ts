@@ -16,13 +16,16 @@ import { dbConfig } from "./db_config.js";
 import { PREFERRED_TRIM_SIZE } from "./postgresql_const.js";
 import { TeXSync } from "../../../model/yjs/storage/sync/tex_sync.js";
 import logger from "../../../common/log4js_config.js";
+import PQueue from "p-queue";
 
 export class PostgresqlPersistance {
   pool: pg.Pool;
+  queue: PQueue;
 
   constructor() {
     const pool = new Pool(dbConfig);
     this.pool = pool;
+    this.queue = new PQueue({ concurrency: 1 });
   }
 
   async getYDoc(docName: string): Promise<Y.Doc> {
@@ -75,16 +78,18 @@ export class PostgresqlPersistance {
 
   async storeUpdate(docName: string, update: Uint8Array) {
     try {
-      return await storeUpdate(this.pool, docName, update);
+      (async () => {
+        await this.queue.add(async () => {
+          await storeUpdate(this.pool, docName, update);
+        });
+        logger.log("Done: store" + docName);
+      })();
     } catch (error) {
       logger.error("store update failed", error);
     }
   }
 
-  async storeUpdateWithSource(
-    keys: any[],
-    update: Uint8Array
-  ) {
+  async storeUpdateWithSource(keys: any[], update: Uint8Array) {
     return await storeUpdateBySrc(this.pool, update, keys);
   }
 

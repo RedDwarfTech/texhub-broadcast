@@ -1,7 +1,7 @@
 // @ts-ignore
 import awarenessProtocol from "y-protocols/dist/awareness.cjs";
-import { docs, messageSync } from "../../yjs/yjs_utils.js";
-import { WSSharedDoc } from "../../yjs/ws_share_doc.js";
+import { docs, messageSync } from "../../collar/yjs_utils.js";
+import { WSSharedDoc } from "../../collar/ws_share_doc.js";
 import log4js from "log4js";
 import { persistencePostgresql } from "../../storage/storage.js";
 import { Socket } from "socket.io";
