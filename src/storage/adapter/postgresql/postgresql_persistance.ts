@@ -17,15 +17,20 @@ import { PREFERRED_TRIM_SIZE } from "./postgresql_const.js";
 import { TeXSync } from "../../../model/yjs/storage/sync/tex_sync.js";
 import logger from "../../../common/log4js_config.js";
 import PQueue from "p-queue";
+import { LRUCache } from 'lru-cache';
 
 export class PostgresqlPersistance {
   pool: pg.Pool;
   queue: PQueue;
+  queueMap: LRUCache<string, PQueue>;
 
   constructor() {
     const pool = new Pool(dbConfig);
     this.pool = pool;
     this.queue = new PQueue({ concurrency: 1 });
+    this.queueMap = new LRUCache({
+      max: 100, // 最大缓存数量
+    });
   }
 
   async getYDoc(docName: string): Promise<Y.Doc> {
@@ -78,12 +83,22 @@ export class PostgresqlPersistance {
 
   async storeUpdate(docName: string, update: Uint8Array) {
     try {
-      (async () => {
-        await this.queue.add(async () => {
-          await storeUpdate(this.pool, docName, update);
-        });
-        logger.log("Done: store" + docName);
-      })();
+      const cacheQueue = this.queueMap.get(docName);
+      if (cacheQueue) {
+        (async () => {
+          await cacheQueue.add(async () => {
+            await storeUpdate(this.pool, docName, update);
+          });
+        })();
+      } else {
+        const queue = new PQueue({ concurrency: 1 });
+        this.queueMap.set(docName, queue);
+        (async () => {
+          await queue.add(async () => {
+            await storeUpdate(this.pool, docName, update);
+          });
+        })();
+      }
     } catch (error) {
       logger.error("store update failed", error);
     }
