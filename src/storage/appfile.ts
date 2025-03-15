@@ -25,26 +25,20 @@ const handleFileSync = async (docName: string, ldb: PostgresqlPersistance) => {
      */
     const persistedYdoc: Y.Doc = await ldb.getYDoc(docName);
     let text: Y.Text = persistedYdoc.getText(docName);
-    if(text == null) {
+    if (text == null) {
       logger.error("text is null");
       return;
     }
-    if(text == undefined) {
+    if (text == undefined) {
       logger.error("text is undefined");
       return;
     }
-    let fileContent: AppResponse<FileContent> = await getFileJsonData(docName);
-    if (!fileContent) {
-      logger.error(
-        `get file info failed，file info: ${fileContent},docName:${docName}`
-      );
-      return;
-    }
+    let fileInfo = await getTexFileInfo(docName);
     let textContext = text.toString();
-    let projectId = fileContent.result.project_id;
-    let fileName = fileContent.result.name;
-    let filePath = fileContent.result.file_path;
-    let date = new Date(fileContent.result.project_created_time);
+    let projectId = fileInfo.project_id;
+    let fileName = fileInfo.name;
+    let filePath = fileInfo.file_path;
+    let date = new Date(fileInfo.project_created_time);
     const year = date.getFullYear();
     const month = date.getMonth() + 1;
     let folderPath = path.join(
@@ -61,9 +55,9 @@ const handleFileSync = async (docName: string, ldb: PostgresqlPersistance) => {
         logger.error("Failed to write file:", err);
       }
     });
-    let ct = fileContent.result.created_time;
-    let ut = fileContent.result.updated_time;
-    let fid = fileContent.result.file_id;
+    let ct = fileInfo.created_time;
+    let ut = fileInfo.updated_time;
+    let fid = fileInfo.file_id;
     let file = {
       name: fileName,
       created_time: ct,
@@ -77,4 +71,14 @@ const handleFileSync = async (docName: string, ldb: PostgresqlPersistance) => {
   } catch (err) {
     logger.error("Failed to sync file to disk", err);
   }
+};
+
+export const getTexFileInfo = async (docName: string): Promise<FileContent> => {
+  let fileContent: AppResponse<FileContent> = await getFileJsonData(docName);
+  if (!fileContent) {
+    logger.error(
+      `get file info failed，file info: ${fileContent},docName:${docName}`
+    );
+  }
+  return fileContent.result;
 };

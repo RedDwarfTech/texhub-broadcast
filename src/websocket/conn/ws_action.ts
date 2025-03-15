@@ -13,6 +13,7 @@ import decoding from "lib0/dist/decoding.cjs";
 // @ts-ignore
 import syncProtocol from "y-protocols/dist/sync.cjs";
 import { SyncMessageType } from "../../model/texhub/sync_msg_type.js";
+import { getTexFileInfo } from "src/storage/appfile.js";
 
 const wsReadyStateOpen = 1;
 
@@ -35,7 +36,11 @@ export const closeConn = (doc: WSSharedDoc, conn: Socket) => {
   }
 };
 
-export const sendWithType = (doc: WSSharedDoc, conn: Socket, m: Uint8Array) => {
+export const sendWithType = async (
+  doc: WSSharedDoc,
+  conn: Socket,
+  m: Uint8Array
+) => {
   try {
     if (conn.connected) {
       // https://stackoverflow.com/questions/16518153/get-connection-status-on-socket-io-client
@@ -52,13 +57,19 @@ export const sendWithType = (doc: WSSharedDoc, conn: Socket, m: Uint8Array) => {
   }
 };
 
-export const send = (doc: WSSharedDoc, conn: Socket, m: Uint8Array) => {
+export const send = async (doc: WSSharedDoc, conn: Socket, m: Uint8Array) => {
   try {
     if (conn.connected) {
       // https://stackoverflow.com/questions/16518153/get-connection-status-on-socket-io-client
       conn.send(m);
     } else {
-      logger.warn("connection state is not open, doc:" + doc.name);
+      let fileInfo = await getTexFileInfo(doc.name);
+      logger.warn(
+        "connection state is not open, doc:" +
+          doc.name +
+          ",file info:" +
+          fileInfo.name
+      );
       closeConn(doc, conn);
     }
   } catch (e) {
