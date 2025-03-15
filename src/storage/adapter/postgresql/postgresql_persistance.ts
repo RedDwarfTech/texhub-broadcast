@@ -21,13 +21,11 @@ import { LRUCache } from 'lru-cache';
 
 export class PostgresqlPersistance {
   pool: pg.Pool;
-  queue: PQueue;
   queueMap: LRUCache<string, PQueue>;
 
   constructor() {
     const pool = new Pool(dbConfig);
     this.pool = pool;
-    this.queue = new PQueue({ concurrency: 1 });
     this.queueMap = new LRUCache({
       max: 100, // 最大缓存数量
     });
@@ -81,28 +79,28 @@ export class PostgresqlPersistance {
     }
   }
 
-  async storeUpdate(docName: string, update: Uint8Array) {
-    try {
-      const cacheQueue = this.queueMap.get(docName);
-      if (cacheQueue) {
-        (async () => {
-          await cacheQueue.add(async () => {
-            await storeUpdate(this.pool, docName, update);
-          });
-        })();
-      } else {
-        const queue = new PQueue({ concurrency: 1 });
-        this.queueMap.set(docName, queue);
-        (async () => {
-          await queue.add(async () => {
-            await storeUpdate(this.pool, docName, update);
-          });
-        })();
-      }
-    } catch (error) {
-      logger.error("store update failed", error);
+async storeUpdate(docName: string, update: Uint8Array) {
+  try {
+    const cacheQueue = this.queueMap.get(docName);
+    if (cacheQueue) {
+      (async () => {
+        await cacheQueue.add(async () => {
+          await storeUpdate(this.pool, docName, update);
+        });
+      })();
+    } else {
+      const queue = new PQueue({ concurrency: 1 });
+      this.queueMap.set(docName, queue);
+      (async () => {
+        await queue.add(async () => {
+          await storeUpdate(this.pool, docName, update);
+        });
+      })();
     }
+  } catch (error) {
+    logger.error("store update failed", error);
   }
+}
 
   async storeUpdateWithSource(keys: any[], update: Uint8Array) {
     return await storeUpdateBySrc(this.pool, update, keys);
