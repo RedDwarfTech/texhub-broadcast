@@ -13,7 +13,7 @@ import decoding from "lib0/dist/decoding.cjs";
 // @ts-ignore
 import syncProtocol from "y-protocols/dist/sync.cjs";
 import { SyncMessageType } from "../../model/texhub/sync_msg_type.js";
-import { getTexFileInfo } from "src/storage/appfile.js";
+import { getTexFileInfo } from "../../storage/appfile.js";
 
 const wsReadyStateOpen = 1;
 
