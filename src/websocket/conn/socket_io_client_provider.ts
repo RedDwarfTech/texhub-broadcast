@@ -35,6 +35,7 @@ import { math } from "lib0";
 import { WsParam } from "../../model/texhub/ws_param";
 import { MySocket } from "../../types/textypes";
 import { toJSON } from "flatted";
+import { SyncMessageType } from "../../model/texhub/sync_msg_type";
 
 export const messageSync = 0;
 export const messageQueryAwareness = 3;
@@ -150,6 +151,18 @@ const broadcastMessage = (
   }
   if (provider.bcconnected) {
     bc.publish(provider.bcChannel, buf, provider);
+  }
+};
+
+/**
+ * send message without broadcast
+ * @param {WebsocketProvider} provider
+ * @param {ArrayBuffer} buf
+ */
+const sendMessage = (provider: SocketIOClientProvider, buf: ArrayBuffer) => {
+  const ws = provider.ws;
+  if (provider.wsconnected && ws && ws.connected) {
+    ws.send(buf);
   }
 };
 
@@ -292,6 +305,7 @@ export class SocketIOClientProvider extends Observable<string> {
   _resyncInterval: any;
   _bcSubscriber: (data: any, origin: any) => void;
   _updateHandler: (update: any, origin: any) => void;
+  sendExtMsg: (msg: any) => void;
   _awarenessUpdateHandler: (
     { added, updated, removed }: { added: any; updated: any; removed: any },
     _origin: any
@@ -389,6 +403,17 @@ export class SocketIOClientProvider extends Observable<string> {
       }
     };
     this.doc.on("update", this._updateHandler);
+    /**
+     * send control message to the server side
+     */
+    this.sendExtMsg = (msg: string) => {
+      const encoded = new TextEncoder().encode(msg);
+      const encoder = encoding.createEncoder();
+      encoding.writeVarUint(encoder, SyncMessageType.MessageControl);
+      syncProtocol.writeUpdate(encoder, encoded);
+      sendMessage(this, encoding.toUint8Array(encoder));
+    };
+
     /**
      * @param {any} changed
      * @param {any} _origin
