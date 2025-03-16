@@ -1,4 +1,4 @@
-import { AppControlType } from "./app_control_type";
+import { AppControlType } from "./app_control_type.js";
 
 export interface ControlMsg { 
     socketId: string;
