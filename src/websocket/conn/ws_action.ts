@@ -109,6 +109,12 @@ export const messageListener = (
         );
         break;
       }
+      case SyncMessageType.MessageControl: {
+        const decoder = new TextDecoder("utf-8");
+        const str = decoder.decode(message);
+        logger.info("receive control message:" + str);
+        break;
+      }
       default:
         logger.error("unknown message type", messageType);
         break;
