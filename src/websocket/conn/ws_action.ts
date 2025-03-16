@@ -14,6 +14,7 @@ import decoding from "lib0/dist/decoding.cjs";
 import syncProtocol from "y-protocols/dist/sync.cjs";
 import { SyncMessageType } from "../../model/texhub/sync_msg_type.js";
 import { getTexFileInfo } from "../../storage/appfile.js";
+import { handleControlSignals } from "./event/app_control_handler.js";
 
 const wsReadyStateOpen = 1;
 
@@ -113,6 +114,7 @@ export const messageListener = (
         const decoder = new TextDecoder("utf-8");
         const str = decoder.decode(message);
         logger.info("receive control message:" + str);
+        handleControlSignals(str, conn);
         break;
       }
       default:

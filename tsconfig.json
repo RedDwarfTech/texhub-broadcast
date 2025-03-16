@@ -13,7 +13,8 @@
     "baseUrl": ".",
     "paths": {
       "@controllers/*": ["src/controllers/*"],
-      "@websocket/*": ["src/websocket/*"]
+      "@websocket/*": ["src/websocket/*"],
+      "@common/*": ["src/common/*"]
     },
     "lib": ["DOM", "ES2021.String"],
     "sourceMap": true
