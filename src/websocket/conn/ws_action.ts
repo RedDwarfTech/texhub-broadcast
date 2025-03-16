@@ -112,11 +112,12 @@ export const messageListener = (
       }
       case SyncMessageType.MessageControl: {
         // const decoder = new TextDecoder("utf-8");
-        let msgContent = decoding.readVarUint8Array(decoder);
+        //let msgContent = decoding.readVarUint8Array(decoder);
         const decoderText = new TextDecoder("utf-8");
-        const str = decoderText.decode(msgContent);
+        const str = decoderText.decode(message);
+        const replacedText = str.replace(">","");
         logger.info("receive control message:" + str);
-        handleControlSignals(str, conn);
+        handleControlSignals(replacedText, conn);
         break;
       }
       default:
