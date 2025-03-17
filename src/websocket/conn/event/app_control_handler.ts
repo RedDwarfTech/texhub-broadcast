@@ -15,7 +15,11 @@ import decoding from "lib0/dist/decoding.cjs";
 export const handleControlSignals = (message: Uint8Array, conn: Socket) => {
   try {
     const decoder = decoding.createDecoder(message);
-    let msgContent = decoding.readVarUint8Array(decoder);
+    let msgContent = decoding.readVarString(decoder);
+    logger.info(
+      'Message content from server::',
+      decoding.readVarString(decoder)
+    );
     const decoderutf = new TextDecoder("utf-8");
     const str = decoderutf.decode(msgContent);
     console.log("decode:" + str);
