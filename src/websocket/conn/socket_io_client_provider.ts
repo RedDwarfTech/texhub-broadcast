@@ -179,15 +179,19 @@ const setupWS = (provider: SocketIOClientProvider) => {
     provider._synced = false;
 
     websocket.on("message", (data) => {
-      provider.emit("message", data);
-      debugger;
+      debugger
+      provider.emit("message", [
+        {
+          status: "message",
+        },
+      ]);
       console.log("socketioprovider received message:" + toJSON(data));
       provider.wsLastMessageReceived = time.getUnixTime();
       const encoder = readMessage(provider, new Uint8Array(data), true);
       if (encoding.length(encoder) > 1) {
         websocket.send(encoding.toUint8Array(encoder));
       }
-      // provider.emit("message", [data, provider]);
+      provider.emit("message", [data, provider]);
     });
     websocket.on("error", (event) => {
       provider.emit("connection-error", [event, provider]);
@@ -253,6 +257,11 @@ const setupWS = (provider: SocketIOClientProvider) => {
       provider.wsconnecting = false;
       provider.wsconnected = true;
       provider.wsUnsuccessfulReconnects = 0;
+      provider.emit("message", [
+        {
+          status: "message",
+        },
+      ]);
       provider.emit("status", [
         {
           status: "connected",
