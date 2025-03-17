@@ -407,9 +407,10 @@ export class SocketIOClientProvider extends Observable<string> {
      * send control message to the server side
      */
     this.sendExtMsg = (msg: string) => {
+      const encoded = new TextEncoder().encode(msg);
       const encoder = encoding.createEncoder();
       encoding.writeVarUint(encoder, SyncMessageType.MessageControl);
-      encoding.writeVarString(encoder, msg);
+      syncProtocol.writeUpdate(encoder, encoded);
       sendMessage(this, encoding.toUint8Array(encoder));
     };
 
