@@ -182,7 +182,7 @@ const setupWS = (provider: SocketIOClientProvider) => {
       debugger
       provider.emit("message", [
         {
-          status: "message",
+          status: "message-message",
         },
       ]);
       console.log("socketioprovider received message:" + toJSON(data));
@@ -257,11 +257,6 @@ const setupWS = (provider: SocketIOClientProvider) => {
       provider.wsconnecting = false;
       provider.wsconnected = true;
       provider.wsUnsuccessfulReconnects = 0;
-      provider.emit("message", [
-        {
-          status: "message",
-        },
-      ]);
       provider.emit("status", [
         {
           status: "connected",
