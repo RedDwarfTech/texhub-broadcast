@@ -29,29 +29,30 @@ import * as encoding from "lib0/encoding";
 import * as bc from "lib0/broadcastchannel";
 // @ts-ignore
 import * as time from "lib0/time";
-import { io, ManagerOptions, Socket, SocketOptions } from "socket.io-client";
+import { ManagerOptions, Socket, SocketOptions } from "socket.io-client";
 // @ts-ignore
 import { math } from "lib0";
 import { WsParam } from "../../model/texhub/ws_param";
 import { MySocket } from "../../types/textypes";
 import { toJSON } from "flatted";
 import { SyncMessageType } from "../../model/texhub/sync_msg_type";
+import { WsCommand } from "@common/ws/WsCommand";
+import logger from "@common/log4js_config";
 
-export const messageSync = 0;
 export const messageQueryAwareness = 3;
 export const messageAwareness = 1;
 export const messageAuth = 2;
 
 const messageHandlers: any[] = [];
 
-messageHandlers[messageSync] = (
+messageHandlers[SyncMessageType.MessageSync] = (
   encoder: any,
   decoder: any,
-  provider: any,
+  provider: SocketIOClientProvider,
   emitSynced: any,
-  _messageType: any
+  messageType: any
 ) => {
-  writeVarUint(encoder, messageSync);
+  writeVarUint(encoder, SyncMessageType.MessageSync);
   const syncMessageType = syncProtocol.readSyncMessage(
     decoder,
     encoder,
@@ -129,7 +130,7 @@ const readMessage = (
   const encoder = createEncoder();
   const messageType = readVarUint(decoder);
   const messageHandler = provider.messageHandlers[messageType];
-  if (/** @type {any} */ messageHandler) {
+  if (messageHandler) {
     messageHandler(encoder, decoder, provider, emitSynced, messageType);
   } else {
     console.error("Unable to compute message");
@@ -172,19 +173,13 @@ const sendMessage = (provider: SocketIOClientProvider, buf: ArrayBuffer) => {
 const setupWS = (provider: SocketIOClientProvider) => {
   if (provider.shouldConnect && provider.ws === null) {
     const websocket: Socket = new provider._WS(provider.url, provider.options);
-    // websocket.binaryType = "arraybuffer";
     provider.ws = websocket;
     provider.wsconnecting = true;
     provider.wsconnected = false;
-    provider._synced = false;
+    provider.synced = false;
 
     websocket.on("message", (data) => {
-      debugger
-      provider.emit("message", [
-        {
-          status: "message-message",
-        },
-      ]);
+      debugger;
       console.log("socketioprovider received message:" + toJSON(data));
       provider.wsLastMessageReceived = time.getUnixTime();
       const encoder = readMessage(provider, new Uint8Array(data), true);
@@ -202,7 +197,7 @@ const setupWS = (provider: SocketIOClientProvider) => {
       provider.wsconnecting = false;
       if (provider.wsconnected) {
         provider.wsconnected = false;
-        provider._synced = false;
+        provider.synced = false;
         // update awareness (all users except local left)
         awarenessProtocol.removeAwarenessStates(
           provider.awareness,
@@ -264,7 +259,7 @@ const setupWS = (provider: SocketIOClientProvider) => {
       ]);
       // always send sync step 1 when connected
       const encoder = encoding.createEncoder();
-      encoding.writeVarUint(encoder, messageSync);
+      encoding.writeVarUint(encoder, SyncMessageType.MessageSync);
       syncProtocol.writeSyncStep1(encoder, provider.doc);
       websocket.send(encoding.toUint8Array(encoder));
       // broadcast local awareness state
@@ -303,13 +298,13 @@ export class SocketIOClientProvider extends Observable<string> {
   disableBc: boolean;
   wsUnsuccessfulReconnects: number;
   messageHandlers: any;
-  _synced: boolean;
+  synced: boolean;
   ws: Socket | null;
   wsLastMessageReceived: number;
   shouldConnect: boolean;
   _resyncInterval: any;
-  _bcSubscriber: (data: any, origin: any) => void;
-  _updateHandler: (update: any, origin: any) => void;
+  bcSubscriber: (data: any, origin: any) => void;
+  updateHandler: (update: any, origin: any) => void;
   sendExtMsg: (msg: any) => void;
   _awarenessUpdateHandler: (
     { added, updated, removed }: { added: any; updated: any; removed: any },
@@ -357,7 +352,7 @@ export class SocketIOClientProvider extends Observable<string> {
     /**
      * @type {boolean}
      */
-    this._synced = false;
+    this.synced = false;
     this.ws = null;
     this.wsLastMessageReceived = 0;
     /**
@@ -375,7 +370,7 @@ export class SocketIOClientProvider extends Observable<string> {
         if (this.ws && this.ws.connected) {
           // resend sync step 1
           const encoder = createEncoder();
-          writeVarUint(encoder, messageSync);
+          writeVarUint(encoder, SyncMessageType.MessageSync);
           syncProtocol.writeSyncStep1(encoder, doc);
           this.ws.send(toUint8Array(encoder));
         }
@@ -386,7 +381,7 @@ export class SocketIOClientProvider extends Observable<string> {
      * @param {ArrayBuffer} data
      * @param {any} origin
      */
-    this._bcSubscriber = (data, origin) => {
+    this.bcSubscriber = (data: ArrayBuffer, origin: any) => {
       if (origin !== this) {
         const encoder = readMessage(this, new Uint8Array(data), false);
         if (encoding.length(encoder) > 1) {
@@ -394,29 +389,39 @@ export class SocketIOClientProvider extends Observable<string> {
         }
       }
     };
+
     /**
      * Listens to Yjs updates and sends them to remote peers (ws and broadcastchannel)
      * @param {Uint8Array} update
      * @param {any} origin
      */
-    this._updateHandler = (update: Uint8Array, origin: any) => {
+    this.updateHandler = (update: Uint8Array, origin: any) => {
       if (origin !== this) {
         const encoder = encoding.createEncoder();
-        encoding.writeVarUint(encoder, messageSync);
+        encoding.writeVarUint(encoder, SyncMessageType.MessageSync);
         syncProtocol.writeUpdate(encoder, update);
         broadcastMessage(this, encoding.toUint8Array(encoder));
       }
     };
-    this.doc.on("update", this._updateHandler);
+    this.doc.on("update", this.updateHandler);
+
     /**
      * send control message to the server side
      */
-    this.sendExtMsg = (msg: string) => {
-      const encoded = new TextEncoder().encode(msg);
+    this.sendExtMsg = (msg: WsCommand) => {
+      const encoded = new TextEncoder().encode(JSON.stringify(msg));
       const encoder = encoding.createEncoder();
       encoding.writeVarUint(encoder, SyncMessageType.MessageControl);
       syncProtocol.writeUpdate(encoder, encoded);
       sendMessage(this, encoding.toUint8Array(encoder));
+      let docOpt = {
+        guid: msg.fileId,
+        collectionid: msg.projectId,
+        gc: false,
+      };
+      let ydoc = new Y.Doc(docOpt);
+      logger.debug("set the currentdoc to" + msg.fileId);
+      this.doc = ydoc;
     };
 
     /**
@@ -481,18 +486,18 @@ export class SocketIOClientProvider extends Observable<string> {
       return;
     }
     if (!this.bcconnected) {
-      bc.subscribe(this.bcChannel, this._bcSubscriber);
+      bc.subscribe(this.bcChannel, this.bcSubscriber);
       this.bcconnected = true;
     }
     // send sync step1 to bc
     // write sync step 1
     const encoderSync = encoding.createEncoder();
-    encoding.writeVarUint(encoderSync, messageSync);
+    encoding.writeVarUint(encoderSync, SyncMessageType.MessageSync);
     syncProtocol.writeSyncStep1(encoderSync, this.doc);
     bc.publish(this.bcChannel, encoding.toUint8Array(encoderSync), this);
     // broadcast local state
     const encoderState = encoding.createEncoder();
-    encoding.writeVarUint(encoderState, messageSync);
+    encoding.writeVarUint(encoderState, SyncMessageType.MessageSync);
     syncProtocol.writeSyncStep2(encoderState, this.doc);
     bc.publish(this.bcChannel, encoding.toUint8Array(encoderState), this);
     // write queryAwareness
@@ -533,7 +538,7 @@ export class SocketIOClientProvider extends Observable<string> {
     );
     broadcastMessage(this, encoding.toUint8Array(encoder));
     if (this.bcconnected) {
-      bc.unsubscribe(this.bcChannel, this._bcSubscriber);
+      bc.unsubscribe(this.bcChannel, this.bcSubscriber);
       this.bcconnected = false;
     }
   }
