@@ -32,12 +32,12 @@ import * as time from "lib0/time";
 import { ManagerOptions, Socket, SocketOptions } from "socket.io-client";
 // @ts-ignore
 import { math } from "lib0";
-import { WsParam } from "../../model/texhub/ws_param";
-import { MySocket } from "../../types/textypes";
+import { WsParam } from "../../model/texhub/ws_param.js";
+import { MySocket } from "../../types/textypes.js";
 import { toJSON } from "flatted";
-import { SyncMessageType } from "../../model/texhub/sync_msg_type";
-import { WsCommand } from "@common/ws/WsCommand";
-import logger from "@common/log4js_config";
+import { SyncMessageType } from "../../model/texhub/sync_msg_type.js";
+import { WsCommand } from "@common/ws/WsCommand.js";
+import logger from "@common/log4js_config.js";
 
 export const messageQueryAwareness = 3;
 export const messageAwareness = 1;
