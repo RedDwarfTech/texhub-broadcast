@@ -37,7 +37,6 @@ import { MySocket } from "../../types/textypes.js";
 import { toJSON } from "flatted";
 import { SyncMessageType } from "../../model/texhub/sync_msg_type.js";
 import { WsCommand } from "@common/ws/WsCommand.js";
-import logger from "@common/log4js_config.js";
 
 export const messageQueryAwareness = 3;
 export const messageAwareness = 1;
@@ -420,7 +419,7 @@ export class SocketIOClientProvider extends Observable<string> {
         gc: false,
       };
       let ydoc = new Y.Doc(docOpt);
-      logger.debug("set the currentdoc to" + msg.fileId);
+      console.debug("set the currentdoc to" + msg.fileId);
       this.doc = ydoc;
     };
 
