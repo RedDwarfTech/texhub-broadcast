@@ -38,6 +38,22 @@ export const getDocAllUpdates = async (
   );
 };
 
+export const getPgUpdatesTrans = async (
+  db: pg.PoolClient,
+  docName: string,
+  opts = { values: true, keys: false, reverse: false, limit: 1 }
+) => {
+  return await getPgBulkDataTrans(
+    db,
+    {
+      gte: createDocumentUpdateKey(docName, 0),
+      lt: createDocumentUpdateKey(docName, binary.BITS32),
+      ...opts,
+    },
+    docName
+  );
+};
+
 export const getPgUpdates = async (
   db: pg.Pool,
   docName: string,
@@ -52,6 +68,48 @@ export const getPgUpdates = async (
     },
     docName
   );
+};
+
+export const getPgBulkDataTrans = async (
+  db: pg.PoolClient,
+  opts: any,
+  docName: string
+) => {
+  try {
+    let col = [];
+    col.push("id");
+    col.push("clock");
+    if (opts.values) {
+      col.push("value");
+    }
+    if (opts.keys) {
+      col.push("key");
+    }
+    let col_concat = col.join(",");
+    const queryPart = "select " + col_concat;
+    const fromPart = " from tex_sync ";
+    const filterPart =
+      " where doc_name = '" +
+      docName +
+      "' and content_type='" +
+      opts.gte.get("contentType") +
+      "' and clock>=0 and clock <" +
+      binary.BITS32;
+    let orderPart = " order by clock asc";
+    if (opts.reverse) {
+      orderPart = " order by clock desc";
+    }
+    let limitPart = "";
+    if (opts.limit) {
+      limitPart = " limit " + opts.limit;
+    }
+    const sql = queryPart + fromPart + filterPart + orderPart + limitPart;
+    let result: QueryResult<TeXSync> = await db.query(sql);
+    return result.rows;
+  } catch (err) {
+    console.error("Query error:", err);
+    throw err;
+  }
 };
 
 export const getPgBulkData = async (
@@ -177,6 +235,41 @@ async function unlock(docName: string, uniqueValue: string) {
   }
 }
 
+export const storeUpdateTrans = async (
+  db: pg.PoolClient,
+  docName: string,
+  update: Uint8Array
+) => {
+  const uniqueValue = uuidv4();
+  try {
+    if (await getLock(docName, uniqueValue, 0)) {
+      console.time("getlock");
+      const clock = await getCurrentUpdateClockTrans(db, docName);
+      console.timeEnd("getlock");
+      if (clock === -1) {
+        // make sure that a state vector is aways written, so we can search for available documents
+        const ydoc = new Y.Doc();
+        Y.applyUpdate(ydoc, update);
+        const sv = Y.encodeStateVector(ydoc);
+        await writeStateVectorTrans(db, docName, sv, 0);
+      }
+      await pgPutTrans(
+        db,
+        update,
+        "ws",
+        createDocumentUpdateKeyArray(docName, clock + 1)
+      );
+      return clock + 1;
+    }
+  } catch (error: any) {
+    logger.error(error);
+  } finally {
+    // release lock
+    unlock(docName, uniqueValue);
+  }
+  return 0;
+};
+
 export const storeUpdate = async (
   db: pg.Pool,
   docName: string,
@@ -226,6 +319,24 @@ export const insertKey = async (
   originalKey: any[]
 ) => {
   await pgPutKey(db, keyMap, originalKey);
+};
+
+const writeStateVectorTrans = async (
+  db: pg.PoolClient,
+  docName: string,
+  sv: any,
+  clock: number
+) => {
+  const encoder = encoding.createEncoder();
+  encoding.writeVarUint(encoder, clock);
+  encoding.writeVarUint8Array(encoder, sv);
+  await pgPutUpsertTrans(
+    db,
+    createDocumentStateVectorKeyMap(docName, clock),
+    encoding.toUint8Array(encoder),
+    "ws",
+    createDocumentStateVectorKey(docName)
+  );
 };
 
 const writeStateVector = async (
@@ -282,6 +393,45 @@ const pgPutKey = async (db: pg.Pool, key: any[], originalKey: any[]) => {
   }
 };
 
+const pgPutTrans = async (
+  db: pg.PoolClient,
+  val: Uint8Array,
+  source: string,
+  keys: any[]
+) => {
+  try {
+    const query = `INSERT INTO tex_sync (key, value, plain_value, version, content_type, doc_name, clock, source) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) `;
+    const decoder = new TextDecoder("utf-8");
+    let text: string = decoder.decode(val);
+    let version = keys[0];
+    let contentType = keys[2] || "default";
+    let docName = keys[1];
+    let clock = keys[3] || 0;
+    // https://stackoverflow.com/questions/1347646/postgres-error-on-insert-error-invalid-byte-sequence-for-encoding-utf8-0x0
+    let replacedText = text
+      .replaceAll("", "")
+      .replaceAll("0x00", "")
+      .replaceAll(/\u0000/g, "");
+    const values = [
+      JSON.stringify(keys),
+      Buffer.from(val),
+      replacedText,
+      version,
+      contentType,
+      docName,
+      clock,
+      source,
+    ];
+    const res: pg.QueryResult<any> = await db.query(query, values);
+  } catch (err: any) {
+    logger.error(
+      "Insert tex sync record error:" + JSON.stringify(keys) + ",val:" + val,
+      err.stack
+    );
+  }
+};
+
 const pgPut = async (
   db: pg.Pool,
   val: Uint8Array,
@@ -318,6 +468,48 @@ const pgPut = async (
       "Insert tex sync record error:" + JSON.stringify(keys) + ",val:" + val,
       err.stack
     );
+  }
+};
+
+const pgPutUpsertTrans = async (
+  db: pg.PoolClient,
+  key: Map<string, string>,
+  val: Uint8Array,
+  source: string,
+  keys: any[]
+) => {
+  try {
+    const query = `INSERT INTO tex_sync (key, value, plain_value, version, content_type, doc_name, clock, source) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+      ON CONFLICT (key) DO UPDATE 
+      SET value = $2, plain_value = $3`;
+    const decoder = new TextDecoder("utf-8");
+    let content = String.fromCharCode(...new Uint8Array(val));
+    // let decodedUpdate = Y.decodeUpdateV2(val);
+    logger.info("decoded update:" + content);
+    let text: string = decoder.decode(val);
+    let version = key.get("version") || "default";
+    let contentType = key.get("contentType") || "default";
+    let docName = key.get("docName") ? key.get("docName") : "default";
+    let clock = key.get("clock") ? key.get("clock") : -1;
+    // https://stackoverflow.com/questions/1347646/postgres-error-on-insert-error-invalid-byte-sequence-for-encoding-utf8-0x0
+    let replacedText = content
+      .replaceAll("", "")
+      .replaceAll("0x00", "")
+      .replaceAll(/\u0000/g, "");
+    const values = [
+      JSON.stringify(keys),
+      Buffer.from(val),
+      replacedText,
+      version,
+      contentType,
+      docName,
+      clock,
+      source,
+    ];
+    const res: pg.QueryResult<any> = await db.query(query, values);
+  } catch (err: any) {
+    logger.error("Insert pgPutUpsert error:" + JSON.stringify(keys), err.stack);
   }
 };
 
@@ -360,6 +552,24 @@ const pgPutUpsert = async (
     const res: pg.QueryResult<any> = await db.query(query, values);
   } catch (err: any) {
     logger.error("Insert pgPutUpsert error:" + JSON.stringify(keys), err.stack);
+  }
+};
+
+export const getCurrentUpdateClockTrans = async (
+  db: pg.PoolClient,
+  docName: string
+): Promise<number> => {
+  const result: any[] = await getPgUpdatesTrans(db, docName, {
+    keys: true,
+    values: false,
+    reverse: true,
+    limit: 1,
+  });
+  if (result && result.length > 0) {
+    return result[0].clock;
+  } else {
+    // the document does not exist yet.
+    return -1;
   }
 };
 

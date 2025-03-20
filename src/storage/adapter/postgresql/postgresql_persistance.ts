@@ -11,13 +11,14 @@ import {
   readStateVector,
   storeUpdate,
   storeUpdateBySrc,
+  storeUpdateTrans,
 } from "./postgresql_operation.js";
 import { dbConfig } from "./db_config.js";
 import { PREFERRED_TRIM_SIZE } from "./postgresql_const.js";
 import { TeXSync } from "../../../model/yjs/storage/sync/tex_sync.js";
 import logger from "../../../common/log4js_config.js";
 import PQueue from "p-queue";
-import { LRUCache } from 'lru-cache';
+import { LRUCache } from "lru-cache";
 
 export class PostgresqlPersistance {
   pool: pg.Pool;
@@ -79,28 +80,42 @@ export class PostgresqlPersistance {
     }
   }
 
-async storeUpdate(docName: string, update: Uint8Array) {
-  try {
-    const cacheQueue = this.queueMap.get(docName);
-    if (cacheQueue) {
-      (async () => {
-        await cacheQueue.add(async () => {
-          await storeUpdate(this.pool, docName, update);
-        });
-      })();
-    } else {
-      const queue = new PQueue({ concurrency: 1 });
-      this.queueMap.set(docName, queue);
-      (async () => {
-        await queue.add(async () => {
-          await storeUpdate(this.pool, docName, update);
-        });
-      })();
+  async storeUpdateTrans(docName: string, update: Uint8Array) {
+    const client: pg.PoolClient = await this.pool.connect();
+    try {
+      await client.query('BEGIN')
+      await storeUpdateTrans(client, docName, update);
+      await client.query('COMMIT')
+    } catch (e) {
+      await client.query('ROLLBACK')
+      throw e
+    } finally {
+      client.release()
     }
-  } catch (error) {
-    logger.error("store update failed", error);
   }
-}
+
+  async storeUpdate(docName: string, update: Uint8Array) {
+    try {
+      const cacheQueue = this.queueMap.get(docName);
+      if (cacheQueue) {
+        (async () => {
+          await cacheQueue.add(async () => {
+            await storeUpdate(this.pool, docName, update);
+          });
+        })();
+      } else {
+        const queue = new PQueue({ concurrency: 1 });
+        this.queueMap.set(docName, queue);
+        (async () => {
+          await queue.add(async () => {
+            await storeUpdate(this.pool, docName, update);
+          });
+        })();
+      }
+    } catch (error) {
+      logger.error("store update failed", error);
+    }
+  }
 
   async storeUpdateWithSource(keys: any[], update: Uint8Array) {
     return await storeUpdateBySrc(this.pool, update, keys);
