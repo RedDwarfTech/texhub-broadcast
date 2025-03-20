@@ -21,14 +21,6 @@ if (typeof persistenceDir === "string") {
         await postgresqlDb.storeUpdate(docName, newUpdates);
         Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(persistedYdoc));
         ydoc.on("update", async (update: Uint8Array) => {
-          const decoder = decoding.createDecoder(update);
-          const dec = new Y.UpdateDecoderV2(decoder);
-          const info = dec.readInfo();
-          switch (binary.BITS5 & info) {
-            case 0: {
-              logger.warn("gc object");
-            }
-          }
           await postgresqlDb.storeUpdate(docName, update);
           if (persistedYdoc) {
             throttledFn(docName, postgresqlDb);
