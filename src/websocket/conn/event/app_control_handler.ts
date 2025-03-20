@@ -15,6 +15,7 @@ import decoding from "lib0/dist/decoding.cjs";
 export const handleControlSignals = (message: Uint8Array, conn: Socket) => {
   try {
     const decoder = decoding.createDecoder(message);
+    syncProtocol.readUpdate();
     let msgContent = decoding.readVarString(decoder);
     logger.info(
       'Message content from server::',
