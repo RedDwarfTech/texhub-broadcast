@@ -176,12 +176,11 @@ export const flushDocument = async (
   return clock;
 };
 
-const getLock = async (docName: string, uniqueValue: string, times: number) => {
+const getLock = async (lockKey: string, uniqueValue: string, times: number) => {
   if (times > 15) {
     logger.error("could not get lock wih 15 times retry");
     return false;
   }
-  const lockKey = `lock:${docName + ":update"}`;
   // the expire time is seconds
   const expireTime = 5;
   // Lua脚本用于原子获取锁
@@ -202,7 +201,7 @@ const getLock = async (docName: string, uniqueValue: string, times: number) => {
   } else {
     logger.warn(`[x] 无法获取锁 ${lockKey}`);
     await sleep(1000);
-    return getLock(docName, uniqueValue, times + 1);
+    return getLock(lockKey, uniqueValue, times + 1);
   }
 };
 
@@ -216,8 +215,7 @@ function sleep(delay: number) {
  * @param uniqueValue 唯一值，用于验证锁的所有者(建议:UUID)
  * @returns 是否成功释放锁
  */
-async function unlock(docName: string, uniqueValue: string) {
-  const lockKey = `lock:${docName + "-update"}`;
+async function unlock(lockKey: string, uniqueValue: string) {
   const luaScript = `
     if redis.call("GET", KEYS[1]) == ARGV[1] then
       return redis.call("DEL", KEYS[1])
@@ -266,8 +264,9 @@ export const storeUpdate = async (
   update: Uint8Array
 ) => {
   const uniqueValue = uuidv4();
+  const lockKey = `lock:${docName}:update`;
   try {
-    if (await getLock(docName, uniqueValue, 0)) {
+    if (await getLock(lockKey, uniqueValue, 0)) {
       console.time("getlock");
       const clock = await getCurrentUpdateClock(db, docName);
       console.timeEnd("getlock");
@@ -291,7 +290,7 @@ export const storeUpdate = async (
     logger.error(error);
   } finally {
     // release lock
-    unlock(docName, uniqueValue);
+    unlock(lockKey, uniqueValue);
   }
   return 0;
 };
