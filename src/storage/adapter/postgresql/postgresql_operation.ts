@@ -270,6 +270,7 @@ export const storeUpdate = async (
       console.time("getlock");
       const clock = await getCurrentUpdateClock(db, docName);
       console.timeEnd("getlock");
+      Y.logUpdate(update);
       if (clock === -1) {
         // make sure that a state vector is aways written, so we can search for available documents
         const ydoc = new Y.Doc();

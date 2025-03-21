@@ -18,10 +18,10 @@ if (typeof persistenceDir === "string") {
       try {
         const persistedYdoc: Y.Doc = await postgresqlDb.getYDoc(docName);
         const newUpdates: Uint8Array = Y.encodeStateAsUpdate(ydoc);
-        await postgresqlDb.storeUpdateTrans(docName, newUpdates);
+        await postgresqlDb.storeUpdate(docName, newUpdates);
         Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(persistedYdoc));
         ydoc.on("update", async (update: Uint8Array) => {
-          await postgresqlDb.storeUpdateTrans(docName, update);
+          await postgresqlDb.storeUpdate(docName, update);
           if (persistedYdoc) {
             throttledFn(docName, postgresqlDb);
           }
