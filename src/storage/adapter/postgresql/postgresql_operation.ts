@@ -181,8 +181,9 @@ const getLock = async (docName: string, uniqueValue: string, times: number) => {
     logger.error("could not get lock wih 15 times retry");
     return false;
   }
-  const lockKey = `lock:${docName + "-update"}`;
-  const expireTime = 5000;
+  const lockKey = `lock:${docName + ":update"}`;
+  // the expire time is seconds
+  const expireTime = 5;
   // Lua脚本用于原子获取锁
   const luaScript = `
     if redis.call('SET', KEYS[1], ARGV[1], 'NX', 'EX', ARGV[2]) then
