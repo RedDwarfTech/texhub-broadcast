@@ -4,6 +4,7 @@ import http from "http";
 import "dotenv/config";
 import { initialize } from "@websocket/entry/init.js";
 import { handleMiddlewareAuthCheck } from "@websocket/entry/handle/auth.js";
+import logger from "@common/log4js_config";
 const PORT = 1234;
 export const app: Express = express();
 var httpServer = http.createServer(app);
@@ -37,4 +38,7 @@ websocketServer.use((socket: Socket, next) => {
 //handleMiddlewareAuthCheck(websocketServer);
 
 initialize();
+process.on("uncaughtException", (error, origin) => {
+  logger.error("uncaughtException", error, origin);
+});
 httpServer.listen(PORT);
