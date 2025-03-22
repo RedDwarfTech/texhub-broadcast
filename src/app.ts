@@ -4,7 +4,7 @@ import http from "http";
 import "dotenv/config";
 import { initialize } from "@websocket/entry/init.js";
 import { handleMiddlewareAuthCheck } from "@websocket/entry/handle/auth.js";
-import logger from "@common/log4js_config";
+import logger from "@common/log4js_config.js";
 const PORT = 1234;
 export const app: Express = express();
 var httpServer = http.createServer(app);
