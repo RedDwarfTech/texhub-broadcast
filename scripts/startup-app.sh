@@ -2,7 +2,8 @@
 
 export HOST=0.0.0.0
 export PORT=1234
-export NODE_DEBUG=net
+# https://stackoverflow.com/questions/10814481/how-to-debug-a-socket-hang-up-error-in-nodejs
+# export NODE_DEBUG=net
 export YPERSISTENCE=/opt/data/yjs-storage-socketio
 # export NODE_OPTIONS="--max-old-space-size=256"
 
