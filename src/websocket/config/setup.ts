@@ -22,8 +22,6 @@ export function setupWSConnection(
   req: http.IncomingMessage,
   { gc = true } = {}
 ) {
-  // handleAuth(req, conn);
-  // conn.binaryType = "arraybuffer";
   const docId = new URL(
     req.url!,
     `http://${req.headers.host}`

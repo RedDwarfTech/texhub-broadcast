@@ -40,6 +40,6 @@ websocketServer.use((socket: Socket, next) => {
 initialize();
 process.on("uncaughtException", (error, origin) => {
   // https://stackoverflow.com/questions/17245881/how-do-i-debug-error-econnreset-in-node-js
-  logger.error("uncaughtException", error, origin);
+  logger.error("uncaughtException", error, origin, error.stack);
 });
 httpServer.listen(PORT);

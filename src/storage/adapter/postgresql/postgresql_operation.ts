@@ -4,7 +4,7 @@ import * as binary from "lib0/binary.js";
 import * as encoding from "lib0/encoding.js";
 import * as decoding from "lib0/decoding.js";
 import pg, { QueryResult } from "pg";
-import logger from "../../../common/log4js_config.js";
+import logger from "@common/log4js_config.js";
 import {
   createDocumentStateVectorKey,
   createDocumentStateVectorKeyMap,
@@ -12,7 +12,7 @@ import {
   createDocumentUpdateKeyArray,
   createSimpleDocumentStateVectorKeyMap,
 } from "./postgresql_const.js";
-import { TeXSync } from "../../../model/yjs/storage/sync/tex_sync.js";
+import { TeXSync } from "@model/yjs/storage/sync/tex_sync.js";
 import { createClient } from "redis";
 import { v4 as uuidv4 } from "uuid";
 

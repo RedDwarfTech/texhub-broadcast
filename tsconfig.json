@@ -14,7 +14,8 @@
     "paths": {
       "@controllers/*": ["src/controllers/*"],
       "@websocket/*": ["src/websocket/*"],
-      "@common/*": ["src/common/*"]
+      "@common/*": ["src/common/*"],
+      "@model/*": ["src/model/*"]
     },
     "lib": ["DOM", "ES2021.String"],
     "sourceMap": true
