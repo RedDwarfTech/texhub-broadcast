@@ -98,7 +98,7 @@ export const messageListener = (
     const messageType: number = decoding.readVarUint(decoder);
     switch (messageType) {
       case SyncMessageType.MessageSync:
-        preHandleSubDoc(doc, conn, decoder);
+        //preHandleSubDoc(doc, conn, decoder);
         encoding.writeVarUint(encoder, messageSync);
         syncProtocol.readSyncMessage(decoder, encoder, doc, conn);
 
