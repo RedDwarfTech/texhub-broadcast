@@ -122,11 +122,11 @@ export const messageListener = (
         break;
       }
       default:
-        logger.error("unknown message type", messageType);
+        logger.error("unknown message type" + messageType);
         break;
     }
   } catch (err) {
-    logger.error("message listener error," + err);
+    logger.error("message listener error", err);
     // doc.emit("error", [err]);
   }
 };
