@@ -98,11 +98,7 @@ export const messageListener = (
     const messageType: number = decoding.readVarUint(decoder);
     switch (messageType) {
       case SyncMessageType.MessageSync:
-        let targetDoc = doc;
-        const docGuid = decoding.readVarString(decoder);
-        if (docGuid !== doc.name) {
-          handleSubDoc(targetDoc, docGuid, conn, doc);
-        }
+        preHandleSubDoc(doc, conn, decoder);
         encoding.writeVarUint(encoder, messageSync);
         syncProtocol.readSyncMessage(decoder, encoder, doc, conn);
 
@@ -132,6 +128,18 @@ export const messageListener = (
   } catch (err) {
     logger.error("message listener error," + err);
     // doc.emit("error", [err]);
+  }
+};
+
+const preHandleSubDoc = (doc: WSSharedDoc, conn: Socket, decoder: any) => {
+  try {
+    let targetDoc = doc;
+    const docGuid = decoding.readVarString(decoder);
+    if (docGuid !== doc.name) {
+      handleSubDoc(targetDoc, docGuid, conn, doc);
+    }
+  } catch (err) {
+    logger.error("handle sub doc facing issue", err);
   }
 };
 
