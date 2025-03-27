@@ -16,7 +16,10 @@ let logConfig: Configuration = {
     default: {
       appenders: ["out", "files"],
       level: "all",
+      // https://stackoverflow.com/questions/79536525/is-it-possible-to-output-the-full-callstack-in-nodejs
+      enableCallStack: true,
     },
+    
   },
   disableClustering: true,
 };
