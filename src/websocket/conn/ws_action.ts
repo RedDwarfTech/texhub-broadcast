@@ -1,6 +1,6 @@
 // @ts-ignore
 import awarenessProtocol from "y-protocols/dist/awareness.cjs";
-import { docs, messageSync } from "../../collar/yjs_utils.js";
+import { docs, getYDoc, messageSync } from "../../collar/yjs_utils.js";
 import { WSSharedDoc } from "../../collar/ws_share_doc.js";
 import log4js from "log4js";
 import { persistencePostgresql } from "../../storage/storage.js";
@@ -81,6 +81,12 @@ export const send = async (doc: WSSharedDoc, conn: Socket, m: Uint8Array) => {
   }
 };
 
+/**
+ * relationship of main doc & sub docs
+ * @type {Map<String, Map<String, WSSharedDoc>>} mainDocID, subDocID
+ */
+const subdocsMap: Map<String, Map<String, WSSharedDoc>> = new Map();
+
 export const messageListener = (
   conn: Socket,
   doc: WSSharedDoc,
@@ -92,6 +98,11 @@ export const messageListener = (
     const messageType: number = decoding.readVarUint(decoder);
     switch (messageType) {
       case SyncMessageType.MessageSync:
+        let targetDoc = doc;
+        const docGuid = decoding.readVarString(decoder);
+        if (docGuid !== doc.name) {
+          handleSubDoc(targetDoc, docGuid, conn, doc);
+        }
         encoding.writeVarUint(encoder, messageSync);
         syncProtocol.readSyncMessage(decoder, encoder, doc, conn);
 
@@ -121,5 +132,36 @@ export const messageListener = (
   } catch (err) {
     logger.error("message listener error," + err);
     // doc.emit("error", [err]);
+  }
+};
+
+const handleSubDoc = (
+  targetDoc: WSSharedDoc,
+  docGuid: string,
+  conn: Socket,
+  doc: WSSharedDoc
+) => {
+  // subdoc
+  targetDoc = getYDoc(docGuid, false);
+  if (!targetDoc.conns.has(conn)) targetDoc.conns.set(conn, new Set());
+
+  /**@type {Map<String, Boolean>}*/ const subm = subdocsMap.get(doc.name);
+  if (subm && subm.has(targetDoc.name)) {
+    // sync step 1 done before.
+  } else {
+    if (subm) {
+      subm.set(targetDoc.name, targetDoc);
+    } else {
+      const nm = new Map();
+      nm.set(targetDoc.name, targetDoc);
+      subdocsMap.set(doc.name, nm);
+    }
+
+    // send sync step 1
+    const encoder = encoding.createEncoder();
+    encoding.writeVarUint(encoder, messageSync);
+    encoding.writeVarString(encoder, targetDoc.name);
+    syncProtocol.writeSyncStep1(encoder, targetDoc);
+    send(targetDoc, conn, encoding.toUint8Array(encoder));
   }
 };
