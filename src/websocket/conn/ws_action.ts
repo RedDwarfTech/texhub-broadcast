@@ -110,8 +110,35 @@ export const messageListener = (
     const messageType: number = decoding.readVarUint(decoder);
     switch (messageType) {
       case SyncMessageType.MessageSync:
-        let targetDoc = doc;
-        preHandleSubDoc(targetDoc, conn, decoder);
+        let targetDoc = doc
+        const docGuid = decoding.readVarString(decoder)
+        if (docGuid !== doc.name) {
+          // subdoc
+          targetDoc = getYDoc(docGuid, false)
+          if (!targetDoc.conns.has(conn)) targetDoc.conns.set(conn, new Set())
+
+          /**@type {Map<String, Boolean>}*/ const subm = subdocsMap.get(doc.name)
+          if (subm && subm.has(targetDoc.name)) {
+            // sync step 1 done before.
+          } else {
+            if (subm) {
+              subm.set(targetDoc.name, targetDoc)
+            } else {
+              const nm = new Map()
+              nm.set(targetDoc.name, targetDoc)
+              subdocsMap.set(doc.name, nm)
+            }
+
+            // send sync step 1
+            const encoder = encoding.createEncoder()
+            encoding.writeVarUint(encoder, messageSync)
+            encoding.writeVarString(encoder, targetDoc.name)
+            syncProtocol.writeSyncStep1(encoder, targetDoc)
+            send(targetDoc, conn, encoding.toUint8Array(encoder))
+          }
+
+        }
+        //preHandleSubDoc(targetDoc, conn, decoder);
         encoding.writeVarUint(encoder, messageSync);
         // syncProtocol.readSyncMessage(decoder, encoder, doc, conn);
         syncProtocol.readSyncMessage(decoder, encoder, targetDoc, null);
@@ -120,7 +147,7 @@ export const messageListener = (
         // message, there is no need to send the message. When `encoder` only
         // contains the type of reply, its length is 1.
         if (encoding.length(encoder) > 1 && needSend(encoder)) {
-          send(doc, conn, encoding.toUint8Array(encoder));
+          send(targetDoc, conn, encoding.toUint8Array(encoder));
         }
         break;
       case SyncMessageType.MessageAwareness: {
