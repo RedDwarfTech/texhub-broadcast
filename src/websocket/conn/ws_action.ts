@@ -111,7 +111,7 @@ export const messageListener = (
     switch (messageType) {
       case SyncMessageType.MessageSync:
         let targetDoc = doc;
-        preHandleSubDoc(message, conn, targetDoc, doc);
+        preHandleSubDoc(message, conn, targetDoc, doc, decoder);
         encoding.writeVarUint(encoder, messageSync);
         encoding.writeVarString(encoder, targetDoc.name);
         // syncProtocol.readSyncMessage(decoder, encoder, doc, conn);
@@ -150,12 +150,12 @@ const preHandleSubDoc = (
   message: Uint8Array,
   conn: Socket,
   targetDoc: WSSharedDoc,
-  doc: WSSharedDoc
+  doc: WSSharedDoc,
+  decoder: any
 ) => {
   try {
-    var b64Msg = Buffer.from(message).toString("base64");
-    logger.info("msg:" + b64Msg);
-    const decoder = decoding.createDecoder(message);
+    var b64Msg = Buffer.from(decoder).toString("base64");
+    logger.info("decoder:" + b64Msg);
     const docGuid = decoding.readVarString(decoder);
     if (docGuid !== doc.name) {
       handleSubDoc(targetDoc, docGuid, conn, doc);
