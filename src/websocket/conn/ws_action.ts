@@ -154,8 +154,6 @@ const preHandleSubDoc = (
   decoder: any
 ) => {
   try {
-    var b64Msg = Buffer.from(decoder).toString("base64");
-    logger.info("decoder:" + b64Msg);
     const docGuid = decoding.readVarString(decoder);
     if (docGuid !== doc.name) {
       handleSubDoc(targetDoc, docGuid, conn, doc);
