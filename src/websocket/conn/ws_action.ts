@@ -105,38 +105,41 @@ export const messageListener = (
   message: Uint8Array
 ) => {
   try {
+    var b64Msg = Buffer.from(message).toString("base64");
     const encoder = encoding.createEncoder();
     const decoder = decoding.createDecoder(message);
     const messageType: number = decoding.readVarUint(decoder);
     switch (messageType) {
       case SyncMessageType.MessageSync:
-        let targetDoc = doc
-        const docGuid = decoding.readVarString(decoder)
+        logger.info("msg:" + b64Msg);
+        let targetDoc = doc;
+        const docGuid = decoding.readVarString(decoder);
         if (docGuid !== doc.name) {
           // subdoc
-          targetDoc = getYDoc(docGuid, false)
-          if (!targetDoc.conns.has(conn)) targetDoc.conns.set(conn, new Set())
+          targetDoc = getYDoc(docGuid, false);
+          if (!targetDoc.conns.has(conn)) targetDoc.conns.set(conn, new Set());
 
-          /**@type {Map<String, Boolean>}*/ const subm = subdocsMap.get(doc.name)
+          /**@type {Map<String, Boolean>}*/ const subm = subdocsMap.get(
+            doc.name
+          );
           if (subm && subm.has(targetDoc.name)) {
             // sync step 1 done before.
           } else {
             if (subm) {
-              subm.set(targetDoc.name, targetDoc)
+              subm.set(targetDoc.name, targetDoc);
             } else {
-              const nm = new Map()
-              nm.set(targetDoc.name, targetDoc)
-              subdocsMap.set(doc.name, nm)
+              const nm = new Map();
+              nm.set(targetDoc.name, targetDoc);
+              subdocsMap.set(doc.name, nm);
             }
 
             // send sync step 1
-            const encoder = encoding.createEncoder()
-            encoding.writeVarUint(encoder, messageSync)
-            encoding.writeVarString(encoder, targetDoc.name)
-            syncProtocol.writeSyncStep1(encoder, targetDoc)
-            send(targetDoc, conn, encoding.toUint8Array(encoder))
+            const encoder = encoding.createEncoder();
+            encoding.writeVarUint(encoder, messageSync);
+            encoding.writeVarString(encoder, targetDoc.name);
+            syncProtocol.writeSyncStep1(encoder, targetDoc);
+            send(targetDoc, conn, encoding.toUint8Array(encoder));
           }
-
         }
         //preHandleSubDoc(targetDoc, conn, decoder);
         encoding.writeVarUint(encoder, messageSync);
