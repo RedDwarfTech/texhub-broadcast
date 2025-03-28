@@ -110,18 +110,14 @@ export const messageListener = (
     const messageType: number = decoding.readVarUint(decoder);
     switch (messageType) {
       case SyncMessageType.MessageSync:
-        let targetDoc = doc;
-        preHandleSubDoc(message, conn, targetDoc, doc, decoder);
         encoding.writeVarUint(encoder, messageSync);
-        encoding.writeVarString(encoder, targetDoc.name);
-        // syncProtocol.readSyncMessage(decoder, encoder, doc, conn);
-        syncProtocol.readSyncMessage(decoder, encoder, targetDoc, null);
+        syncProtocol.readSyncMessage(decoder, encoder, doc, conn);
 
         // If the `encoder` only contains the type of reply message and no
         // message, there is no need to send the message. When `encoder` only
         // contains the type of reply, its length is 1.
-        if (encoding.length(encoder) > 1 && needSend(encoder)) {
-          send(targetDoc, conn, encoding.toUint8Array(encoder));
+        if (encoding.length(encoder) > 1) {
+          send(doc, conn, encoding.toUint8Array(encoder));
         }
         break;
       case SyncMessageType.MessageAwareness: {
