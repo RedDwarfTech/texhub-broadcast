@@ -82,6 +82,18 @@ export const send = async (doc: WSSharedDoc, conn: Socket, m: Uint8Array) => {
 };
 
 /**
+ *
+ * @param {encoding.Encoder} encoder
+ */
+const needSend = (encoder: any) => {
+  const buf = encoding.toUint8Array(encoder);
+  const decoder = decoding.createDecoder(buf);
+  decoding.readVarUint(decoder);
+  decoding.readVarString(decoder);
+  return decoding.hasContent(decoder);
+};
+
+/**
  * relationship of main doc & sub docs
  * @type {Map<String, Map<String, WSSharedDoc>>} mainDocID, subDocID
  */
@@ -98,14 +110,16 @@ export const messageListener = (
     const messageType: number = decoding.readVarUint(decoder);
     switch (messageType) {
       case SyncMessageType.MessageSync:
-        preHandleSubDoc(doc, conn, decoder);
+        let targetDoc = doc;
+        preHandleSubDoc(targetDoc, conn, decoder);
         encoding.writeVarUint(encoder, messageSync);
-        syncProtocol.readSyncMessage(decoder, encoder, doc, conn);
+        // syncProtocol.readSyncMessage(decoder, encoder, doc, conn);
+        syncProtocol.readSyncMessage(decoder, encoder, targetDoc, null);
 
         // If the `encoder` only contains the type of reply message and no
         // message, there is no need to send the message. When `encoder` only
         // contains the type of reply, its length is 1.
-        if (encoding.length(encoder) > 1) {
+        if (encoding.length(encoder) > 1 && needSend(encoder)) {
           send(doc, conn, encoding.toUint8Array(encoder));
         }
         break;
