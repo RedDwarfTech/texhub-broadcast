@@ -113,6 +113,7 @@ export const messageListener = (
         let targetDoc = doc;
         preHandleSubDoc(message, conn, targetDoc, doc);
         encoding.writeVarUint(encoder, messageSync);
+        encoding.writeVarString(encoder, targetDoc.name);
         // syncProtocol.readSyncMessage(decoder, encoder, doc, conn);
         syncProtocol.readSyncMessage(decoder, encoder, targetDoc, null);
 
