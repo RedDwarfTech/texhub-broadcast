@@ -110,6 +110,17 @@ export const messageListener = (
     const messageType: number = decoding.readVarUint(decoder);
     switch (messageType) {
       case SyncMessageType.MessageSync:
+        const subDocDecoder = decoding.createDecoder(message);
+        const subDocMessageType: number = decoding.readVarUint(subDocDecoder);
+        const docGuid = decoding.readVarString(subDocDecoder);
+        if (docGuid !== doc.name) {
+          logger.warn(
+            "this is an subdocument,subDocMessageType:" +
+              subDocMessageType +
+              ",doc guid:" +
+              docGuid
+          );
+        }
         encoding.writeVarUint(encoder, messageSync);
         syncProtocol.readSyncMessage(decoder, encoder, doc, conn);
 
