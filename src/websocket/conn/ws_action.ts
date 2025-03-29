@@ -110,17 +110,8 @@ export const messageListener = (
     const messageType: number = decoding.readVarUint(decoder);
     switch (messageType) {
       case SyncMessageType.MessageSync:
-        const subDocDecoder = decoding.createDecoder(message);
-        const subDocMessageType: number = decoding.readVarUint(subDocDecoder);
-        const docGuid = decoding.readVarString(subDocDecoder);
-        if (docGuid !== doc.name) {
-          logger.warn(
-            "this is an subdocument,subDocMessageType:" +
-              subDocMessageType +
-              ",doc guid:" +
-              docGuid
-          );
-        }
+        let targetDoc = doc;
+        preHandleSubDoc(message, conn, targetDoc, doc);
         encoding.writeVarUint(encoder, messageSync);
         syncProtocol.readSyncMessage(decoder, encoder, doc, conn);
 
@@ -157,12 +148,19 @@ const preHandleSubDoc = (
   message: Uint8Array,
   conn: Socket,
   targetDoc: WSSharedDoc,
-  doc: WSSharedDoc,
-  decoder: any
+  doc: WSSharedDoc
 ) => {
   try {
-    const docGuid = decoding.readVarString(decoder);
+    const subDocDecoder = decoding.createDecoder(message);
+    const subDocMessageType: number = decoding.readVarUint(subDocDecoder);
+    const docGuid = decoding.readVarString(subDocDecoder);
     if (docGuid !== doc.name) {
+      logger.warn(
+        "this is an subdocument,subDocMessageType:" +
+          subDocMessageType +
+          ",doc guid:" +
+          docGuid
+      );
       handleSubDoc(targetDoc, docGuid, conn, doc);
     }
   } catch (err) {
