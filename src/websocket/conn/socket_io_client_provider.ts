@@ -309,6 +309,12 @@ export class SocketIOClientProvider extends Observable<string> {
   ) => void;
   _unloadHandler: () => void;
   _checkInterval: NodeJS.Timeout;
+  subdocUpdateHandlers: any;
+  /**
+   * manage all sub docs with main doc self
+   * @type {Map}
+   */
+  docs: Map<string, any> = new Map();
 
   constructor(
     serverUrl: string,
@@ -357,6 +363,8 @@ export class SocketIOClientProvider extends Observable<string> {
      * @type {boolean}
      */
     this.shouldConnect = connect;
+    this.subdocUpdateHandlers = new Map();
+    this.docs.set(roomname, doc);
 
     /**
      * @type {number}
@@ -475,6 +483,48 @@ export class SocketIOClientProvider extends Observable<string> {
     if (connect) {
       this.connect();
     }
+
+    /**
+     * Listen to sub documents updates
+     * @param {String} id identifier of sub documents
+     * @returns
+     */
+    this.subdocUpdateHandlers = (id: string) => {
+      return (update: any, origin: any) => {
+        if (origin === this) return;
+        const encoder = encoding.createEncoder();
+        encoding.writeVarUint(encoder, SyncMessageType.MessageSync);
+        encoding.writeVarString(encoder, id);
+        syncProtocol.writeUpdate(encoder, update);
+        broadcastMessage(this, encoding.toUint8Array(encoder));
+      };
+    };
+  }
+
+  /**
+   * @param {Y.Doc} subdoc
+   */
+  addSubdoc(subdoc: Y.Doc) {
+    let updateHandler = this.subdocUpdateHandlers(subdoc.guid);
+    this.docs.set(subdoc.guid, subdoc);
+    subdoc.on("update", updateHandler);
+    this.subdocUpdateHandlers.set(subdoc.guid, updateHandler);
+
+    // invoke sync step1
+    const encoder = encoding.createEncoder();
+    encoding.writeVarUint(encoder, SyncMessageType.MessageSync);
+    encoding.writeVarString(encoder, subdoc.guid);
+    syncProtocol.writeSyncStep1(encoder, subdoc);
+    broadcastMessage(this, encoding.toUint8Array(encoder));
+  }
+
+  /**
+   * get doc by id (main doc or sub doc)
+   * @param {String} id
+   * @returns
+   */
+  getDoc(id: string) {
+    return this.docs.get(id);
   }
 
   connectBc() {
