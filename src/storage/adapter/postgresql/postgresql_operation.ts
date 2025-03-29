@@ -151,6 +151,7 @@ export const getPgBulkData = async (
   } catch (err) {
     logger.error("Query error:", err);
   }
+  return [];
 };
 
 export const mergeUpdates = (updates: any) => {
