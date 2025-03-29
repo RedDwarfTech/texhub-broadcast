@@ -149,8 +149,7 @@ export const getPgBulkData = async (
     let result: QueryResult<TeXSync> = await db.query(sql);
     return result.rows;
   } catch (err) {
-    console.error("Query error:", err);
-    throw err;
+    logger.error("Query error:", err);
   }
 };
 
