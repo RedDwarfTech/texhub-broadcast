@@ -178,8 +178,6 @@ const setupWS = (provider: SocketIOClientProvider) => {
     provider.synced = false;
 
     websocket.on("message", (data) => {
-      debugger;
-      console.log("socketioprovider received message:" + toJSON(data));
       provider.wsLastMessageReceived = time.getUnixTime();
       const encoder = readMessage(provider, new Uint8Array(data), true);
       if (encoding.length(encoder) > 1) {
@@ -439,7 +437,6 @@ export class SocketIOClientProvider extends Observable<string> {
       },
       _origin: any
     ) => {
-      console.log("awareness trigger update...");
       const changedClients = added.concat(updated).concat(removed);
       const encoder = encoding.createEncoder();
       encoding.writeVarUint(encoder, messageAwareness);
