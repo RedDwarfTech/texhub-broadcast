@@ -164,7 +164,12 @@ const preHandleSubDoc = (
       handleSubDoc(targetDoc, docGuid, conn, doc);
     }
   } catch (err) {
-    logger.error("handle sub doc facing issue", err);
+    logger.error(
+      "handle sub doc facing issue" +
+        ", msg: " +
+        Buffer.from(message).toString("base64"),
+      err
+    );
   }
 };
 
