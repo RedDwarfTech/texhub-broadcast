@@ -502,6 +502,13 @@ export class SocketIOClientProvider extends Observable<string> {
   }
 
   /**
+   * @param {Y.Doc} subdoc 
+   */
+  removeSubdoc (subdoc: Y.Doc) {
+    subdoc.off('update', this.subdocUpdateHandlers.get(subdoc.guid))
+  }
+
+  /**
    * @param {Y.Doc} subdoc
    */
   addSubdoc(subdoc: Y.Doc) {
