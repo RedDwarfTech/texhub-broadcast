@@ -2,6 +2,9 @@
   "name": "texhub-broadcast",
   "version": "1.0.43",
   "description": "",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "main": "./dist/app.js",
   "module": "./dist/app.js",
   "types": "./dist/app.d.ts",
@@ -71,5 +74,6 @@
     "vite": "^6.0.11",
     "vite-node": "^3.0.4",
     "vitest": "^3.0.4"
-  }
+  },
+  "engine-strict": true
 }

@@ -489,16 +489,16 @@ export class SocketIOClientProvider extends Observable<string> {
      * @param {String} id identifier of sub documents
      * @returns
      */
-this.subdocUpdateHandlers = (id: string) => {
-  return (update: any, origin: any) => {
-    if (origin === this) return;
-    const encoder = encoding.createEncoder();
-    encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
-    encoding.writeVarString(encoder, id);
-    syncProtocol.writeUpdate(encoder, update);
-    broadcastMessage(this, encoding.toUint8Array(encoder));
-  };
-};
+    this.subdocUpdateHandlers = (id: string) => {
+      return (update: any, origin: any) => {
+        if (origin === this) return;
+        const encoder = encoding.createEncoder();
+        encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
+        encoding.writeVarString(encoder, id);
+        syncProtocol.writeUpdate(encoder, update);
+        broadcastMessage(this, encoding.toUint8Array(encoder));
+      };
+    };
   }
 
   /**
