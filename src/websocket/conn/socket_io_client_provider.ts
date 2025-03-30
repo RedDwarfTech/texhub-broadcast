@@ -8,19 +8,15 @@ import {
   createEncoder,
   toUint8Array,
   writeVarUint,
-  writeVarUint8Array,
   // @ts-ignore
 } from "lib0/dist/encoding.cjs";
 import {
   createDecoder,
   readVarUint,
-  readVarUint8Array,
   // @ts-ignore
 } from "lib0/dist/decoding.cjs";
 // @ts-ignore
 import * as syncProtocol from "y-protocols/sync";
-// @ts-ignore
-import * as authProtocol from "y-protocols/auth";
 // @ts-ignore
 import * as url from "lib0/url";
 // @ts-ignore
@@ -32,90 +28,13 @@ import * as time from "lib0/time";
 import { ManagerOptions, Socket, SocketOptions } from "socket.io-client";
 import { WsParam } from "@model/texhub/ws_param.js";
 import { MySocket } from "../../types/textypes.js";
-import { toJSON } from "flatted";
 import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
 import { WsCommand } from "@common/ws/WsCommand.js";
 import { setupWebsocket } from "./event/setup_ws.js";
-
-export const messageAuth = 2;
-
-const messageHandlers: any[] = [];
-
-messageHandlers[SyncMessageType.MessageSync] = (
-  encoder: any,
-  decoder: any,
-  provider: SocketIOClientProvider,
-  emitSynced: any,
-  messageType: any
-) => {
-  writeVarUint(encoder, SyncMessageType.MessageSync);
-  const syncMessageType = syncProtocol.readSyncMessage(
-    decoder,
-    encoder,
-    provider.doc,
-    provider
-  );
-  if (
-    emitSynced &&
-    syncMessageType === syncProtocol.messageYjsSyncStep2 &&
-    !provider.synced
-  ) {
-    provider.synced = true;
-  }
-};
-
-messageHandlers[SyncMessageType.MessageQueryAwareness] = (
-  encoder: any,
-  _decoder: any,
-  provider: any,
-  _emitSynced: any,
-  _messageType: any
-) => {
-  writeVarUint(encoder, SyncMessageType.MessageAwareness);
-  writeVarUint8Array(
-    encoder,
-    awarenessProtocol.encodeAwarenessUpdate(
-      provider.awareness,
-      Array.from(provider.awareness.getStates().keys())
-    )
-  );
-};
-
-messageHandlers[SyncMessageType.MessageAwareness] = (
-  _encoder: any,
-  decoder: any,
-  provider: any,
-  _emitSynced: any,
-  _messageType: any
-) => {
-  awarenessProtocol.applyAwarenessUpdate(
-    provider.awareness,
-    readVarUint8Array(decoder),
-    provider
-  );
-};
-
-messageHandlers[messageAuth] = (
-  _encoder: any,
-  decoder: any,
-  provider: any,
-  _emitSynced: any,
-  _messageType: any
-) => {
-  authProtocol.readAuthMessage(decoder, provider.doc, (_ydoc, reason) =>
-    permissionDeniedHandler(provider, reason)
-  );
-};
+import { messageHandlers } from "./event/msg_type_handler.js";
 
 // @todo - this should depend on awareness.outdatedTime
 const messageReconnectTimeout = 30000;
-
-/**
- * @param {WebsocketProvider} provider
- * @param {string} reason
- */
-const permissionDeniedHandler = (provider: any, reason: any) =>
-  console.warn(`Permission denied to access ${provider.url}.\n${reason}`);
 
 export const readMessage = (
   provider: SocketIOClientProvider,
@@ -198,6 +117,10 @@ export class SocketIOClientProvider extends Observable<string> {
    * @type {Map}
    */
   docs: Map<string, any> = new Map();
+  /**
+     * store synced status for sub docs
+     */
+  syncedStatus = new Map()
 
   constructor(
     serverUrl: string,
@@ -384,6 +307,14 @@ export class SocketIOClientProvider extends Observable<string> {
     };
   }
 
+  updateSyncedStatus (id: string, state:any) {
+    const oldState = this.syncedStatus.get(id)
+    if (oldState !== state) {
+      this.syncedStatus.set(id, state)
+      this.emit('subdoc_synced', [id, state])
+    }
+  }
+
   /**
    * @param {Y.Doc} subdoc
    */
@@ -438,7 +369,10 @@ export class SocketIOClientProvider extends Observable<string> {
     bc.publish(this.bcChannel, encoding.toUint8Array(encoderState), this);
     // write queryAwareness
     const encoderAwarenessQuery = encoding.createEncoder();
-    encoding.writeVarUint(encoderAwarenessQuery, SyncMessageType.MessageQueryAwareness);
+    encoding.writeVarUint(
+      encoderAwarenessQuery,
+      SyncMessageType.MessageQueryAwareness
+    );
     bc.publish(
       this.bcChannel,
       encoding.toUint8Array(encoderAwarenessQuery),
@@ -446,7 +380,10 @@ export class SocketIOClientProvider extends Observable<string> {
     );
     // broadcast local awareness state
     const encoderAwarenessState = encoding.createEncoder();
-    encoding.writeVarUint(encoderAwarenessState,SyncMessageType.MessageAwareness);
+    encoding.writeVarUint(
+      encoderAwarenessState,
+      SyncMessageType.MessageAwareness
+    );
     encoding.writeVarUint8Array(
       encoderAwarenessState,
       awarenessProtocol.encodeAwarenessUpdate(this.awareness, [
