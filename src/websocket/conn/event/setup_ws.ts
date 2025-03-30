@@ -1,4 +1,7 @@
-import { readMessage, SocketIOClientProvider } from "../socket_io_client_provider.js";
+import {
+  readMessage,
+  SocketIOClientProvider,
+} from "../socket_io_client_provider.js";
 import { ManagerOptions, Socket, SocketOptions } from "socket.io-client";
 // @ts-ignore
 import { math } from "lib0";
@@ -100,15 +103,29 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
           status: "connected",
         },
       ]);
-      // always send sync step 1 when connected
-      const encoder = encoding.createEncoder();
-      encoding.writeVarUint(encoder, SyncMessageType.MessageSync);
-      syncProtocol.writeSyncStep1(encoder, provider.doc);
-      websocket.send(encoding.toUint8Array(encoder));
+      let enableSubDoc = localStorage.getItem("subDoc");
+      if (enableSubDoc && enableSubDoc.toString() === "subdoc") {
+        for (const [k, doc] of provider.docs) {
+          const encoder = encoding.createEncoder();
+          encoding.writeVarUint(encoder, SyncMessageType.MessageSync);
+          encoding.writeVarString(encoder, k);
+          syncProtocol.writeSyncStep1(encoder, doc);
+          websocket.send(encoding.toUint8Array(encoder));
+        }
+      } else {
+        // always send sync step 1 when connected
+        const encoder = encoding.createEncoder();
+        encoding.writeVarUint(encoder, SyncMessageType.MessageSync);
+        syncProtocol.writeSyncStep1(encoder, provider.doc);
+        websocket.send(encoding.toUint8Array(encoder));
+      }
       // broadcast local awareness state
       if (provider.awareness.getLocalState() !== null) {
         const encoderAwarenessState = encoding.createEncoder();
-        encoding.writeVarUint(encoderAwarenessState, SyncMessageType.MessageAwareness);
+        encoding.writeVarUint(
+          encoderAwarenessState,
+          SyncMessageType.MessageAwareness
+        );
         encoding.writeVarUint8Array(
           encoderAwarenessState,
           awarenessProtocol.encodeAwarenessUpdate(provider.awareness, [
