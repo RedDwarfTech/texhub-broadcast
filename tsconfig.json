@@ -15,7 +15,9 @@
       "@controllers/*": ["src/controllers/*"],
       "@websocket/*": ["src/websocket/*"],
       "@common/*": ["src/common/*"],
-      "@model/*": ["src/model/*"]
+      "@model/*": ["src/model/*"],
+      "@collar/*": ["src/collar/*"],
+      "@storage/*": ["src/storage/*"]
     },
     "lib": ["DOM", "ES2021.String"],
     "sourceMap": true
