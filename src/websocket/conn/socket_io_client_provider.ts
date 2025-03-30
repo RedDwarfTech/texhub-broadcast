@@ -309,7 +309,7 @@ export class SocketIOClientProvider extends Observable<string> {
   ) => void;
   _unloadHandler: () => void;
   _checkInterval: NodeJS.Timeout;
-  subdocUpdateHandlers: any;
+  subdocUpdateHandlersMap: any;
   /**
    * manage all sub docs with main doc self
    * @type {Map}
@@ -363,7 +363,7 @@ export class SocketIOClientProvider extends Observable<string> {
      * @type {boolean}
      */
     this.shouldConnect = connect;
-    this.subdocUpdateHandlers = new Map();
+    this.subdocUpdateHandlersMap = new Map();
     this.docs.set(roomname, doc);
 
     /**
@@ -489,7 +489,7 @@ export class SocketIOClientProvider extends Observable<string> {
      * @param {String} id identifier of sub documents
      * @returns
      */
-    this.subdocUpdateHandlers = (id: string) => {
+    this.subdocUpdateHandlersMap = (id: string) => {
       return (update: any, origin: any) => {
         if (origin === this) return;
         const encoder = encoding.createEncoder();
@@ -502,20 +502,20 @@ export class SocketIOClientProvider extends Observable<string> {
   }
 
   /**
-   * @param {Y.Doc} subdoc 
+   * @param {Y.Doc} subdoc
    */
-  removeSubdoc (subdoc: Y.Doc) {
-    subdoc.off('update', this.subdocUpdateHandlers.get(subdoc.guid))
+  removeSubdoc(subdoc: Y.Doc) {
+    subdoc.off("update", this.subdocUpdateHandlersMap.get(subdoc.guid));
   }
 
   /**
    * @param {Y.Doc} subdoc
    */
   addSubdoc(subdoc: Y.Doc) {
-    let updateHandler = this.subdocUpdateHandlers(subdoc.guid);
+    let updateHandler = this.subdocUpdateHandlersMap(subdoc.guid);
     this.docs.set(subdoc.guid, subdoc);
     subdoc.on("update", updateHandler);
-    this.subdocUpdateHandlers.set(subdoc.guid, updateHandler);
+    this.subdocUpdateHandlersMap.set(subdoc.guid, updateHandler);
 
     // invoke sync step1
     const encoder = encoding.createEncoder();

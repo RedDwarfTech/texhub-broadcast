@@ -12,8 +12,8 @@ import encoding from "lib0/dist/encoding.cjs";
 import decoding from "lib0/dist/decoding.cjs";
 // @ts-ignore
 import syncProtocol from "y-protocols/dist/sync.cjs";
-import { SyncMessageType } from "../../model/texhub/sync_msg_type.js";
-import { getTexFileInfo } from "../../storage/appfile.js";
+import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
+import { getTexFileInfo } from "@storage/appfile.js";
 import { handleControlSignals } from "./event/app_control_handler.js";
 import { handleSubDocMsg } from "./event/subdoc_msg_handler.js";
 
@@ -117,7 +117,7 @@ export const messageListener = (
         break;
       }
       default:
-        logger.error("unknown message type" + messageType);
+        logger.error("unknown message type in messageListener" + messageType);
         break;
     }
   } catch (err) {
