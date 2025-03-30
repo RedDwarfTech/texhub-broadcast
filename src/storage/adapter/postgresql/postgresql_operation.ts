@@ -470,11 +470,7 @@ const pgPutUpsertTrans = async (
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
       ON CONFLICT (key) DO UPDATE 
       SET value = $2, plain_value = $3`;
-    const decoder = new TextDecoder("utf-8");
     let content = String.fromCharCode(...new Uint8Array(val));
-    // let decodedUpdate = Y.decodeUpdateV2(val);
-    logger.info("decoded update:" + content);
-    let text: string = decoder.decode(val);
     let version = key.get("version") || "default";
     let contentType = key.get("contentType") || "default";
     let docName = key.get("docName") ? key.get("docName") : "default";
@@ -512,11 +508,7 @@ const pgPutUpsert = async (
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
       ON CONFLICT (key) DO UPDATE 
       SET value = $2, plain_value = $3`;
-    const decoder = new TextDecoder("utf-8");
     let content = String.fromCharCode(...new Uint8Array(val));
-    // let decodedUpdate = Y.decodeUpdateV2(val);
-    logger.info("decoded update:" + content);
-    let text: string = decoder.decode(val);
     let version = key.get("version") || "default";
     let contentType = key.get("contentType") || "default";
     let docName = key.get("docName") ? key.get("docName") : "default";
