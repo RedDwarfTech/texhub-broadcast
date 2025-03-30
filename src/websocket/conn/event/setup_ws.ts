@@ -103,16 +103,16 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
           status: "connected",
         },
       ]);
-      let enableSubDoc = localStorage.getItem("subDoc");
-      if (enableSubDoc && enableSubDoc.toString() === "subdoc") {
-        for (const [k, doc] of provider.docs) {
-          const encoder = encoding.createEncoder();
-          encoding.writeVarUint(encoder, SyncMessageType.MessageSync);
-          encoding.writeVarString(encoder, k);
-          syncProtocol.writeSyncStep1(encoder, doc);
-          websocket.send(encoding.toUint8Array(encoder));
-        }
-      } else {
+let enableSubDoc = localStorage.getItem("subDoc");
+if (enableSubDoc && enableSubDoc.toString() === "subdoc") {
+  for (const [k, doc] of provider.docs) {
+    const encoder = encoding.createEncoder();
+    encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
+    encoding.writeVarString(encoder, k);
+    syncProtocol.writeSyncStep1(encoder, doc);
+    websocket.send(encoding.toUint8Array(encoder));
+  }
+} else {
         // always send sync step 1 when connected
         const encoder = encoding.createEncoder();
         encoding.writeVarUint(encoder, SyncMessageType.MessageSync);
