@@ -30,16 +30,13 @@ import * as bc from "lib0/broadcastchannel";
 // @ts-ignore
 import * as time from "lib0/time";
 import { ManagerOptions, Socket, SocketOptions } from "socket.io-client";
-// @ts-ignore
-import { math } from "lib0";
-import { WsParam } from "../../model/texhub/ws_param.js";
+import { WsParam } from "@model/texhub/ws_param.js";
 import { MySocket } from "../../types/textypes.js";
 import { toJSON } from "flatted";
-import { SyncMessageType } from "../../model/texhub/sync_msg_type.js";
+import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
 import { WsCommand } from "@common/ws/WsCommand.js";
+import { setupWebsocket } from "./event/setup_ws.js";
 
-export const messageQueryAwareness = 3;
-export const messageAwareness = 1;
 export const messageAuth = 2;
 
 const messageHandlers: any[] = [];
@@ -67,14 +64,14 @@ messageHandlers[SyncMessageType.MessageSync] = (
   }
 };
 
-messageHandlers[messageQueryAwareness] = (
+messageHandlers[SyncMessageType.MessageQueryAwareness] = (
   encoder: any,
   _decoder: any,
   provider: any,
   _emitSynced: any,
   _messageType: any
 ) => {
-  writeVarUint(encoder, messageAwareness);
+  writeVarUint(encoder, SyncMessageType.MessageAwareness);
   writeVarUint8Array(
     encoder,
     awarenessProtocol.encodeAwarenessUpdate(
@@ -84,7 +81,7 @@ messageHandlers[messageQueryAwareness] = (
   );
 };
 
-messageHandlers[messageAwareness] = (
+messageHandlers[SyncMessageType.MessageAwareness] = (
   _encoder: any,
   decoder: any,
   provider: any,
@@ -120,7 +117,7 @@ const messageReconnectTimeout = 30000;
 const permissionDeniedHandler = (provider: any, reason: any) =>
   console.warn(`Permission denied to access ${provider.url}.\n${reason}`);
 
-const readMessage = (
+export const readMessage = (
   provider: SocketIOClientProvider,
   buf: Uint8Array,
   emitSynced: boolean
@@ -163,120 +160,6 @@ const sendMessage = (provider: SocketIOClientProvider, buf: ArrayBuffer) => {
   const ws = provider.ws;
   if (provider.wsconnected && ws && ws.connected) {
     ws.send(buf);
-  }
-};
-
-/**
- * @param {SocketIOClientProvider} provider
- */
-const setupWS = (provider: SocketIOClientProvider) => {
-  if (provider.shouldConnect && provider.ws === null) {
-    const websocket: Socket = new provider._WS(provider.url, provider.options);
-    provider.ws = websocket;
-    provider.wsconnecting = true;
-    provider.wsconnected = false;
-    provider.synced = false;
-
-    websocket.on("message", (data) => {
-      provider.wsLastMessageReceived = time.getUnixTime();
-      const encoder = readMessage(provider, new Uint8Array(data), true);
-      if (encoding.length(encoder) > 1) {
-        websocket.send(encoding.toUint8Array(encoder));
-      }
-      provider.emit("message", [data, provider]);
-    });
-    websocket.on("error", (event) => {
-      provider.emit("connection-error", [event, provider]);
-    });
-    websocket.on("close", (event) => {
-      provider.emit("connection-close", [event, provider]);
-      provider.ws = null;
-      provider.wsconnecting = false;
-      if (provider.wsconnected) {
-        provider.wsconnected = false;
-        provider.synced = false;
-        // update awareness (all users except local left)
-        awarenessProtocol.removeAwarenessStates(
-          provider.awareness,
-          Array.from(provider.awareness.getStates().keys()).filter(
-            (client) => client !== provider.doc.clientID
-          ),
-          provider
-        );
-        provider.emit("status", [
-          {
-            status: "disconnected",
-          },
-        ]);
-      } else {
-        provider.wsUnsuccessfulReconnects++;
-      }
-
-      // Do not reconnect if auth failed
-      if (event.code === 4000) {
-        console.log("Auth failed", event.code);
-        provider.emit("auth", [
-          {
-            status: "failed",
-          },
-        ]);
-        return;
-      }
-
-      if (event.code === 4001) {
-        console.log("Auth failed expire", event.code);
-        provider.emit("auth", [
-          {
-            status: "expired",
-          },
-        ]);
-        return;
-      }
-
-      // Start with no reconnect timeout and increase timeout by
-      // using exponential backoff starting with 100ms
-      setTimeout(
-        setupWS,
-        math.min(
-          math.pow(2, provider.wsUnsuccessfulReconnects) * 100,
-          provider.maxBackoffTime
-        ),
-        provider
-      );
-    });
-    websocket.on("connect", () => {
-      provider.wsLastMessageReceived = time.getUnixTime();
-      provider.wsconnecting = false;
-      provider.wsconnected = true;
-      provider.wsUnsuccessfulReconnects = 0;
-      provider.emit("status", [
-        {
-          status: "connected",
-        },
-      ]);
-      // always send sync step 1 when connected
-      const encoder = encoding.createEncoder();
-      encoding.writeVarUint(encoder, SyncMessageType.MessageSync);
-      syncProtocol.writeSyncStep1(encoder, provider.doc);
-      websocket.send(encoding.toUint8Array(encoder));
-      // broadcast local awareness state
-      if (provider.awareness.getLocalState() !== null) {
-        const encoderAwarenessState = encoding.createEncoder();
-        encoding.writeVarUint(encoderAwarenessState, messageAwareness);
-        encoding.writeVarUint8Array(
-          encoderAwarenessState,
-          awarenessProtocol.encodeAwarenessUpdate(provider.awareness, [
-            provider.doc.clientID,
-          ])
-        );
-        websocket.send(encoding.toUint8Array(encoderAwarenessState));
-      }
-    });
-    provider.emit("status", [
-      {
-        status: "connecting",
-      },
-    ]);
   }
 };
 
@@ -447,7 +330,7 @@ export class SocketIOClientProvider extends Observable<string> {
     ) => {
       const changedClients = added.concat(updated).concat(removed);
       const encoder = encoding.createEncoder();
-      encoding.writeVarUint(encoder, messageAwareness);
+      encoding.writeVarUint(encoder, SyncMessageType.MessageAwareness);
       encoding.writeVarUint8Array(
         encoder,
         awarenessProtocol.encodeAwarenessUpdate(awareness, changedClients)
@@ -555,7 +438,7 @@ export class SocketIOClientProvider extends Observable<string> {
     bc.publish(this.bcChannel, encoding.toUint8Array(encoderState), this);
     // write queryAwareness
     const encoderAwarenessQuery = encoding.createEncoder();
-    encoding.writeVarUint(encoderAwarenessQuery, messageQueryAwareness);
+    encoding.writeVarUint(encoderAwarenessQuery, SyncMessageType.MessageQueryAwareness);
     bc.publish(
       this.bcChannel,
       encoding.toUint8Array(encoderAwarenessQuery),
@@ -563,7 +446,7 @@ export class SocketIOClientProvider extends Observable<string> {
     );
     // broadcast local awareness state
     const encoderAwarenessState = encoding.createEncoder();
-    encoding.writeVarUint(encoderAwarenessState, messageAwareness);
+    encoding.writeVarUint(encoderAwarenessState,SyncMessageType.MessageAwareness);
     encoding.writeVarUint8Array(
       encoderAwarenessState,
       awarenessProtocol.encodeAwarenessUpdate(this.awareness, [
@@ -580,7 +463,7 @@ export class SocketIOClientProvider extends Observable<string> {
   disconnectBc() {
     // broadcast message with local awareness state set to null (indicating disconnect)
     const encoder = encoding.createEncoder();
-    encoding.writeVarUint(encoder, messageAwareness);
+    encoding.writeVarUint(encoder, SyncMessageType.MessageAwareness);
     encoding.writeVarUint8Array(
       encoder,
       awarenessProtocol.encodeAwarenessUpdate(
@@ -607,7 +490,7 @@ export class SocketIOClientProvider extends Observable<string> {
   connect() {
     this.shouldConnect = true;
     if (!this.wsconnected || this.ws === null || this.ws === undefined) {
-      setupWS(this);
+      setupWebsocket(this);
       this.connectBc();
     }
   }

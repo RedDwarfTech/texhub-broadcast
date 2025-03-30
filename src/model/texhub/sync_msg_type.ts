@@ -4,6 +4,7 @@ export enum SyncMessageType {
      * the cursor location and so on
      */
     MessageAwareness = 1,
+    MessageQueryAwareness = 3,
     /**
      * the message sync original defined by y-websocket
      * 
