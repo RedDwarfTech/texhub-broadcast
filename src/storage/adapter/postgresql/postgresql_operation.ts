@@ -183,7 +183,6 @@ const getLock = async (lockKey: string, uniqueValue: string, times: number) => {
   }
   // the expire time is seconds
   const expireTime = 5;
-  // Lua脚本用于原子获取锁
   const luaScript = `
     if redis.call('SET', KEYS[1], ARGV[1], 'NX', 'EX', ARGV[2]) then
       return 1
@@ -191,7 +190,6 @@ const getLock = async (lockKey: string, uniqueValue: string, times: number) => {
       return 0
     end
     `;
-  // 执行Lua脚本
   const result = await client.eval(luaScript, {
     keys: [lockKey],
     arguments: [uniqueValue, `${expireTime}`],
@@ -227,10 +225,7 @@ async function unlock(lockKey: string, uniqueValue: string) {
     keys: [lockKey],
     arguments: [uniqueValue],
   });
-
   if (result === 1) {
-  } else {
-    logger.error("[x] 锁释放失败，可能锁已经被其他客户端更新");
   }
 }
 
