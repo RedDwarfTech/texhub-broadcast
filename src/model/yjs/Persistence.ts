@@ -1,4 +1,4 @@
-import { PostgresqlPersistance } from "../../storage/adapter/postgresql/postgresql_persistance";
+import { PostgresqlPersistance } from "@storage/adapter/postgresql/postgresql_persistance";
 import * as Y from "yjs";
 
 export type Persistence = {

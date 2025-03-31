@@ -1,4 +1,4 @@
-import { getYDoc, messageSync } from "../../collar/yjs_utils.js";
+import { getYDoc, messageSync } from "@collar/yjs_utils.js";
 import { closeConn, send } from "../conn/ws_action.js";
 import {
   createEncoder,
@@ -9,12 +9,12 @@ import {
 } from "lib0/dist/encoding.cjs";
 // @ts-ignore
 import syncProtocol from "y-protocols/dist/sync.cjs";
-import { messageAwareness, WSSharedDoc } from "../../collar/ws_share_doc.js";
+import { messageAwareness, WSSharedDoc } from "@collar/ws_share_doc.js";
 // @ts-ignore
 import awarenessProtocol from "y-protocols/dist/awareness.cjs";
 import { Socket } from "socket.io";
 import http from "http";
-import logger from "../../common/log4js_config.js";
+import logger from "@common/log4js_config.js";
 import { ws_msg_handle } from "../conn/event/message_handler.js";
 
 export function setupWSConnection(
