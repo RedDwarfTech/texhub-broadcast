@@ -333,7 +333,7 @@ export class SocketIOClientProvider extends Observable<string> {
 
     // invoke sync step1
     const encoder = encoding.createEncoder();
-    encoding.writeVarUint(encoder, SyncMessageType.MessageSync);
+    encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
     encoding.writeVarString(encoder, subdoc.guid);
     syncProtocol.writeSyncStep1(encoder, subdoc);
     broadcastMessage(this, encoding.toUint8Array(encoder));
