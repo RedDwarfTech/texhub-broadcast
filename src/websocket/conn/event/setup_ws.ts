@@ -10,10 +10,10 @@ import * as time from "lib0/time";
 // @ts-ignore
 import * as encoding from "lib0/encoding";
 // @ts-ignore
-import * as awarenessProtocol from "y-protocols/awareness";
+import * as awarenessProtocol from "rdy-protocols/awareness";
 import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
 // @ts-ignore
-import * as syncProtocol from "y-protocols/sync";
+import * as syncProtocol from "rdy-protocols/sync";
 
 /**
  * @param {SocketIOClientProvider} provider

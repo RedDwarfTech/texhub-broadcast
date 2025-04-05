@@ -4,9 +4,9 @@ import * as decoding from "lib0/decoding";
 // @ts-ignore
 import * as encoding from "lib0/encoding";
 // @ts-ignore
-import * as syncProtocol from "y-protocols/sync";
+import * as syncProtocol from "rdy-protocols/sync";
 // @ts-ignore
-import * as authProtocol from "y-protocols/auth";
+import * as authProtocol from "rdy-protocols/auth";
 import {
   writeVarUint,
   writeVarUint8Array,
@@ -17,7 +17,7 @@ import {
   // @ts-ignore
 } from "lib0/dist/decoding.cjs";
 // @ts-ignore
-import * as awarenessProtocol from "y-protocols/awareness";
+import * as awarenessProtocol from "rdy-protocols/awareness";
 
 export const messageHandlers: any[] = [];
 

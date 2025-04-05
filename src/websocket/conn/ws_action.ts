@@ -1,5 +1,5 @@
 // @ts-ignore
-import awarenessProtocol from "y-protocols/dist/awareness.cjs";
+import awarenessProtocol from "rdy-protocols/dist/awareness.cjs";
 import { docs, messageSync } from "@collar/yjs_utils.js";
 import { WSSharedDoc } from "@collar/ws_share_doc.js";
 import log4js from "log4js";

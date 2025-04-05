@@ -11,7 +11,7 @@ import {
 import syncProtocol from "rdy-protocols/dist/sync.cjs";
 import { messageAwareness, WSSharedDoc } from "@collar/ws_share_doc.js";
 // @ts-ignore
-import awarenessProtocol from "y-protocols/dist/awareness.cjs";
+import awarenessProtocol from "rdy-protocols/dist/awareness.cjs";
 import { Socket } from "socket.io";
 import http from "http";
 import logger from "@common/log4js_config.js";

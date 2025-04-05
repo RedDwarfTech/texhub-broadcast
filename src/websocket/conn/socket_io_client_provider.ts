@@ -3,7 +3,7 @@ import { Observable } from "lib0/observable";
 // @ts-ignore
 import * as Y from "rdyjs";
 // @ts-ignore
-import * as awarenessProtocol from "y-protocols/awareness";
+import * as awarenessProtocol from "rdy-protocols/awareness";
 import {
   createEncoder,
   toUint8Array,
@@ -16,7 +16,7 @@ import {
   // @ts-ignore
 } from "lib0/dist/decoding.cjs";
 // @ts-ignore
-import * as syncProtocol from "y-protocols/sync";
+import * as syncProtocol from "rdy-protocols/sync";
 // @ts-ignore
 import * as url from "lib0/url";
 // @ts-ignore
