@@ -65,6 +65,9 @@ importers:
       prom-client:
         specifier: ^14.2.0
         version: 14.2.0
+      rdyjs:
+        specifier: ^13.6.24
+        version: 13.6.24
       redis:
         specifier: ^4.7.0
         version: 4.7.0
@@ -80,9 +83,6 @@ importers:
       y-protocols:
         specifier: ^1.0.6
         version: 1.0.6(yjs@13.6.24)
-      yjs:
-        specifier: ^13.6.24
-        version: 13.6.24
     devDependencies:
       '@types/express':
         specifier: ^5.0.1
@@ -1672,6 +1672,10 @@ packages:
   raw-body@2.5.2:
     resolution: {integrity: sha512-8zGqypfENjCIqGhgXToC8aB2r7YrBX+AQAfIPs/Mlk+BtPTztOvTS01NRW/3Eh60J+a48lt8qsCzirQ6loCVfA==}
     engines: {node: '>= 0.8'}
+
+  rdyjs@13.6.24:
+    resolution: {integrity: sha512-HeJya37BXtNzMWYHEUqQAmj97/mqWXsd+pyH14g16WQUYIEvEpQ0NLec45pgntI1WjJ5xlH3noMPIJ/gTfnWdQ==}
+    engines: {node: '>=16.0.0', npm: '>=8.0.0'}
 
   readable-stream@3.6.2:
     resolution: {integrity: sha512-9u/sniCrY3D5WdsERHzHE4G2YCXqoG5FTHUiCC4SIbr6XcLZBY05ya9EKjYek9O5xOAwjGq+1JdGBAS7Q9ScoA==}
@@ -3533,6 +3537,10 @@ snapshots:
       http-errors: 2.0.0
       iconv-lite: 0.4.24
       unpipe: 1.0.0
+
+  rdyjs@13.6.24:
+    dependencies:
+      lib0: 0.2.102
 
   readable-stream@3.6.2:
     dependencies:

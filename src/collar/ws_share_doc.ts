@@ -1,5 +1,5 @@
 // @ts-ignore
-import * as Y from "yjs";
+import * as Y from "rdyjs";
 // @ts-ignore
 import {
   createEncoder,

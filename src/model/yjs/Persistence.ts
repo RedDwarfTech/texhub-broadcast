@@ -1,5 +1,5 @@
 import { PostgresqlPersistance } from "@storage/adapter/postgresql/postgresql_persistance";
-import * as Y from "yjs";
+import * as Y from "rdyjs";
 
 export type Persistence = {
   provider: PostgresqlPersistance;

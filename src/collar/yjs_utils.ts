@@ -9,7 +9,7 @@ import { callbackRequest, getContent } from "./ydoc_callback.js";
 // @ts-ignore
 import syncProtocol from "y-protocols/dist/sync.cjs";
 // @ts-ignore
-import * as Y from "yjs";
+import * as Y from "rdyjs";
 import debounce from 'lodash';
 
 const CALLBACK_URL = process.env.CALLBACK_URL
