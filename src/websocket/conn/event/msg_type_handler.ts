@@ -11,11 +11,11 @@ import {
   writeVarUint,
   writeVarUint8Array,
   // @ts-ignore
-} from "rdlib0/dist/encoding.cjs";
+} from "rdlib0/dist/encoding.mjs";
 import {
   readVarUint8Array,
   // @ts-ignore
-} from "rdlib0/dist/decoding.cjs";
+} from "rdlib0/dist/decoding.mjs";
 // @ts-ignore
 import * as awarenessProtocol from "rdy-protocols/awareness";
 

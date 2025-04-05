@@ -9,12 +9,12 @@ import {
   toUint8Array,
   writeVarUint,
   // @ts-ignore
-} from "rdlib0/dist/encoding.cjs";
+} from "rdlib0/dist/encoding.mjs";
 import {
   createDecoder,
   readVarUint,
   // @ts-ignore
-} from "rdlib0/dist/decoding.cjs";
+} from "rdlib0/dist/decoding.mjs";
 // @ts-ignore
 import * as syncProtocol from "rdy-protocols/sync";
 // @ts-ignore

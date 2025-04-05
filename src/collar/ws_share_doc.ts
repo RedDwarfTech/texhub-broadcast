@@ -7,9 +7,9 @@ import {
   writeVarUint8Array,
   toUint8Array,
   // @ts-ignore
-} from "rdlib0/dist/encoding.cjs";
+} from "rdlib0/dist/encoding.mjs";
 // @ts-ignore
-import awarenessProtocol from "rdy-protocols/dist/awareness.cjs";
+import awarenessProtocol from "rdy-protocols/dist/awareness.mjs";
 import debounce from "lodash";
 import { send } from "../websocket/conn/ws_action.js";
 import { callbackHandler, updateHandler } from "./yjs_utils.js";

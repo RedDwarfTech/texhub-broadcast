@@ -1,15 +1,15 @@
 import { Socket } from "socket.io";
 import { WSSharedDoc } from "@collar/ws_share_doc.js";
 // @ts-ignore
-import encoding from "rdlib0/dist/encoding.cjs";
+import encoding from "rdlib0/dist/encoding.mjs";
 // @ts-ignore
-import decoding from "rdlib0/dist/decoding.cjs";
+import decoding from "rdlib0/dist/decoding.mjs";
 import logger from "@common/log4js_config.js";
 import { getYDoc } from "@collar/yjs_utils.js";
 import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
 import { send } from "../ws_action.js";
 // @ts-ignore
-import syncProtocol from "rdy-protocols/dist/sync.cjs";
+import syncProtocol from "rdy-protocols/dist/sync.mjs";
 
 /**
  * relationship of main doc & sub docs

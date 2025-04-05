@@ -6,7 +6,7 @@ import {
   writeVarUint,
   writeVarUint8Array,
   // @ts-ignore
-} from "rdlib0/dist/encoding.cjs";
+} from "rdlib0/dist/encoding.mjs";
 // @ts-ignore
 import syncProtocol from "rdy-protocols/dist/sync.mjs";
 import { messageAwareness, WSSharedDoc } from "@collar/ws_share_doc.js";
