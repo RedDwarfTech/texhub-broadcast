@@ -7,7 +7,7 @@ import {
   writeVarUint8Array,
   toUint8Array,
   // @ts-ignore
-} from "lib0/dist/encoding.cjs";
+} from "rdlib0/dist/encoding.cjs";
 // @ts-ignore
 import awarenessProtocol from "rdy-protocols/dist/awareness.cjs";
 import debounce from "lodash";

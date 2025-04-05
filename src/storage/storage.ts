@@ -5,7 +5,7 @@ import { throttledFn } from "./appfile.js";
 import { Persistence } from "../model/yjs/Persistence.js";
 import { PostgresqlPersistance } from "./adapter/postgresql/postgresql_persistance.js";
 import logger from "../common/log4js_config.js";
-import { binary, decoding } from "lib0";
+import { binary, decoding } from "rdlib0";
 import { SocketIOClientProvider } from "@websocket/conn/socket_io_client_provider.js";
 
 export let persistencePostgresql: Persistence;

@@ -3,14 +3,14 @@ import { ControlMsg } from "../../../model/texhub/app/control_msg.js";
 import { AppControlType } from "../../../model/texhub/app/app_control_type.js";
 import { getYDoc } from "../../../collar/yjs_utils.js";
 import { WSSharedDoc } from "../../../collar/ws_share_doc.js";
-import { createEncoder, toUint8Array, writeVarUint } from "lib0/encoding.js";
+import { createEncoder, toUint8Array, writeVarUint } from "rdlib0/encoding.js";
 import { Socket } from "socket.io";
 import { SyncMessageType } from "../../../model/texhub/sync_msg_type.js";
 import { send } from "../ws_action.js";
 // @ts-ignore
 import syncProtocol from "rdy-protocols/dist/sync.cjs";
 // @ts-ignore
-import decoding from "lib0/dist/decoding.cjs";
+import decoding from "rdlib0/dist/decoding.cjs";
 
 export const handleControlSignals = (message: Uint8Array, conn: Socket) => {
   try {

@@ -4,11 +4,11 @@ import {
 } from "../socket_io_client_provider.js";
 import { ManagerOptions, Socket, SocketOptions } from "socket.io-client";
 // @ts-ignore
-import { math } from "lib0";
+import { math } from "rdlib0";
 // @ts-ignore
-import * as time from "lib0/time";
+import * as time from "rdlib0/time";
 // @ts-ignore
-import * as encoding from "lib0/encoding";
+import * as encoding from "rdlib0/encoding";
 // @ts-ignore
 import * as awarenessProtocol from "rdy-protocols/awareness";
 import { SyncMessageType } from "@model/texhub/sync_msg_type.js";

@@ -1,9 +1,9 @@
 import { Socket } from "socket.io";
 import { WSSharedDoc } from "@collar/ws_share_doc.js";
 // @ts-ignore
-import encoding from "lib0/dist/encoding.cjs";
+import encoding from "rdlib0/dist/encoding.cjs";
 // @ts-ignore
-import decoding from "lib0/dist/decoding.cjs";
+import decoding from "rdlib0/dist/decoding.cjs";
 import logger from "@common/log4js_config.js";
 import { getYDoc } from "@collar/yjs_utils.js";
 import { SyncMessageType } from "@model/texhub/sync_msg_type.js";

@@ -1,9 +1,9 @@
 // @ts-ignore
-import { setIfUndefined } from "lib0/dist/map.cjs";
+import { setIfUndefined } from "rdlib0/dist/map.cjs";
 import { WSSharedDoc } from "./ws_share_doc.js";
 import { persistencePostgresql } from "../storage/storage.js";
 // @ts-ignore
-import encoding from "lib0/dist/encoding.cjs";
+import encoding from "rdlib0/dist/encoding.cjs";
 import { send } from "../websocket/conn/ws_action.js";
 import { callbackRequest, getContent } from "./ydoc_callback.js";
 // @ts-ignore

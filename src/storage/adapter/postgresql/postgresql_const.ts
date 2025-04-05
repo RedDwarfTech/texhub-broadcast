@@ -1,7 +1,7 @@
-import * as encoding from "lib0/encoding.js";
-import * as decoding from "lib0/decoding.js";
-import { writeUint32BigEndian } from "lib0/encoding.js";
-import { readUint32BigEndian } from "lib0/decoding.js";
+import * as encoding from "rdlib0/encoding.js";
+import * as decoding from "rdlib0/decoding.js";
+import { writeUint32BigEndian } from "rdlib0/encoding.js";
+import { readUint32BigEndian } from "rdlib0/decoding.js";
 
 const YEncodingString = 0;
 const YEncodingUint32 = 1;

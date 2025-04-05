@@ -7,9 +7,9 @@ import { persistencePostgresql } from "@storage/storage.js";
 import { Socket } from "socket.io";
 var logger = log4js.getLogger();
 // @ts-ignore
-import encoding from "lib0/dist/encoding.cjs";
+import encoding from "rdlib0/dist/encoding.cjs";
 // @ts-ignore
-import decoding from "lib0/dist/decoding.cjs";
+import decoding from "rdlib0/dist/decoding.cjs";
 // @ts-ignore
 import syncProtocol from "rdy-protocols/dist/sync.cjs";
 import { SyncMessageType } from "@model/texhub/sync_msg_type.js";

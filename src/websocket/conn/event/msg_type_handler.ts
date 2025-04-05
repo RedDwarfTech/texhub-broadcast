@@ -1,8 +1,8 @@
 import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
 import { SocketIOClientProvider } from "../socket_io_client_provider.js";
-import * as decoding from "lib0/decoding";
+import * as decoding from "rdlib0/decoding";
 // @ts-ignore
-import * as encoding from "lib0/encoding";
+import * as encoding from "rdlib0/encoding";
 // @ts-ignore
 import * as syncProtocol from "rdy-protocols/sync";
 // @ts-ignore
@@ -11,11 +11,11 @@ import {
   writeVarUint,
   writeVarUint8Array,
   // @ts-ignore
-} from "lib0/dist/encoding.cjs";
+} from "rdlib0/dist/encoding.cjs";
 import {
   readVarUint8Array,
   // @ts-ignore
-} from "lib0/dist/decoding.cjs";
+} from "rdlib0/dist/decoding.cjs";
 // @ts-ignore
 import * as awarenessProtocol from "rdy-protocols/awareness";
 
