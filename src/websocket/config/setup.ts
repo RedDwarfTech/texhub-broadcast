@@ -8,10 +8,10 @@ import {
   // @ts-ignore
 } from "lib0/dist/encoding.cjs";
 // @ts-ignore
-import syncProtocol from "rdy-protocols/dist/sync.cjs";
+import syncProtocol from "rdy-protocols/dist/sync.mjs";
 import { messageAwareness, WSSharedDoc } from "@collar/ws_share_doc.js";
 // @ts-ignore
-import awarenessProtocol from "rdy-protocols/dist/awareness.cjs";
+import awarenessProtocol from "rdy-protocols/dist/awareness.mjs";
 import { Socket } from "socket.io";
 import http from "http";
 import logger from "@common/log4js_config.js";
