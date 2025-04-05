@@ -1,7 +1,10 @@
 //@ts-ignore
 import * as Y from "rdyjs";
+// @ts-ignore
 import * as binary from "rdlib0/binary.js";
+// @ts-ignore
 import * as encoding from "rdlib0/encoding.js";
+// @ts-ignore
 import * as decoding from "rdlib0/decoding.js";
 import pg, { QueryResult } from "pg";
 import logger from "@common/log4js_config.js";

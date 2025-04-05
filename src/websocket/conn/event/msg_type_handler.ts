@@ -1,6 +1,7 @@
 import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
 import { SocketIOClientProvider } from "../socket_io_client_provider.js";
-import * as decoding from "rdlib0/decoding";
+// @ts-ignore
+import * as decoding from "rdlib0/decoding.js";
 // @ts-ignore
 import * as encoding from "rdlib0/encoding";
 // @ts-ignore

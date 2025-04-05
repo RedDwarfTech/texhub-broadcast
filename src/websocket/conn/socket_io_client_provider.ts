@@ -311,7 +311,7 @@ export class SocketIOClientProvider extends Observable<string> {
     const oldState = this.syncedStatus.get(id)
     if (oldState !== state) {
       this.syncedStatus.set(id, state)
-      this.emit('subdoc_synced', [id, state])
+      // this.emit('subdoc_synced', [id, state])
     }
   }
 

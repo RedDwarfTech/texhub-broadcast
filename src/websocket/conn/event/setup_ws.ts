@@ -32,13 +32,13 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
       if (encoding.length(encoder) > 1) {
         websocket.send(encoding.toUint8Array(encoder));
       }
-      provider.emit("message", [data, provider]);
+      //provider.emit("message", [data, provider]);
     });
     websocket.on("error", (event) => {
-      provider.emit("connection-error", [event, provider]);
+      //provider.emit("connection-error", [event, provider]);
     });
     websocket.on("close", (event) => {
-      provider.emit("connection-close", [event, provider]);
+      //provider.emit("connection-close", [event, provider]);
       provider.ws = null;
       provider.wsconnecting = false;
       if (provider.wsconnected) {
@@ -52,34 +52,13 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
           ),
           provider
         );
-        provider.emit("status", [
-          {
-            status: "disconnected",
-          },
-        ]);
+        //provider.emit("status", [
+        //  {
+        //    status: "disconnected",
+        //  },
+        //]);
       } else {
         provider.wsUnsuccessfulReconnects++;
-      }
-
-      // Do not reconnect if auth failed
-      if (event.code === 4000) {
-        console.log("Auth failed", event.code);
-        provider.emit("auth", [
-          {
-            status: "failed",
-          },
-        ]);
-        return;
-      }
-
-      if (event.code === 4001) {
-        console.log("Auth failed expire", event.code);
-        provider.emit("auth", [
-          {
-            status: "expired",
-          },
-        ]);
-        return;
       }
 
       // Start with no reconnect timeout and increase timeout by
@@ -98,21 +77,21 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
       provider.wsconnecting = false;
       provider.wsconnected = true;
       provider.wsUnsuccessfulReconnects = 0;
-      provider.emit("status", [
-        {
-          status: "connected",
-        },
-      ]);
-let enableSubDoc = localStorage.getItem("subDoc");
-if (enableSubDoc && enableSubDoc.toString() === "subdoc") {
-  for (const [k, doc] of provider.docs) {
-    const encoder = encoding.createEncoder();
-    encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
-    encoding.writeVarString(encoder, k);
-    syncProtocol.writeSyncStep1(encoder, doc);
-    websocket.send(encoding.toUint8Array(encoder));
-  }
-} else {
+      //provider.emit("status", [
+      // {
+      //   status: "connected",
+      // },
+      //]);
+      let enableSubDoc = localStorage.getItem("subDoc");
+      if (enableSubDoc && enableSubDoc.toString() === "subdoc") {
+        for (const [k, doc] of provider.docs) {
+          const encoder = encoding.createEncoder();
+          encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
+          encoding.writeVarString(encoder, k);
+          syncProtocol.writeSyncStep1(encoder, doc);
+          websocket.send(encoding.toUint8Array(encoder));
+        }
+      } else {
         // always send sync step 1 when connected
         const encoder = encoding.createEncoder();
         encoding.writeVarUint(encoder, SyncMessageType.MessageSync);
@@ -135,10 +114,10 @@ if (enableSubDoc && enableSubDoc.toString() === "subdoc") {
         websocket.send(encoding.toUint8Array(encoderAwarenessState));
       }
     });
-    provider.emit("status", [
-      {
-        status: "connecting",
-      },
-    ]);
+    //provider.emit("status", [
+    //   {
+    //    status: "connecting",
+    // },
+    //]);
   }
 };

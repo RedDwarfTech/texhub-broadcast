@@ -1,6 +1,10 @@
+// @ts-ignore
 import * as encoding from "rdlib0/encoding.js";
+// @ts-ignore
 import * as decoding from "rdlib0/decoding.js";
+// @ts-ignore
 import { writeUint32BigEndian } from "rdlib0/encoding.js";
+// @ts-ignore
 import { readUint32BigEndian } from "rdlib0/decoding.js";
 
 const YEncodingString = 0;
