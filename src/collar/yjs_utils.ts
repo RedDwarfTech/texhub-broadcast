@@ -7,7 +7,7 @@ import encoding from "lib0/dist/encoding.cjs";
 import { send } from "../websocket/conn/ws_action.js";
 import { callbackRequest, getContent } from "./ydoc_callback.js";
 // @ts-ignore
-import syncProtocol from "y-protocols/dist/sync.cjs";
+import syncProtocol from "rdy-protocols/dist/sync.cjs";
 // @ts-ignore
 import * as Y from "rdyjs";
 import debounce from 'lodash';

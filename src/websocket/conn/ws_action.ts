@@ -11,7 +11,7 @@ import encoding from "lib0/dist/encoding.cjs";
 // @ts-ignore
 import decoding from "lib0/dist/decoding.cjs";
 // @ts-ignore
-import syncProtocol from "y-protocols/dist/sync.cjs";
+import syncProtocol from "rdy-protocols/dist/sync.cjs";
 import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
 import { getTexFileInfo } from "@storage/appfile.js";
 import { handleControlSignals } from "./event/app_control_handler.js";

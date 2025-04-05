@@ -8,7 +8,7 @@ import { Socket } from "socket.io";
 import { SyncMessageType } from "../../../model/texhub/sync_msg_type.js";
 import { send } from "../ws_action.js";
 // @ts-ignore
-import syncProtocol from "y-protocols/dist/sync.cjs";
+import syncProtocol from "rdy-protocols/dist/sync.cjs";
 // @ts-ignore
 import decoding from "lib0/dist/decoding.cjs";
 

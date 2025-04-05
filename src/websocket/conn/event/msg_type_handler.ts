@@ -133,7 +133,7 @@ messageHandlers[SyncMessageType.MessageAuth] = (
   _emitSynced: any,
   _messageType: any
 ) => {
-  authProtocol.readAuthMessage(decoder, provider.doc, (_ydoc, reason) =>
+  authProtocol.readAuthMessage(decoder, provider.doc, (_ydoc: any, reason: any) =>
     permissionDeniedHandler(provider, reason)
   );
 };

@@ -8,7 +8,7 @@ import {
   // @ts-ignore
 } from "lib0/dist/encoding.cjs";
 // @ts-ignore
-import syncProtocol from "y-protocols/dist/sync.cjs";
+import syncProtocol from "rdy-protocols/dist/sync.cjs";
 import { messageAwareness, WSSharedDoc } from "@collar/ws_share_doc.js";
 // @ts-ignore
 import awarenessProtocol from "y-protocols/dist/awareness.cjs";
