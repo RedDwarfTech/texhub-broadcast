@@ -63,8 +63,8 @@ importers:
         specifier: ^14.2.0
         version: 14.2.0
       rdlib0:
-        specifier: ^0.2.105
-        version: 0.2.105
+        specifier: ^0.2.106
+        version: 0.2.106
       rdy-protocols:
         specifier: ^1.0.12
         version: 1.0.12(rdyjs@13.6.27)
@@ -1657,8 +1657,8 @@ packages:
     resolution: {integrity: sha512-8zGqypfENjCIqGhgXToC8aB2r7YrBX+AQAfIPs/Mlk+BtPTztOvTS01NRW/3Eh60J+a48lt8qsCzirQ6loCVfA==}
     engines: {node: '>= 0.8'}
 
-  rdlib0@0.2.105:
-    resolution: {integrity: sha512-xbcmoCsbeDq8FzE6aUMQggYFBa2gKW1S9Mca7wF5zau6LsvEwge0osjaBt/1NDHzp2diPi+BmCddSmo5cdguUA==}
+  rdlib0@0.2.106:
+    resolution: {integrity: sha512-5W6hDDstLldwgagiF668lSapLrVXLPCMXAKU1YUtZX/9ZaNldJBpdPyXy2pHNh5uoGpPcdM3/bBI7nfN70H+oQ==}
     engines: {node: '>=16'}
     hasBin: true
 
@@ -3519,18 +3519,18 @@ snapshots:
       iconv-lite: 0.4.24
       unpipe: 1.0.0
 
-  rdlib0@0.2.105:
+  rdlib0@0.2.106:
     dependencies:
       isomorphic.js: 0.2.5
 
   rdy-protocols@1.0.12(rdyjs@13.6.27):
     dependencies:
-      rdlib0: 0.2.105
+      rdlib0: 0.2.106
       rdyjs: 13.6.27
 
   rdyjs@13.6.27:
     dependencies:
-      rdlib0: 0.2.105
+      rdlib0: 0.2.106
 
   readable-stream@3.6.2:
     dependencies:
