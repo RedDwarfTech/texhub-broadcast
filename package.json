@@ -77,6 +77,6 @@
   },
   "engine-strict": true,
   "overrides": {
-    "rdlib0": "0.2.106"
+    "rdlib0": "^0.2.106"
   }
 }
