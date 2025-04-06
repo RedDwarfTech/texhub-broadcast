@@ -11,7 +11,7 @@ import { send } from "../ws_action.js";
 // @ts-ignore
 import syncProtocol from "rdy-protocols/dist/sync.mjs";
 // @ts-ignore
-import decoding from "rdlib0/dist/decoding.mjs";
+import { decoding } from "rdlib0/dist/decoding.mjs";
 
 export const handleControlSignals = (message: Uint8Array, conn: Socket) => {
   try {
