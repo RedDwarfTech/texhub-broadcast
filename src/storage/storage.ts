@@ -19,6 +19,7 @@ if (typeof persistenceDir === "string") {
         const newUpdates: Uint8Array = Y.encodeStateAsUpdate(ydoc);
         await postgresqlDb.storeUpdate(docName, newUpdates);
         Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(persistedYdoc));
+        // @ts-ignore
         ydoc.on("update", async (update: Uint8Array) => {
           await postgresqlDb.storeUpdate(docName, update);
           if (persistedYdoc) {

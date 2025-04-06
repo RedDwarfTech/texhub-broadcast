@@ -79,8 +79,10 @@ export class WSSharedDoc extends Y.Doc {
       });
     };
     this.awareness.on("update", awarenessChangeHandler);
+    // @ts-ignore
     this.on("update", updateHandler);
     if (isCallbackSet) {
+      // @ts-ignore
       this.on(
         "update",
         callbackHandler

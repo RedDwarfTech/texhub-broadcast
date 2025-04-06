@@ -214,6 +214,7 @@ export class SocketIOClientProvider extends Observable<string> {
         broadcastMessage(this, encoding.toUint8Array(encoder));
       }
     };
+    // @ts-ignore
     this.doc.on("update", this.updateHandler);
 
     /**
@@ -319,6 +320,7 @@ export class SocketIOClientProvider extends Observable<string> {
    * @param {Y.Doc} subdoc
    */
   removeSubdoc(subdoc: Y.Doc) {
+    // @ts-ignore
     subdoc.off("update", this.subdocUpdateHandlersMap.get(subdoc.guid));
   }
 
@@ -328,6 +330,7 @@ export class SocketIOClientProvider extends Observable<string> {
   addSubdoc(subdoc: Y.Doc) {
     let updateHandler = this.subdocUpdateHandlersMap(subdoc.guid);
     this.docs.set(subdoc.guid, subdoc);
+    // @ts-ignore
     subdoc.on("update", updateHandler);
     this.subdocUpdateHandlersMap.set(subdoc.guid, updateHandler);
 
