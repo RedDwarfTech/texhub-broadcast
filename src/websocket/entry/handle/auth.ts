@@ -1,7 +1,7 @@
 import { Socket } from "socket.io";
 import http from "http";
 import jwt from "jsonwebtoken";
-import logger from "../../../common/log4js_config.js";
+import logger from "@common/log4js_config.js";
 import { toJSON } from "flatted";
 import { Server } from "socket.io";
 const JWT_SIGN_KEY = process.env.JWT_SIGN_KEY || "key-missing";
