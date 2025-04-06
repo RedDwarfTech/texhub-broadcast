@@ -67,10 +67,10 @@ importers:
         version: 0.2.105
       rdy-protocols:
         specifier: ^1.0.11
-        version: 1.0.11(rdyjs@13.6.26)
+        version: 1.0.11(rdyjs@13.6.27)
       rdyjs:
-        specifier: 13.6.26
-        version: 13.6.26
+        specifier: 13.6.27
+        version: 13.6.27
       redis:
         specifier: ^4.7.0
         version: 4.7.0
@@ -1309,11 +1309,6 @@ packages:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
     engines: {node: '>= 0.8.0'}
 
-  lib0@0.2.102:
-    resolution: {integrity: sha512-g70kydI0I1sZU0ChO8mBbhw0oUW/8U0GHzygpvEIx8k+jgOpqnTSb/E+70toYVqHxBhrERD21TwD5QcZJQ40ZQ==}
-    engines: {node: '>=16'}
-    hasBin: true
-
   locate-path@6.0.0:
     resolution: {integrity: sha512-iPZK6eYjbxRu3uB4/WZ3EsEIMJFMqAoopl3R+zuq0UjcAm/MO6KCweDgPfP3elTztoKP3KtnVHxTn2NHBSDVUw==}
     engines: {node: '>=10'}
@@ -1673,8 +1668,8 @@ packages:
     peerDependencies:
       rdyjs: ^13.6.26
 
-  rdyjs@13.6.26:
-    resolution: {integrity: sha512-XG4qRPm+MkFCC+cwn73pQAiK4T3RCU2GgcgVIMJsKtFf3LWDK0UI99/FiHGn7JYVVtZTU6XZnjU5uQi6nwnaEQ==}
+  rdyjs@13.6.27:
+    resolution: {integrity: sha512-jtB19wjkNqxFL0DQti6GgTKIRUGcJ9Mss0KpgjjGOTKuROVez3A1K12v57B/XNwwrWE26EFe3ve/zrE1ClNLpw==}
     engines: {node: '>=16.0.0', npm: '>=8.0.0'}
 
   readable-stream@3.6.2:
@@ -3246,10 +3241,6 @@ snapshots:
       prelude-ls: 1.2.1
       type-check: 0.4.0
 
-  lib0@0.2.102:
-    dependencies:
-      isomorphic.js: 0.2.5
-
   locate-path@6.0.0:
     dependencies:
       p-locate: 5.0.0
@@ -3532,14 +3523,14 @@ snapshots:
     dependencies:
       isomorphic.js: 0.2.5
 
-  rdy-protocols@1.0.11(rdyjs@13.6.26):
+  rdy-protocols@1.0.11(rdyjs@13.6.27):
     dependencies:
       rdlib0: 0.2.105
-      rdyjs: 13.6.26
+      rdyjs: 13.6.27
 
-  rdyjs@13.6.26:
+  rdyjs@13.6.27:
     dependencies:
-      lib0: 0.2.102
+      rdlib0: 0.2.105
 
   readable-stream@3.6.2:
     dependencies:

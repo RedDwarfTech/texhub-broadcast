@@ -49,7 +49,7 @@
     "pg": "^8.14.1",
     "prom-client": "^14.2.0",
     "rdy-protocols": "^1.0.11",
-    "rdyjs": "13.6.26",
+    "rdyjs": "13.6.27",
     "redis": "^4.7.0",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
