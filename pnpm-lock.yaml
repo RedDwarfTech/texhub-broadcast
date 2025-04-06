@@ -66,8 +66,8 @@ importers:
         specifier: ^0.2.105
         version: 0.2.105
       rdy-protocols:
-        specifier: ^1.0.11
-        version: 1.0.11(rdyjs@13.6.27)
+        specifier: ^1.0.12
+        version: 1.0.12(rdyjs@13.6.27)
       rdyjs:
         specifier: 13.6.27
         version: 13.6.27
@@ -1662,8 +1662,8 @@ packages:
     engines: {node: '>=16'}
     hasBin: true
 
-  rdy-protocols@1.0.11:
-    resolution: {integrity: sha512-A1pApPo7JOgwxKZHaRUx9/2U34qpeQqP+EvIzaotgH0NJpaWasaoC7/GppSz/cSPwlaWBtRcOhdAcFaA3sjWfQ==}
+  rdy-protocols@1.0.12:
+    resolution: {integrity: sha512-u5UjJFtzpIaeG6RVAefbODjMhrPcMuHx1YrW5JZDOWLJRrQJrd4YylhUxzvnwxgwTLaXpfHzDZ5NxvaCrmcdDw==}
     engines: {node: '>=16.0.0', npm: '>=8.0.0'}
     peerDependencies:
       rdyjs: ^13.6.26
@@ -3523,7 +3523,7 @@ snapshots:
     dependencies:
       isomorphic.js: 0.2.5
 
-  rdy-protocols@1.0.11(rdyjs@13.6.27):
+  rdy-protocols@1.0.12(rdyjs@13.6.27):
     dependencies:
       rdlib0: 0.2.105
       rdyjs: 13.6.27
