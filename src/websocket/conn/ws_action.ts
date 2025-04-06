@@ -1,5 +1,5 @@
 // @ts-ignore
-import awarenessProtocol from "rdy-protocols/dist/awareness.mjs";
+import * as awarenessProtocol from "rdy-protocols/dist/awareness.mjs";
 import { docs, messageSync } from "@collar/yjs_utils.js";
 import { WSSharedDoc } from "@collar/ws_share_doc.js";
 import log4js from "log4js";
@@ -7,11 +7,11 @@ import { persistencePostgresql } from "@storage/storage.js";
 import { Socket } from "socket.io";
 var logger = log4js.getLogger();
 // @ts-ignore
-import encoding from "rdlib0/dist/encoding.mjs";
+import * as encoding from "rdlib0/dist/encoding.mjs";
 // @ts-ignore
-import decoding from "rdlib0/dist/decoding.mjs";
+import * as decoding from "rdlib0/dist/decoding.mjs";
 // @ts-ignore
-import syncProtocol from "rdy-protocols/dist/sync.mjs";
+import * as syncProtocol from "rdy-protocols/dist/sync.mjs";
 import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
 import { getTexFileInfo } from "@storage/appfile.js";
 import { handleControlSignals } from "./event/app_control_handler.js";

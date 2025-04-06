@@ -9,7 +9,7 @@ import {
   // @ts-ignore
 } from "rdlib0/dist/encoding.mjs";
 // @ts-ignore
-import awarenessProtocol from "rdy-protocols/dist/awareness.mjs";
+import * as awarenessProtocol from "rdy-protocols/dist/awareness.mjs";
 import debounce from "lodash";
 import { send } from "../websocket/conn/ws_action.js";
 import { callbackHandler, updateHandler } from "./yjs_utils.js";

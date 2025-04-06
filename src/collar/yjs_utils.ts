@@ -3,11 +3,11 @@ import { setIfUndefined } from "rdlib0/dist/map.mjs";
 import { WSSharedDoc } from "./ws_share_doc.js";
 import { persistencePostgresql } from "../storage/storage.js";
 // @ts-ignore
-import encoding from "rdlib0/dist/encoding.mjs";
+import * as encoding from "rdlib0/dist/encoding.mjs";
 import { send } from "../websocket/conn/ws_action.js";
 import { callbackRequest, getContent } from "./ydoc_callback.js";
 // @ts-ignore
-import syncProtocol from "rdy-protocols/dist/sync.mjs";
+import * as syncProtocol from "rdy-protocols/dist/sync.mjs";
 // @ts-ignore
 import * as Y from "rdyjs";
 import debounce from 'lodash';

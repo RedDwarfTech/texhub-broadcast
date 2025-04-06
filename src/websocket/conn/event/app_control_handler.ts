@@ -9,9 +9,9 @@ import { Socket } from "socket.io";
 import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
 import { send } from "../ws_action.js";
 // @ts-ignore
-import syncProtocol from "rdy-protocols/dist/sync.mjs";
+import * as syncProtocol from "rdy-protocols/dist/sync.mjs";
 // @ts-ignore
-import { decoding } from "rdlib0/dist/decoding.mjs";
+import * as decoding from "rdlib0/dist/decoding.mjs";
 
 export const handleControlSignals = (message: Uint8Array, conn: Socket) => {
   try {
