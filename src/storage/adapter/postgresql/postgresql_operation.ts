@@ -184,6 +184,7 @@ const getLock = async (lockKey: string, uniqueValue: string, times: number) => {
     logger.error("could not get lock wih 15 times retry");
     return false;
   }
+  const waitTime = Math.min(200 * Math.pow(1.5, times), 2000);
   // the expire time is seconds
   const expireTime = 5;
   const luaScript = `
@@ -200,8 +201,8 @@ const getLock = async (lockKey: string, uniqueValue: string, times: number) => {
   if (result === 1) {
     return true;
   } else {
-    logger.warn(`[x] 无法获取锁 ${lockKey}`);
-    await sleep(1000);
+    logger.warn(`[x] 无法获取锁 ${lockKey}，第${times+1}次重试`);
+    await sleep(waitTime);
     return getLock(lockKey, uniqueValue, times + 1);
   }
 };
