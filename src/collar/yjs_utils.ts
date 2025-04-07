@@ -11,6 +11,7 @@ import * as syncProtocol from "rdy-protocols/dist/sync.mjs";
 // @ts-ignore
 import * as Y from "rdyjs";
 import debounce from 'lodash';
+import { PostgresqlPersistance } from "@/storage/adapter/postgresql/postgresql_persistance.js";
 
 const CALLBACK_URL = process.env.CALLBACK_URL
   ? new URL(process.env.CALLBACK_URL)
@@ -89,11 +90,15 @@ export const updateHandler = (update:any, _origin:any, doc:any, _tr:any) => {
   doc.conns.forEach((_:any, conn:any) => send(doc, conn, message))
 }
 
-export const initTpl = (docId: string, projectId: string, initContext: any) => {
+export const initTpl = async (docId: string, projectId: string, initContext: any) => {
   let docOpt = {
     guid: docId,
     collectionid: projectId,
   };
+  const postgresqlDb: PostgresqlPersistance = new PostgresqlPersistance();
   const ydoc = new Y.Doc(docOpt);
   const ytext = ydoc.getText(docId);
+  ytext.insert(0, initContext);
+  const newUpdates: Uint8Array = Y.encodeStateAsUpdate(ydoc);
+  await postgresqlDb.storeUpdate(docId, newUpdates); 
 };

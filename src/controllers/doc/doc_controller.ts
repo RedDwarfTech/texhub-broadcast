@@ -15,10 +15,10 @@ routerDoc.get("/", async (req: Request, res: Response) => {
 /**
  * https://discuss.yjs.dev/t/is-it-possible-to-using-http-to-do-some-initial-job/2108/1
  */
-routerDoc.post("/initial", async (req, res) => {
+routerDoc.post("/initial", async (req: Request, res: Response) => {
   const docId = req.body.doc_id;
   const projectId = req.body.project_id;
   const fileContent = req.body.file_content;
-  initTpl(docId, projectId, fileContent);
+  await initTpl(docId, projectId, fileContent);
   res.end("success");
 });
