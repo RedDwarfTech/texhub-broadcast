@@ -27,7 +27,7 @@ import * as bc from "rdlib0/broadcastchannel";
 import * as time from "rdlib0/time";
 import { ManagerOptions, Socket, SocketOptions } from "socket.io-client";
 import { WsParam } from "@model/texhub/ws_param.js";
-import { TeXSocket } from "../../texhub/client/tex_socket.js";
+import { TeXSocket } from "@texhub/client/tex_socket.js";
 import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
 import { WsCommand } from "@common/ws/WsCommand.js";
 import { setupWebsocket } from "./event/setup_ws.js";

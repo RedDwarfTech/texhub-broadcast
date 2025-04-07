@@ -1,7 +1,7 @@
 import logger from "@common/log4js_config.js";
 import { toJSON } from "flatted";
 import { Socket } from "socket.io";
-import { websocketServer } from "../../../app.js";
+import { websocketServer } from "@/app.js";
 import { EngineConnErr } from "@model/socketio/engine_conn_err.js";
 
 export const initial_default = () => {

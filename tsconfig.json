@@ -12,6 +12,7 @@
     "declaration": true,
     "baseUrl": ".",
     "paths": {
+      "@/*": ["src/*"],
       "@controllers/*": ["src/controllers/*"],
       "@websocket/*": ["src/websocket/*"],
       "@common/*": ["src/common/*"],
