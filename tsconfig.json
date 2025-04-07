@@ -17,7 +17,8 @@
       "@common/*": ["src/common/*"],
       "@model/*": ["src/model/*"],
       "@collar/*": ["src/collar/*"],
-      "@storage/*": ["src/storage/*"]
+      "@storage/*": ["src/storage/*"],
+      "@texhub/*": ["src/texhub/*"]
     },
     "lib": ["DOM", "ES2021.String"],
     "sourceMap": true

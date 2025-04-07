@@ -27,7 +27,7 @@ import * as bc from "rdlib0/broadcastchannel";
 import * as time from "rdlib0/time";
 import { ManagerOptions, Socket, SocketOptions } from "socket.io-client";
 import { WsParam } from "@model/texhub/ws_param.js";
-import { MySocket } from "../../types/textypes.js";
+import { TeXSocket } from "../../texhub/client/tex_socket.js";
 import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
 import { WsCommand } from "@common/ws/WsCommand.js";
 import { setupWebsocket } from "./event/setup_ws.js";
@@ -131,7 +131,7 @@ export class SocketIOClientProvider extends Observable<string> {
       connect = true,
       awareness = new awarenessProtocol.Awareness(doc),
       params = {},
-      SocketPolyfill = MySocket as unknown as WsParam,
+      SocketPolyfill = TeXSocket as unknown as WsParam,
       resyncInterval = -1,
       maxBackoffTime = 2500,
       disableBc = false,

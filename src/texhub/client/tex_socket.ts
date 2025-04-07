@@ -1,6 +1,6 @@
 import { ManagerOptions, Socket, SocketOptions, io } from "socket.io-client";
 
-export class MySocket {
+export class TeXSocket {
   constructor(url: string, options?: Partial<ManagerOptions & SocketOptions>) {
     console.log("initial the websocket...." + url);
     const socket: Socket = io(url, options);
