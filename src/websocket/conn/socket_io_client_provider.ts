@@ -112,6 +112,7 @@ export class SocketIOClientProvider extends Observable<string> {
   _unloadHandler: () => void;
   _checkInterval: NodeJS.Timeout;
   subdocUpdateHandlersMap: any;
+  subdocUpdateHandler: any;
   /**
    * manage all sub docs with main doc self
    * @type {Map}
@@ -296,7 +297,7 @@ export class SocketIOClientProvider extends Observable<string> {
      * @param {String} id identifier of sub documents
      * @returns
      */
-    this.subdocUpdateHandlersMap = (id: string) => {
+    this.subdocUpdateHandler = (id: string) => {
       return (update: any, origin: any) => {
         if (origin === this) return;
         const encoder = encoding.createEncoder();
@@ -328,7 +329,7 @@ export class SocketIOClientProvider extends Observable<string> {
    * @param {Y.Doc} subdoc
    */
   addSubdoc(subdoc: Y.Doc) {
-    let updateHandler = this.subdocUpdateHandlersMap(subdoc.guid);
+    let updateHandler = this.subdocUpdateHandler(subdoc.guid);
     this.docs.set(subdoc.guid, subdoc);
     // @ts-ignore
     subdoc.on("update", updateHandler);
