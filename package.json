@@ -1,6 +1,6 @@
 {
   "name": "texhub-broadcast",
-  "version": "1.0.47",
+  "version": "1.0.48",
   "description": "",
   "engines": {
     "node": ">=20.0.0"
@@ -36,9 +36,6 @@
     "flatted": "^3.3.3",
     "globals": "^15.15.0",
     "jsonwebtoken": "^9.0.2",
-    "level": "^9.0.0",
-    "leveldown": "^6.1.1",
-    "levelup": "^5.1.1",
     "lodash": "^4.17.21",
     "log4js": "^6.9.1",
     "lru-cache": "^11.1.0",

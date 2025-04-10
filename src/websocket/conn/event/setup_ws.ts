@@ -82,8 +82,7 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
       //   status: "connected",
       // },
       //]);
-      let enableSubDoc = localStorage.getItem("subDoc");
-      if (enableSubDoc && enableSubDoc.toString() === "subdoc") {
+      if (provider.enableSubDoc) {
         for (const [k, doc] of provider.docs) {
           const encoder = encoding.createEncoder();
           encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);

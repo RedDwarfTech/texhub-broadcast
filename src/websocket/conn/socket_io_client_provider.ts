@@ -88,6 +88,7 @@ export class SocketIOClientProvider extends Observable<string> {
   options?: Partial<ManagerOptions & SocketOptions>;
   url: string;
   roomname: string;
+  enableSubDoc?: boolean;
   doc: Y.Doc;
   _WS: WsParam;
   awareness: awarenessProtocol.Awareness;
@@ -111,13 +112,13 @@ export class SocketIOClientProvider extends Observable<string> {
   ) => void;
   _unloadHandler: () => void;
   _checkInterval: NodeJS.Timeout;
-  subdocUpdateHandlersMap: any;
+  subdocUpdateHandlersMap: Map<string,any>;
   subdocUpdateHandler: any;
   /**
    * manage all sub docs with main doc self
    * @type {Map}
    */
-  docs: Map<string, any> = new Map();
+  docs: Map<string, Y.Doc> = new Map();
   /**
      * store synced status for sub docs
      */
@@ -127,6 +128,7 @@ export class SocketIOClientProvider extends Observable<string> {
     serverUrl: string,
     roomname: string,
     doc: Y.Doc,
+    enableSubDoc?: boolean,
     options?: Partial<ManagerOptions & SocketOptions>,
     {
       connect = true,
@@ -156,6 +158,7 @@ export class SocketIOClientProvider extends Observable<string> {
     this.wsconnected = false;
     this.wsconnecting = false;
     this.bcconnected = false;
+    this.enableSubDoc = enableSubDoc;
     this.disableBc = disableBc;
     this.wsUnsuccessfulReconnects = 0;
     this.messageHandlers = messageHandlers.slice();
@@ -298,7 +301,7 @@ export class SocketIOClientProvider extends Observable<string> {
      * @returns
      */
     this.subdocUpdateHandler = (id: string) => {
-      return (update: any, origin: any) => {
+      let result = (update: any, origin: any) => {
         if (origin === this) return;
         const encoder = encoding.createEncoder();
         encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
@@ -306,6 +309,7 @@ export class SocketIOClientProvider extends Observable<string> {
         syncProtocol.writeUpdate(encoder, update);
         broadcastMessage(this, encoding.toUint8Array(encoder));
       };
+      return result;
     };
   }
 
