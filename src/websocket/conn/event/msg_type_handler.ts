@@ -43,8 +43,9 @@ messageHandlers[SyncMessageType.SubDocMessageSync] = (
     return;
   }
 
-  encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
-  encoding.writeVarString(encoder, docGuid);
+  encoding.writeVarUint(encoder, SyncMessageType.MessageSync);
+  // convert to the legacy message without doc guid
+  // encoding.writeVarString(encoder, docGuid);
   const syncMessageType = syncProtocol.readSyncMessage(
     decoder,
     encoder,
