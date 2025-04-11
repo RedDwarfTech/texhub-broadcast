@@ -45,7 +45,7 @@
     "pg": "^8.14.1",
     "prom-client": "^14.2.0",
     "rdlib0": "^0.2.106",
-    "rdy-protocols": "^1.0.12",
+    "rdy-protocols": "^1.0.14",
     "rdyjs": "13.6.27",
     "redis": "^4.7.0",
     "socket.io": "^4.8.1",
