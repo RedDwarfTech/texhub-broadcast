@@ -57,7 +57,7 @@ const preHandleSubDoc = (
       send(targetDoc, conn, encoding.toUint8Array(encoder));
     }
   } catch (err) {
-    logger.error("handle sub doc facing issue", err);
+    logger.error("handle sub doc facing issue:" + doc.name, err);
   }
 };
 
