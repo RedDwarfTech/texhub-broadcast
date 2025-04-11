@@ -50,7 +50,7 @@ const preHandleSubDoc = (
       handleSubDoc(targetDoc, docGuid, conn, doc);
     }
 
-    encoding.writeVarUint(encoder, SyncMessageType.MessageSync);
+    encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
     encoding.writeVarString(encoder, targetDoc.name);
     syncProtocol.readSyncMessage(decoder, encoder, targetDoc, null);
     if (encoding.length(encoder) > 1 && needSend(encoder)) {
