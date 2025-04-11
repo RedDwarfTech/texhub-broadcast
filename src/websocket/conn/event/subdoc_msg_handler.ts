@@ -71,7 +71,7 @@ const handleSubDoc = (
   targetDoc = getYDoc(docGuid, false);
   if (!targetDoc.conns.has(conn)) targetDoc.conns.set(conn, new Set());
 
-  /**@type {Map<String, Boolean>}*/ const subm = subdocsMap.get(doc.name);
+  const subm = subdocsMap.get(doc.name);
   if (subm && subm.has(targetDoc.name)) {
     // sync step 1 done before.
   } else {
@@ -85,7 +85,7 @@ const handleSubDoc = (
 
     // send sync step 1
     const encoder = encoding.createEncoder();
-    encoding.writeVarUint(encoder, SyncMessageType.MessageSync);
+    encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
     encoding.writeVarString(encoder, targetDoc.name);
     syncProtocol.writeSyncStep1(encoder, targetDoc);
     send(targetDoc, conn, encoding.toUint8Array(encoder));
