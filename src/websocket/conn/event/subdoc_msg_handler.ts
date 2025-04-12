@@ -96,13 +96,28 @@ const handleSubDoc = (
 };
 
 /**
+ * if the document only contains message type and document guid
+ * skip and not send this invalid message
  *
  * @param {encoding.Encoder} encoder
  */
 const needSend = (encoder: any) => {
-  const buf = encoding.toUint8Array(encoder);
-  const decoder = decoding.createDecoder(buf);
-  decoding.readVarUint(decoder);
-  decoding.readVarString(decoder);
-  return decoding.hasContent(decoder);
+  try {
+    const buf = encoding.toUint8Array(encoder);
+    const decoder = decoding.createDecoder(buf);
+    if (!decoding.hasContent(decoder)) {
+      logger.warn("the origin did not has content");
+      return false;
+    }
+    decoding.readVarUint(decoder);
+    if (!decoding.hasContent(decoder)) {
+      logger.warn("the origin read msg type did not has content");
+      return false;
+    }
+    decoding.readVarString(decoder);
+    return decoding.hasContent(decoder);
+  } catch (e) {
+    logger.error("need send checked failed", e);
+  }
+  return false;
 };
