@@ -49,12 +49,15 @@ const preHandleSubDoc = (
       );
       handleSubDoc(targetDoc, docGuid, conn, doc);
     }
-
-    encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
-    encoding.writeVarString(encoder, targetDoc.name);
-    syncProtocol.readSyncMessage(decoder, encoder, targetDoc, null);
-    if (encoding.length(encoder) > 1 && needSend(encoder)) {
-      send(targetDoc, conn, encoding.toUint8Array(encoder));
+    try {
+      encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
+      encoding.writeVarString(encoder, targetDoc.name);
+      syncProtocol.readSyncMessage(decoder, encoder, targetDoc, null);
+      if (encoding.length(encoder) > 1 && needSend(encoder)) {
+        send(targetDoc, conn, encoding.toUint8Array(encoder));
+      }
+    } catch (e) {
+      logger.error("write sub document sync failed, docGuid:" + docGuid, e);
     }
   } catch (err) {
     logger.error("handle sub doc facing issue:" + doc.name, err);
