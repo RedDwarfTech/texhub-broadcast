@@ -72,7 +72,7 @@ messageHandlers[SyncMessageType.SubDocMessageSync] = (
     syncMessageType === syncProtocol.messageYjsSyncStep2 &&
     !provider.syncedStatus.get(docGuid)
   ) {
-    logger.info("sub doc synced, docGuid:" + docGuid);
+    console.info("sub doc synced, docGuid:" + docGuid);
     provider.updateSyncedStatus(docGuid, true);
   }
 };
