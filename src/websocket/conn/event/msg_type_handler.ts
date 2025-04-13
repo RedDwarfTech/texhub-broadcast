@@ -19,8 +19,9 @@ import {
 } from "rdlib0/dist/decoding.mjs";
 // @ts-ignore
 import * as awarenessProtocol from "rdy-protocols/awareness";
+import { MessageHandler } from "@/model/yjs/net/msg_handler_fun.js";
 
-export const messageHandlers: any[] = [];
+export const messageHandlers: MessageHandler[] = [];
 
 /**
  * @param {WebsocketProvider} provider
@@ -43,9 +44,9 @@ messageHandlers[SyncMessageType.SubDocMessageSync] = (
     return;
   }
 
-  encoding.writeVarUint(encoder, SyncMessageType.MessageSync);
+  encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
   // convert to the legacy message without doc guid
-  // encoding.writeVarString(encoder, docGuid);
+  encoding.writeVarString(encoder, docGuid);
   const syncMessageType = syncProtocol.readSyncMessage(
     decoder,
     encoder,
