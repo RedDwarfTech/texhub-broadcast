@@ -34,7 +34,7 @@ messageHandlers[SyncMessageType.SubDocMessageSync] = (
   encoder: any,
   decoder: any,
   provider: SocketIOClientProvider,
-  emitSynced: any,
+  emitSynced: boolean = true,
   messageType: any
 ) => {
   const docGuid = decoding.readVarString(decoder);

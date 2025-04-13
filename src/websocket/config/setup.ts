@@ -27,11 +27,11 @@ export function setupWSConnection(
     `http://${req.headers.host}`
   ).searchParams.get("docId");
   // get doc, initialize if it does not exist yet
-  const doc: WSSharedDoc = getYDoc(docId!, gc);
-  doc.conns.set(conn, new Set());
+  const rootDoc: WSSharedDoc = getYDoc(docId!, gc);
+  rootDoc.conns.set(conn, new Set());
   // listen and reply to events
   conn.on("message", (message: Uint8Array) => {
-    ws_msg_handle(message, conn, doc);
+    ws_msg_handle(message, conn, rootDoc);
   });
   conn.on("close", (code, reason, wasClean) => {
     if (code !== 1000 && code !== 4001) {
@@ -46,7 +46,7 @@ export function setupWSConnection(
           docId
       );
     }
-    closeConn(doc, conn);
+    closeConn(rootDoc, conn);
   });
   // put the following in a variables in a block so the interval handlers don't keep in in
   // scope
@@ -54,20 +54,20 @@ export function setupWSConnection(
     // send sync step 1
     const encoder = createEncoder();
     writeVarUint(encoder, messageSync);
-    syncProtocol.writeSyncStep1(encoder, doc);
-    send(doc, conn, toUint8Array(encoder));
-    const awarenessStates = doc.awareness.getStates();
+    syncProtocol.writeSyncStep1(encoder, rootDoc);
+    send(rootDoc, conn, toUint8Array(encoder));
+    const awarenessStates = rootDoc.awareness.getStates();
     if (awarenessStates.size > 0) {
       const encoder = createEncoder();
       writeVarUint(encoder, messageAwareness);
       writeVarUint8Array(
         encoder,
         awarenessProtocol.encodeAwarenessUpdate(
-          doc.awareness,
+          rootDoc.awareness,
           Array.from(awarenessStates.keys())
         )
       );
-      send(doc, conn, toUint8Array(encoder));
+      send(rootDoc, conn, toUint8Array(encoder));
     }
   }
 }

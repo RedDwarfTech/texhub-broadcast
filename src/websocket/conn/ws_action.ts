@@ -82,7 +82,7 @@ export const send = async (doc: WSSharedDoc, conn: Socket, m: Uint8Array) => {
 
 export const messageListener = (
   conn: Socket,
-  doc: WSSharedDoc,
+  rootDoc: WSSharedDoc,
   message: Uint8Array
 ) => {
   try {
@@ -91,22 +91,22 @@ export const messageListener = (
     const messageType: number = decoding.readVarUint(decoder);
     switch (messageType) {
       case SyncMessageType.SubDocMessageSync:
-        handleSubDocMsg(doc, conn, decoder);
+        handleSubDocMsg(rootDoc, conn, decoder);
         break;
       case SyncMessageType.MessageSync:
         encoding.writeVarUint(encoder, messageSync);
-        syncProtocol.readSyncMessage(decoder, encoder, doc, conn);
+        syncProtocol.readSyncMessage(decoder, encoder, rootDoc, conn);
 
         // If the `encoder` only contains the type of reply message and no
         // message, there is no need to send the message. When `encoder` only
         // contains the type of reply, its length is 1.
         if (encoding.length(encoder) > 1) {
-          send(doc, conn, encoding.toUint8Array(encoder));
+          send(rootDoc, conn, encoding.toUint8Array(encoder));
         }
         break;
       case SyncMessageType.MessageAwareness: {
         awarenessProtocol.applyAwarenessUpdate(
-          doc.awareness,
+          rootDoc.awareness,
           decoding.readVarUint8Array(decoder),
           conn
         );

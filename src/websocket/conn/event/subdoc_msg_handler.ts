@@ -21,33 +21,33 @@ const subdocsMap: Map<String, Map<String, WSSharedDoc>> = new Map();
  * hand the subdocument message
  * https://discuss.yjs.dev/t/extend-y-websocket-provider-to-support-sub-docs-synchronization-in-one-websocket-connection/1294
  *
- * @param doc
+ * @param rootDoc
  * @param conn
  * @param message
  */
 export const handleSubDocMsg = (
-  doc: WSSharedDoc,
+  rootDoc: WSSharedDoc,
   conn: Socket,
   decoder: any
 ) => {
-  let targetDoc = doc;
-  preHandleSubDoc(decoder, conn, targetDoc, doc);
+  let targetDoc = rootDoc;
+  preHandleSubDoc(decoder, conn, targetDoc, rootDoc);
 };
 
 const preHandleSubDoc = (
   decoder: any,
   conn: Socket,
   targetDoc: WSSharedDoc,
-  doc: WSSharedDoc
+  rootDoc: WSSharedDoc
 ) => {
   try {
     const encoder = encoding.createEncoder();
     const docGuid = decoding.readVarString(decoder);
-    if (docGuid !== doc.name) {
+    if (docGuid !== rootDoc.name) {
       logger.warn(
         "this is an subdocument,subDocMessageType,doc guid:" + docGuid
       );
-      handleSubDoc(targetDoc, docGuid, conn, doc);
+      handleSubDoc(targetDoc, docGuid, conn, rootDoc);
     }
     try {
       encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
@@ -62,7 +62,7 @@ const preHandleSubDoc = (
       logger.error("write sub document sync failed, docGuid:" + docGuid, e);
     }
   } catch (err) {
-    logger.error("handle sub doc facing issue:" + doc.name, err);
+    logger.error("handle sub doc facing issue:" + rootDoc.name, err);
   }
 };
 
@@ -70,13 +70,13 @@ const handleSubDoc = (
   targetDoc: WSSharedDoc,
   docGuid: string,
   conn: Socket,
-  doc: WSSharedDoc
+  rootDoc: WSSharedDoc
 ) => {
   // subdoc
   targetDoc = getYDoc(docGuid, false);
   if (!targetDoc.conns.has(conn)) targetDoc.conns.set(conn, new Set());
 
-  const subm = subdocsMap.get(doc.name);
+  const subm: Map<String, WSSharedDoc> | undefined = subdocsMap.get(rootDoc.name);
   if (subm && subm.has(targetDoc.name)) {
     // sync step 1 done before.
   } else {
@@ -85,7 +85,7 @@ const handleSubDoc = (
     } else {
       const nm = new Map();
       nm.set(targetDoc.name, targetDoc);
-      subdocsMap.set(doc.name, nm);
+      subdocsMap.set(rootDoc.name, nm);
     }
 
     // send sync step 1
