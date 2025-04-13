@@ -20,6 +20,7 @@ import {
 // @ts-ignore
 import * as awarenessProtocol from "rdy-protocols/awareness";
 import { MessageHandler } from "@/model/yjs/net/msg_handler_fun.js";
+import logger from "@/common/log4js_config.js";
 
 export const messageHandlers: MessageHandler[] = [];
 
@@ -71,6 +72,7 @@ messageHandlers[SyncMessageType.SubDocMessageSync] = (
     syncMessageType === syncProtocol.messageYjsSyncStep2 &&
     !provider.syncedStatus.get(docGuid)
   ) {
+    logger.info("sub doc synced, docGuid:" + docGuid);
     provider.updateSyncedStatus(docGuid, true);
   }
 };
