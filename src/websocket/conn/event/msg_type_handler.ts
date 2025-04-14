@@ -48,6 +48,10 @@ messageHandlers[SyncMessageType.SubDocMessageSync] = (
   encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
   // convert to the legacy message without doc guid
   encoding.writeVarString(encoder, docGuid);
+  const hasContent = decoding.hasContent(decoder);
+  if (!hasContent) {
+    console.error("sub doc message sync has no content");
+  }
   const syncMessageType = syncProtocol.readSyncMessage(
     decoder,
     encoder,
@@ -60,9 +64,9 @@ messageHandlers[SyncMessageType.SubDocMessageSync] = (
     emitSynced &&
     docGuid === provider.roomname &&
     syncMessageType === syncProtocol.messageYjsSyncStep2 &&
-    !provider.synced
+    !provider._synced
   ) {
-    provider.synced = true;
+    provider._synced = true;
   }
 
   // sub doc synced
@@ -94,9 +98,9 @@ messageHandlers[SyncMessageType.MessageSync] = (
   if (
     emitSynced &&
     syncMessageType === syncProtocol.messageYjsSyncStep2 &&
-    !provider.synced
+    !provider._synced
   ) {
-    provider.synced = true;
+    provider._synced = true;
   }
 };
 
@@ -138,7 +142,9 @@ messageHandlers[SyncMessageType.MessageAuth] = (
   _emitSynced: any,
   _messageType: any
 ) => {
-  authProtocol.readAuthMessage(decoder, provider.doc, (_ydoc: any, reason: any) =>
-    permissionDeniedHandler(provider, reason)
+  authProtocol.readAuthMessage(
+    decoder,
+    provider.doc,
+    (_ydoc: any, reason: any) => permissionDeniedHandler(provider, reason)
   );
 };

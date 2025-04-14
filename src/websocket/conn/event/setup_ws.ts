@@ -24,7 +24,7 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
     provider.ws = websocket;
     provider.wsconnecting = true;
     provider.wsconnected = false;
-    provider.synced = false;
+    provider._synced = false;
 
     websocket.on("message", (data) => {
       provider.wsLastMessageReceived = time.getUnixTime();
@@ -43,7 +43,7 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
       provider.wsconnecting = false;
       if (provider.wsconnected) {
         provider.wsconnected = false;
-        provider.synced = false;
+        provider._synced = false;
         // update awareness (all users except local left)
         awarenessProtocol.removeAwarenessStates(
           provider.awareness,

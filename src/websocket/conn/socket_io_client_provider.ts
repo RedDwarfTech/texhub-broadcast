@@ -98,7 +98,7 @@ export class SocketIOClientProvider extends Observable<string> {
   disableBc: boolean;
   wsUnsuccessfulReconnects: number;
   messageHandlers: any;
-  synced: boolean;
+  _synced: boolean;
   ws: Socket | null;
   wsLastMessageReceived: number;
   shouldConnect: boolean;
@@ -112,7 +112,7 @@ export class SocketIOClientProvider extends Observable<string> {
   ) => void;
   _unloadHandler: () => void;
   _checkInterval: NodeJS.Timeout;
-  subdocUpdateHandlersMap: Map<string,any>;
+  subdocUpdateHandlersMap: Map<string, any>;
   subdocUpdateHandler: any;
   /**
    * manage all sub docs with main doc self
@@ -120,9 +120,9 @@ export class SocketIOClientProvider extends Observable<string> {
    */
   docs: Map<string, Y.Doc> = new Map();
   /**
-     * store synced status for sub docs
-     */
-  syncedStatus = new Map()
+   * store synced status for sub docs
+   */
+  syncedStatus = new Map();
 
   constructor(
     serverUrl: string,
@@ -165,7 +165,7 @@ export class SocketIOClientProvider extends Observable<string> {
     /**
      * @type {boolean}
      */
-    this.synced = false;
+    this._synced = false;
     this.ws = null;
     this.wsLastMessageReceived = 0;
     /**
@@ -313,11 +313,12 @@ export class SocketIOClientProvider extends Observable<string> {
     };
   }
 
-  updateSyncedStatus (id: string, state:any) {
-    const oldState = this.syncedStatus.get(id)
+  updateSyncedStatus(id: string, state: any) {
+    const oldState = this.syncedStatus.get(id);
     if (oldState !== state) {
-      this.syncedStatus.set(id, state)
-      super.emit('subdoc_synced', [id, state])
+      this.syncedStatus.set(id, state);
+      // @ts-ignore
+      this.emit("subdoc_synced", [id, state]);
     }
   }
 
@@ -354,6 +355,23 @@ export class SocketIOClientProvider extends Observable<string> {
    */
   getDoc(id: string) {
     return this.docs.get(id);
+  }
+
+  /**
+   * @type {boolean}
+   */
+  get synced () {
+    return this._synced
+  }
+
+  set synced (state) {
+    if (this._synced !== state) {
+      this._synced = state;
+      // @ts-ignore
+      this.emit('synced', [state]);
+      // @ts-ignore
+      this.emit('sync', [state]);
+    }
   }
 
   connectBc() {
