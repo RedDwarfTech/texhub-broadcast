@@ -42,6 +42,7 @@ messageHandlers[SyncMessageType.SubDocMessageSync] = (
   const doc = provider.getDoc(docGuid);
   if (!doc) {
     console.error("doc not found with id: ", docGuid);
+    console.info("doc map: ", JSON.stringify(provider.docs));
     return;
   }
 
