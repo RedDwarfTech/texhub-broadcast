@@ -26,12 +26,7 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
     provider.wsconnected = false;
     provider._synced = false;
 
-    socketio.on("data", (data) => {
-      console.log("data received",data);
-    });
-
     socketio.on("message", (data) => {
-      console.log("message received");
       provider.wsLastMessageReceived = time.getUnixTime();
       const encoder = readMessage(provider, new Uint8Array(data), true);
       if (encoding.length(encoder) > 1) {

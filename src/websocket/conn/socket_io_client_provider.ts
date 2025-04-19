@@ -41,7 +41,6 @@ export const readMessage = (
   buf: Uint8Array,
   emitSynced: boolean
 ) => {
-  console.log(`[Instance ${provider.instanceId}] readMessage called with docs state:`, Array.from(provider.docs.entries()));
   const decoder = createDecoder(buf);
   const encoder = createEncoder();
   const messageType = readVarUint(decoder);
