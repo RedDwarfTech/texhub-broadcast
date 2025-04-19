@@ -64,6 +64,7 @@ const broadcastMessage = (
 ) => {
   const ws = provider.ws;
   if (provider.wsconnected && ws && ws.connected) {
+    console.log("broadcastMessage called with ws connected");
     ws.send(buf);
   }
   if (provider.bcconnected) {
@@ -340,16 +341,12 @@ export class SocketIOClientProvider extends Observable<string> {
    * @param {Y.Doc} subdoc
    */
   addSubdoc(subdoc: Y.Doc) {
-    console.log(`[Instance ${this.instanceId}] Adding subdoc with guid:`, subdoc.guid);
-    console.log(`[Instance ${this.instanceId}] Current docs before adding:`, Array.from(this.docs.entries()));
     if (!subdoc.guid) {
       console.error("Subdoc guid is missing!");
       return;
     }
-    
     let updateHandler = this.subdocUpdateHandler(subdoc.guid);
     this.docs.set(subdoc.guid, subdoc);
-    console.log(`[Instance ${this.instanceId}] Current docs after adding:`, Array.from(this.docs.entries()));
     // @ts-ignore
     subdoc.on("update", updateHandler);
     this.subdocUpdateHandlersMap.set(subdoc.guid, updateHandler);
@@ -471,7 +468,6 @@ export class SocketIOClientProvider extends Observable<string> {
   }
 
   connect() {
-    console.log(`[Instance ${this.instanceId}] Connecting...`);
     this.shouldConnect = true;
     if (!this.wsconnected || this.ws === null || this.ws === undefined) {
       console.log(`[Instance ${this.instanceId}] Setting up websocket...`);
