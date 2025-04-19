@@ -63,7 +63,6 @@ const broadcastMessage = (
 ) => {
   const ws = provider.ws;
   if (provider.wsconnected && ws && ws.connected) {
-    console.log("broadcastMessage called with ws connected");
     ws.send(buf);
   }
   if (provider.bcconnected) {
@@ -145,7 +144,6 @@ export class SocketIOClientProvider extends Observable<string> {
   ) {
     super();
     this.instanceId = SocketIOClientProvider.instanceCount++;
-    console.log(`Creating SocketIOClientProvider instance ${this.instanceId}`);
     // ensure that url is always ends with /
     while (serverUrl[serverUrl.length - 1] === "/") {
       serverUrl = serverUrl.slice(0, serverUrl.length - 1);
@@ -296,7 +294,6 @@ export class SocketIOClientProvider extends Observable<string> {
         //this.ws.close();
       }
     }, messageReconnectTimeout / 10);
-    console.log(`[Instance ${this.instanceId}] Setting up check interval`);
     if (connect) {
       this.connect();
     }
@@ -469,7 +466,6 @@ export class SocketIOClientProvider extends Observable<string> {
   connect() {
     this.shouldConnect = true;
     if (!this.wsconnected || this.ws === null || this.ws === undefined) {
-      console.log(`[Instance ${this.instanceId}] Setting up websocket...`);
       setupWebsocket(this);
       this.connectBc();
     }

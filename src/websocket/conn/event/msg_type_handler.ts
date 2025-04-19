@@ -53,7 +53,7 @@ messageHandlers[SyncMessageType.SubDocMessageSync] = (
   if (!hasContent) {
     console.error("sub doc message sync has no content");
   }
-  console.error("sub doc message sync with content");
+  console.warn("sub doc message sync with content，docGuid:", docGuid);
   const syncMessageType = syncProtocol.readSyncMessage(
     decoder,
     encoder,
