@@ -38,11 +38,11 @@ messageHandlers[SyncMessageType.SubDocMessageSync] = (
   emitSynced: boolean = true,
   messageType: any
 ) => {
+  console.info("doc map: ", JSON.stringify(provider.docs));
   const docGuid = decoding.readVarString(decoder);
   const doc = provider.getDoc(docGuid);
   if (!doc) {
     console.error("doc not found with id: ", docGuid);
-    console.info("doc map: ", JSON.stringify(provider.docs));
     return;
   }
 
@@ -53,6 +53,7 @@ messageHandlers[SyncMessageType.SubDocMessageSync] = (
   if (!hasContent) {
     console.error("sub doc message sync has no content");
   }
+  console.error("sub doc message sync with content");
   const syncMessageType = syncProtocol.readSyncMessage(
     decoder,
     encoder,

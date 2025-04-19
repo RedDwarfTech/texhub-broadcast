@@ -19,7 +19,10 @@ import * as syncProtocol from "rdy-protocols/sync";
  * @param {SocketIOClientProvider} provider
  */
 export const setupWebsocket = (provider: SocketIOClientProvider) => {
+  
+  console.log("setupWebsocket called:", provider);
   if (provider.shouldConnect && provider.ws === null) {
+    debugger;
     const websocket: Socket = new provider._WS(provider.url, provider.options);
     provider.ws = websocket;
     provider.wsconnecting = true;
@@ -27,6 +30,7 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
     provider._synced = false;
 
     websocket.on("message", (data) => {
+      console.log("message received");
       provider.wsLastMessageReceived = time.getUnixTime();
       const encoder = readMessage(provider, new Uint8Array(data), true);
       if (encoding.length(encoder) > 1) {
@@ -35,6 +39,7 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
       //provider.emit("message", [data, provider]);
     });
     websocket.on("error", (event) => {
+      console.log("error received");
       //provider.emit("connection-error", [event, provider]);
     });
     websocket.on("close", (event) => {

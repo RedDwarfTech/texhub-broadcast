@@ -41,6 +41,7 @@ export const readMessage = (
   buf: Uint8Array,
   emitSynced: boolean
 ) => {
+  console.log(`[Instance ${provider.instanceId}] readMessage called with docs state:`, Array.from(provider.docs.entries()));
   const decoder = createDecoder(buf);
   const encoder = createEncoder();
   const messageType = readVarUint(decoder);
@@ -83,6 +84,8 @@ const sendMessage = (provider: SocketIOClientProvider, buf: ArrayBuffer) => {
 };
 
 export class SocketIOClientProvider extends Observable<string> {
+  private static instanceCount = 0;
+  public readonly instanceId: number;
   maxBackoffTime: number;
   bcChannel: string;
   options?: Partial<ManagerOptions & SocketOptions>;
@@ -141,6 +144,8 @@ export class SocketIOClientProvider extends Observable<string> {
     } = {}
   ) {
     super();
+    this.instanceId = SocketIOClientProvider.instanceCount++;
+    console.log(`Creating SocketIOClientProvider instance ${this.instanceId}`);
     // ensure that url is always ends with /
     while (serverUrl[serverUrl.length - 1] === "/") {
       serverUrl = serverUrl.slice(0, serverUrl.length - 1);
@@ -291,6 +296,7 @@ export class SocketIOClientProvider extends Observable<string> {
         //this.ws.close();
       }
     }, messageReconnectTimeout / 10);
+    console.log(`[Instance ${this.instanceId}] Setting up check interval`);
     if (connect) {
       this.connect();
     }
@@ -334,9 +340,16 @@ export class SocketIOClientProvider extends Observable<string> {
    * @param {Y.Doc} subdoc
    */
   addSubdoc(subdoc: Y.Doc) {
+    console.log(`[Instance ${this.instanceId}] Adding subdoc with guid:`, subdoc.guid);
+    console.log(`[Instance ${this.instanceId}] Current docs before adding:`, Array.from(this.docs.entries()));
+    if (!subdoc.guid) {
+      console.error("Subdoc guid is missing!");
+      return;
+    }
+    
     let updateHandler = this.subdocUpdateHandler(subdoc.guid);
     this.docs.set(subdoc.guid, subdoc);
-    console.log("this docs:" + JSON.stringify(this.docs));
+    console.log(`[Instance ${this.instanceId}] Current docs after adding:`, Array.from(this.docs.entries()));
     // @ts-ignore
     subdoc.on("update", updateHandler);
     this.subdocUpdateHandlersMap.set(subdoc.guid, updateHandler);
@@ -355,7 +368,13 @@ export class SocketIOClientProvider extends Observable<string> {
    * @returns
    */
   getDoc(id: string) {
-    return this.docs.get(id);
+    console.log("Getting doc with id:", id);
+    console.log("Current docs state in getDoc:", Array.from(this.docs.entries()));
+    const doc = this.docs.get(id);
+    if (!doc) {
+      console.error("Document not found for id:", id);
+    }
+    return doc;
   }
 
   /**
@@ -452,8 +471,10 @@ export class SocketIOClientProvider extends Observable<string> {
   }
 
   connect() {
+    console.log(`[Instance ${this.instanceId}] Connecting...`);
     this.shouldConnect = true;
     if (!this.wsconnected || this.ws === null || this.ws === undefined) {
+      console.log(`[Instance ${this.instanceId}] Setting up websocket...`);
       setupWebsocket(this);
       this.connectBc();
     }
