@@ -336,6 +336,7 @@ export class SocketIOClientProvider extends Observable<string> {
   addSubdoc(subdoc: Y.Doc) {
     let updateHandler = this.subdocUpdateHandler(subdoc.guid);
     this.docs.set(subdoc.guid, subdoc);
+    console.log("this docs:" + JSON.stringify(this.docs));
     // @ts-ignore
     subdoc.on("update", updateHandler);
     this.subdocUpdateHandlersMap.set(subdoc.guid, updateHandler);
