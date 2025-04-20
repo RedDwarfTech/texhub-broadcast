@@ -7,6 +7,7 @@ import { WsParam } from "@model/texhub/ws_param.js";
 class SingleClientProvider {
   private static instance: SocketIOClientProvider | null = null;
   private static isInitialized = false;
+  private static currentRoom: string | null = null;
 
   static getInstance(
     serverUrl: string,
@@ -36,6 +37,7 @@ class SingleClientProvider {
         options,
         config
       );
+      SingleClientProvider.currentRoom = roomname;
       SingleClientProvider.isInitialized = true;
     }
     return SingleClientProvider.instance;
@@ -46,12 +48,20 @@ class SingleClientProvider {
       SingleClientProvider.instance.disconnect();
       SingleClientProvider.instance = null;
       SingleClientProvider.isInitialized = false;
+      SingleClientProvider.currentRoom = null;
     }
   }
 
   static isConnected(): boolean {
     return SingleClientProvider.instance?.wsconnected ?? false;
   }
+
+  static getCurrentRoom(): string | null {
+    return SingleClientProvider.currentRoom;
+  }
 }
 
 export default SingleClientProvider;
+
+
+
