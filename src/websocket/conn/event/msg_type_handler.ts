@@ -71,6 +71,9 @@ messageHandlers[SyncMessageType.SubDocMessageSync] = (
     provider._synced = true;
   }
 
+  let docText = doc.getText();
+  console.info("applyed docText: ", docText);
+
   // sub doc synced
   if (
     emitSynced &&
