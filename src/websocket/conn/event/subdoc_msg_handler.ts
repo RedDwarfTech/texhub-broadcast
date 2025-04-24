@@ -91,6 +91,9 @@ const handleSubDoc = (
     }
     let td = targetDoc.getText();
     let tds = td.toString();
+    let tdd = targetDoc.getText(docGuid);
+    let tdds = tdd.toString();
+    logger.info("target doc tdds:" , tdds);
     logger.info("target doc:" + tds);
 
     // send sync step 1
