@@ -102,7 +102,7 @@ const handleSubDoc = async (
     // send sync step 1
     const encoder = encoding.createEncoder();
     encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
-    encoding.writeVarString(encoder, persistedYdoc.name);
+    encoding.writeVarString(encoder, docGuid);
     syncProtocol.writeSyncStep1(encoder, persistedYdoc);
     send(persistedYdoc, conn, encoding.toUint8Array(encoder));
   }
