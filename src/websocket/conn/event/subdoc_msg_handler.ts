@@ -76,7 +76,7 @@ const handleSubDoc = async (
   // subdoc
   const postgresqlDb: PostgresqlPersistance = new PostgresqlPersistance();
   const persistedYdoc: any = await postgresqlDb.getYDoc(docGuid);
-  targetDoc = persistedYdoc;
+  targetDoc = getYDoc(docGuid, false);
   if (!targetDoc.conns.has(conn)) targetDoc.conns.set(conn, new Set());
 
   const subm: Map<String, WSSharedDoc> | undefined = subdocsMap.get(
@@ -92,9 +92,9 @@ const handleSubDoc = async (
       nm.set(targetDoc.name, targetDoc);
       subdocsMap.set(rootDoc.name, nm);
     }
-    let td = targetDoc.getText();
+    let td = persistedYdoc.getText();
     let tds = td.toString();
-    let tdd = targetDoc.getText(docGuid);
+    let tdd = persistedYdoc.getText(docGuid);
     let tdds = tdd.toString();
     logger.info("target doc tdds:", tdds);
     logger.info("target doc:" + tds);
@@ -102,9 +102,9 @@ const handleSubDoc = async (
     // send sync step 1
     const encoder = encoding.createEncoder();
     encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
-    encoding.writeVarString(encoder, targetDoc.name);
-    syncProtocol.writeSyncStep1(encoder, targetDoc);
-    send(targetDoc, conn, encoding.toUint8Array(encoder));
+    encoding.writeVarString(encoder, persistedYdoc.name);
+    syncProtocol.writeSyncStep1(encoder, persistedYdoc);
+    send(persistedYdoc, conn, encoding.toUint8Array(encoder));
   }
 };
 
