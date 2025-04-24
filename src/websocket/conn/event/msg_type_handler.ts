@@ -20,9 +20,7 @@ import {
 // @ts-ignore
 import * as awarenessProtocol from "rdy-protocols/awareness";
 import { MessageHandler } from "@/model/yjs/net/msg_handler_fun.js";
-import logger from "@/common/log4js_config.js";
-// @ts-ignore
-import * as Y from "rdyjs";
+import { enableTracing, logYjsUnwrapMsg } from "@/common/tracing/app_trace.js";
 
 export const messageHandlers: MessageHandler[] = [];
 
@@ -56,8 +54,10 @@ messageHandlers[SyncMessageType.SubDocMessageSync] = (
     console.error("sub doc message sync has no content");
   }
   console.warn("sub doc message sync with content，docGuid:", docGuid);
-  const structDecoder = new Y.UpdateDecoderV2(decoder);
-  console.log("structDecoder: ", structDecoder);
+  let copiedDecoder = decoding.clone(decoder);
+  if (!enableTracing()) {
+    logYjsUnwrapMsg(copiedDecoder);
+  }
   const syncMessageType = syncProtocol.readSyncMessage(
     decoder,
     encoder,
