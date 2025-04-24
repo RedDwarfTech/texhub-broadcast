@@ -76,7 +76,9 @@ const handleSubDoc = (
   targetDoc = getYDoc(docGuid, false);
   if (!targetDoc.conns.has(conn)) targetDoc.conns.set(conn, new Set());
 
-  const subm: Map<String, WSSharedDoc> | undefined = subdocsMap.get(rootDoc.name);
+  const subm: Map<String, WSSharedDoc> | undefined = subdocsMap.get(
+    rootDoc.name
+  );
   if (subm && subm.has(targetDoc.name)) {
     // sync step 1 done before.
   } else {
@@ -87,6 +89,9 @@ const handleSubDoc = (
       nm.set(targetDoc.name, targetDoc);
       subdocsMap.set(rootDoc.name, nm);
     }
+    let td = targetDoc.getText();
+    let tds = td.toString();
+    logger.info("target doc:" + tds);
 
     // send sync step 1
     const encoder = encoding.createEncoder();
