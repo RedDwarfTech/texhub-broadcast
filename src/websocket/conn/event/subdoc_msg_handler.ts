@@ -10,6 +10,7 @@ import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
 import { send } from "../ws_action.js";
 // @ts-ignore
 import * as syncProtocol from "rdy-protocols/dist/sync.mjs";
+import { PostgresqlPersistance } from "@/storage/adapter/postgresql/postgresql_persistance.js";
 
 /**
  * relationship of main doc & sub docs
@@ -66,14 +67,16 @@ const preHandleSubDoc = (
   }
 };
 
-const handleSubDoc = (
+const handleSubDoc = async (
   targetDoc: WSSharedDoc,
   docGuid: string,
   conn: Socket,
   rootDoc: WSSharedDoc
 ) => {
   // subdoc
-  targetDoc = getYDoc(docGuid, false);
+  const postgresqlDb: PostgresqlPersistance = new PostgresqlPersistance();
+  const persistedYdoc: any = await postgresqlDb.getYDoc(docGuid);
+  targetDoc = persistedYdoc;
   if (!targetDoc.conns.has(conn)) targetDoc.conns.set(conn, new Set());
 
   const subm: Map<String, WSSharedDoc> | undefined = subdocsMap.get(
@@ -93,7 +96,7 @@ const handleSubDoc = (
     let tds = td.toString();
     let tdd = targetDoc.getText(docGuid);
     let tdds = tdd.toString();
-    logger.info("target doc tdds:" , tdds);
+    logger.info("target doc tdds:", tdds);
     logger.info("target doc:" + tds);
 
     // send sync step 1
