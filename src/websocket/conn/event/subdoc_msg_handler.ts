@@ -78,19 +78,19 @@ const handleSubDoc = async (
   rootDoc: WSSharedDoc
 ) => {
   
-  if (!targetDoc.conns.has(conn)) targetDoc.conns.set(conn, new Set());
+  //if (!targetDoc.conns.has(conn)) targetDoc.conns.set(conn, new Set());
 
   const subm: Map<String, WSSharedDoc> | undefined = subdocsMap.get(
     rootDoc.name
   );
-  if (subm && subm.has(targetDoc.name)) {
+  if (subm && subm.has(docGuid)) {
     // sync step 1 done before.
   } else {
     if (subm) {
-      subm.set(targetDoc.name, targetDoc);
+      subm.set(docGuid, targetDoc);
     } else {
       const nm = new Map();
-      nm.set(targetDoc.name, targetDoc);
+      nm.set(docGuid, targetDoc);
       subdocsMap.set(rootDoc.name, nm);
     }
     let td = targetDoc.getText();
