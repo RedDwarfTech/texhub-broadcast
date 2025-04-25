@@ -35,7 +35,7 @@ export const handleSubDocMsg = (
   preHandleSubDoc(decoder, conn, targetDoc, rootDoc);
 };
 
-const preHandleSubDoc = (
+const preHandleSubDoc = async (
   decoder: any,
   conn: Socket,
   targetDoc: WSSharedDoc,
@@ -44,15 +44,18 @@ const preHandleSubDoc = (
   try {
     const encoder = encoding.createEncoder();
     const docGuid = decoding.readVarString(decoder);
+    // subdoc
+    const postgresqlDb: PostgresqlPersistance = new PostgresqlPersistance();
+    const persistedYdoc: any = await postgresqlDb.getYDoc(docGuid);
     if (docGuid !== rootDoc.name) {
       logger.warn(
         "this is an subdocument,subDocMessageType,doc guid:" + docGuid
       );
-      handleSubDoc(targetDoc, docGuid, conn, rootDoc);
+      handleSubDoc(persistedYdoc, targetDoc, docGuid, conn, rootDoc);
     }
     try {
       encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
-      encoding.writeVarString(encoder, targetDoc.name);
+      encoding.writeVarString(encoder, docGuid);
       if (decoding.hasContent(decoder)) {
         syncProtocol.readSyncMessage(decoder, encoder, targetDoc, null);
         if (encoding.length(encoder) > 1 && needSend(encoder)) {
@@ -68,15 +71,13 @@ const preHandleSubDoc = (
 };
 
 const handleSubDoc = async (
+  newDoc: any,
   targetDoc: WSSharedDoc,
   docGuid: string,
   conn: Socket,
   rootDoc: WSSharedDoc
 ) => {
-  // subdoc
-  const postgresqlDb: PostgresqlPersistance = new PostgresqlPersistance();
-  const persistedYdoc: any = await postgresqlDb.getYDoc(docGuid);
-  targetDoc = getYDoc(docGuid, false);
+  
   if (!targetDoc.conns.has(conn)) targetDoc.conns.set(conn, new Set());
 
   const subm: Map<String, WSSharedDoc> | undefined = subdocsMap.get(
@@ -92,9 +93,9 @@ const handleSubDoc = async (
       nm.set(targetDoc.name, targetDoc);
       subdocsMap.set(rootDoc.name, nm);
     }
-    let td = persistedYdoc.getText();
+    let td = newDoc.getText();
     let tds = td.toString();
-    let tdd = persistedYdoc.getText(docGuid);
+    let tdd = newDoc.getText(docGuid);
     let tdds = tdd.toString();
     logger.info("target doc tdds:", tdds);
     logger.info("target doc:" + tds);
@@ -103,8 +104,8 @@ const handleSubDoc = async (
     const encoder = encoding.createEncoder();
     encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
     encoding.writeVarString(encoder, docGuid);
-    syncProtocol.writeSyncStep1(encoder, persistedYdoc);
-    send(persistedYdoc, conn, encoding.toUint8Array(encoder));
+    syncProtocol.writeSyncStep1(encoder, newDoc);
+    send(newDoc, conn, encoding.toUint8Array(encoder));
   }
 };
 
