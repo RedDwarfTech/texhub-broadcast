@@ -31,14 +31,12 @@ export const handleSubDocMsg = (
   conn: Socket,
   decoder: any
 ) => {
-  let targetDoc = rootDoc;
-  preHandleSubDoc(decoder, conn, targetDoc, rootDoc);
+  preHandleSubDoc(decoder, conn, rootDoc);
 };
 
 const preHandleSubDoc = async (
   decoder: any,
   conn: Socket,
-  targetDoc: WSSharedDoc,
   rootDoc: WSSharedDoc
 ) => {
   try {
@@ -47,11 +45,15 @@ const preHandleSubDoc = async (
     // subdoc
     const postgresqlDb: PostgresqlPersistance = new PostgresqlPersistance();
     const persistedYdoc: any = await postgresqlDb.getYDoc(docGuid);
-    targetDoc = persistedYdoc;
+    let targetDoc = persistedYdoc;
     if (docGuid !== rootDoc.name) {
       logger.warn(
         "this is an subdocument,subDocMessageType,doc guid:" + docGuid
       );
+      let doc = getYDoc(docGuid);
+      let docTxt = doc.getText(docGuid)
+      let docTxtStr = docTxt.toString();
+      logger.info("docTxtStr:", docTxtStr);
       await handleSubDoc(targetDoc, docGuid, conn, rootDoc);
     }
     try {
