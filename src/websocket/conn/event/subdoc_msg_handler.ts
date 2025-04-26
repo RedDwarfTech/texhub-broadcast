@@ -11,6 +11,7 @@ import { send } from "../ws_action.js";
 // @ts-ignore
 import * as syncProtocol from "rdy-protocols/dist/sync.mjs";
 import { PostgresqlPersistance } from "@/storage/adapter/postgresql/postgresql_persistance.js";
+import { persistencePostgresql } from "@/storage/storage.js";
 
 /**
  * relationship of main doc & sub docs
@@ -41,32 +42,41 @@ const preHandleSubDoc = async (
 ) => {
   try {
     const encoder = encoding.createEncoder();
-    const docGuid = decoding.readVarString(decoder);
-    // subdoc
-    const postgresqlDb: PostgresqlPersistance = new PostgresqlPersistance();
-    const persistedYdoc: any = await postgresqlDb.getYDoc(docGuid);
-    let targetDoc = persistedYdoc;
-    if (docGuid !== rootDoc.name) {
+    const subdocGuid = decoding.readVarString(decoder);
+    let curSubDoc;
+    if (subdocGuid !== rootDoc.name) {
+      // current document id not equal to root document
+      // this is a subdocument
+      // the subdocument message format: [messageSyncSub][subdocId][messageType][data]
       logger.warn(
-        "this is an subdocument,subDocMessageType,doc guid:" + docGuid
+        "this is an subdocument,subDocMessageType,doc guid:" + subdocGuid
       );
-      let doc = getYDoc(docGuid);
-      let docTxt = doc.getText(docGuid)
-      let docTxtStr = docTxt.toString();
-      logger.info("docTxtStr:", docTxtStr);
-      await handleSubDoc(targetDoc, docGuid, conn, rootDoc);
+      let memoryOrDiskSubdoc = getYDoc(subdocGuid);
+      let subdocText = memoryOrDiskSubdoc.getText(subdocGuid);
+      let subdocTextStr = subdocText.toString();
+      logger.info("docTxtStr:", subdocTextStr);
+      if (subdocTextStr) {
+        curSubDoc = memoryOrDiskSubdoc;
+      } else {
+        // try to get document from database directly
+        const postgresqlDb: PostgresqlPersistance =
+          persistencePostgresql.provider;
+        const persistedYdoc: any = await postgresqlDb.getYDoc(subdocGuid);
+        curSubDoc = persistedYdoc;
+      }
+      await handleSubDoc(curSubDoc, subdocGuid, conn, rootDoc);
     }
     try {
       encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
-      encoding.writeVarString(encoder, docGuid);
+      encoding.writeVarString(encoder, subdocGuid);
       if (decoding.hasContent(decoder)) {
-        syncProtocol.readSyncMessage(decoder, encoder, targetDoc, null);
+        syncProtocol.readSyncMessage(decoder, encoder, curSubDoc, null);
         if (encoding.length(encoder) > 1 && needSend(encoder)) {
-          send(targetDoc, conn, encoding.toUint8Array(encoder));
+          send(curSubDoc, conn, encoding.toUint8Array(encoder));
         }
       }
     } catch (e) {
-      logger.error("write sub document sync failed, docGuid:" + docGuid, e);
+      logger.error("write sub document sync failed, docGuid:" + subdocGuid, e);
     }
   } catch (err) {
     logger.error("handle sub doc facing issue:" + rootDoc.name, err);
@@ -74,40 +84,34 @@ const preHandleSubDoc = async (
 };
 
 const handleSubDoc = async (
-  targetDoc: WSSharedDoc,
-  docGuid: string,
+  curSubDoc: WSSharedDoc,
+  subdocGuid: string,
   conn: Socket,
   rootDoc: WSSharedDoc
 ) => {
-  
-  //if (!targetDoc.conns.has(conn)) targetDoc.conns.set(conn, new Set());
-
-  const subm: Map<String, WSSharedDoc> | undefined = subdocsMap.get(
+  let subdocText = curSubDoc.getText(subdocGuid);
+  let subdocTextStr = subdocText.toString();
+  logger.info("handleSubDoc docTxtStr:", subdocTextStr);
+  if (!rootDoc.conns.has(conn)) rootDoc.conns.set(conn, new Set());
+  const curSubdocMap: Map<String, WSSharedDoc> | undefined = subdocsMap.get(
     rootDoc.name
   );
-  if (subm && subm.has(docGuid)) {
+  if (curSubdocMap && curSubdocMap.has(subdocGuid)) {
     // sync step 1 done before.
   } else {
-    if (subm) {
-      subm.set(docGuid, targetDoc);
+    if (curSubdocMap) {
+      curSubdocMap.set(subdocGuid, curSubDoc);
     } else {
-      const nm = new Map();
-      nm.set(docGuid, targetDoc);
-      subdocsMap.set(rootDoc.name, nm);
+      const newMap = new Map<String, WSSharedDoc>();
+      newMap.set(subdocGuid, curSubDoc);
+      subdocsMap.set(rootDoc.name, newMap);
     }
-    let td = targetDoc.getText();
-    let tds = td.toString();
-    let tdd = targetDoc.getText(docGuid);
-    let tdds = tdd.toString();
-    logger.info("target doc tdds:", tdds);
-    logger.info("target doc:" + tds);
-
     // send sync step 1
     const encoder = encoding.createEncoder();
     encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
-    encoding.writeVarString(encoder, docGuid);
-    syncProtocol.writeSyncStep1(encoder, targetDoc);
-    send(targetDoc, conn, encoding.toUint8Array(encoder));
+    encoding.writeVarString(encoder, subdocGuid);
+    syncProtocol.writeSyncStep1(encoder, curSubDoc);
+    send(curSubDoc, conn, encoding.toUint8Array(encoder));
   }
 };
 
