@@ -38,7 +38,6 @@ messageHandlers[SyncMessageType.SubDocMessageSync] = (
   emitSynced: boolean = true,
   messageType: any
 ) => {
-  console.info("doc map: ", JSON.stringify(provider.docs));
   const docGuid = decoding.readVarString(decoder);
   const doc = provider.getDoc(docGuid);
   if (!doc) {
@@ -72,12 +71,8 @@ messageHandlers[SyncMessageType.SubDocMessageSync] = (
     syncMessageType === syncProtocol.messageYjsSyncStep2 &&
     !provider._synced
   ) {
-    provider._synced = true;
+    provider.synced = true;
   }
-
-  let docText = doc.getText();
-  console.info("applyed docText: ", docText.toString());
-
   // sub doc synced
   if (
     emitSynced &&
