@@ -58,6 +58,7 @@ const preHandleSubDoc = async (
       if (subdocTextStr) {
         curSubDoc = memoryOrDiskSubdoc;
       } else {
+        console.log("subdocTextStr is empty,try to get document from database directly");
         // try to get document from database directly
         const postgresqlDb: PostgresqlPersistance =
           persistencePostgresql.provider;
