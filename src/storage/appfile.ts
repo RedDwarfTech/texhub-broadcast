@@ -33,7 +33,14 @@ const handleFileSync = async (docName: string, ldb: PostgresqlPersistance) => {
       logger.error("text is undefined");
       return;
     }
-    let fileInfo = await getTexFileInfo(docName);
+    let fileInfo: FileContent = await getTexFileInfo(docName);
+    if (!fileInfo || !fileInfo.file_path) {
+      logger.warn(
+        "fileInfo is null or fileInfo.file_path is null" +
+          JSON.stringify(fileInfo)
+      );
+      return;
+    }
     let textContext = text.toString();
     let projectId = fileInfo.project_id;
     let fileName = fileInfo.name;
