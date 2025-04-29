@@ -43,7 +43,8 @@ const preHandleSubDoc = async (
   try {
     const encoder = encoding.createEncoder();
     const subdocGuid = decoding.readVarString(decoder);
-    let curSubDoc;
+    let memoryOrDiskSubdoc = getYDoc(subdocGuid);
+    let curSubDoc = memoryOrDiskSubdoc;
     if (subdocGuid !== rootDoc.name) {
       // current document id not equal to root document
       // this is a subdocument
@@ -51,7 +52,6 @@ const preHandleSubDoc = async (
       logger.warn(
         "this is an subdocument,subDocMessageType,doc guid:" + subdocGuid
       );
-      let memoryOrDiskSubdoc = getYDoc(subdocGuid);
       let subdocText = memoryOrDiskSubdoc.getText(subdocGuid);
       let subdocTextStr = subdocText.toString();
       logger.info("docTxtStr:", subdocTextStr);
