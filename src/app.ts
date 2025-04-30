@@ -18,6 +18,7 @@ export const websocketServer: Server = new Server(httpServer, {
       "https://admin.socket.io",
       "chrome-extension://ophmdkgfcjapomjdpfobjfbihojchbko",
       "http://192.168.1.6:3003",
+      "http://192.168.1.7:3003"
     ],
     credentials: true,
     allowedHeaders: ["*"],
