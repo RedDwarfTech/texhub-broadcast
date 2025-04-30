@@ -16,16 +16,16 @@ import { Socket } from "socket.io";
 import http from "http";
 import logger from "@common/log4js_config.js";
 import { ws_msg_handle } from "../conn/event/message_handler.js";
+import { URLSearchParams } from "url";
 
 export function setupWSConnection(
   conn: Socket,
   req: http.IncomingMessage,
   { gc = true } = {}
 ) {
-  const docId = new URL(
-    req.url!,
-    `http://${req.headers.host}`
-  ).searchParams.get("docId");
+  let url: URL = new URL(req.url!,`http://${req.headers.host}`);
+  let urlParams: URLSearchParams = url.searchParams;
+  const docId = urlParams.get("docId");
   // get doc, initialize if it does not exist yet
   const rootDoc: WSSharedDoc = getYDoc(docId!, gc);
   rootDoc.conns.set(conn, new Set());
@@ -55,12 +55,9 @@ export function setupWSConnection(
     const encoder = createEncoder();
     writeVarUint(encoder, messageSync);
     syncProtocol.writeSyncStep1(encoder, rootDoc);
-    let rootText = rootDoc.getText();
-    let rootTextStr = rootText.toString();
     let rootTextDocId = rootDoc.get(docId!);
     let rootTextDocIdStr = rootTextDocId.toString();
     logger.info("rootTextDocIdStr:" + rootTextDocIdStr);
-    logger.error("root text content:" + rootTextStr);
     send(rootDoc, conn, toUint8Array(encoder));
     const awarenessStates = rootDoc.awareness.getStates();
     if (awarenessStates.size > 0) {
