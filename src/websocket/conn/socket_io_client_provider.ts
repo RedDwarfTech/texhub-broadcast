@@ -70,6 +70,10 @@ const broadcastMessage = (
   }
 };
 
+type YDocUpdateHandler = (update: any, origin: any) => void;
+
+type UpdateHandlerFactory = (id: string) => YDocUpdateHandler;
+
 /**
  * send message without broadcast
  * @param {WebsocketProvider} provider
@@ -114,8 +118,8 @@ export class SocketIOClientProvider extends Observable<string> {
   ) => void;
   _unloadHandler: () => void;
   _checkInterval: NodeJS.Timeout;
-  subdocUpdateHandlersMap: Map<string, any>;
-  subdocUpdateHandler: any;
+  subdocUpdateHandlersMap: Map<string, YDocUpdateHandler>;
+  subdocUpdateHandler: UpdateHandlerFactory;
   /**
    * manage all sub docs with main doc self
    * @type {Map}
