@@ -343,9 +343,9 @@ export class SocketIOClientProvider extends Observable<string> {
       return;
     }
     let updateHandler = this.subdocUpdateHandler(subdoc.guid);
-    this.docs.set(subdoc.guid, subdoc);
     // @ts-ignore
     subdoc.on("update", updateHandler);
+    this.docs.set(subdoc.guid, subdoc);
     this.subdocUpdateHandlersMap.set(subdoc.guid, updateHandler);
 
     // invoke sync step1
