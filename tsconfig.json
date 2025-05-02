@@ -25,9 +25,8 @@
     "sourceMap": true
   },
   "include": ["**/*.ts", "**/*.tsx"],
-  "files": ["src/app.ts"],
+  "files": ["src/app.ts", "src/index.ts"],
   "ts-node": {
-    "esm": true,
-    "require": ["tsconfig-paths/register"]
+    "esm": true
   }
 }
