@@ -308,8 +308,8 @@ export class SocketIOClientProvider extends Observable<string> {
      * @returns
      */
     this.subdocUpdateHandler = (id: string) => {
-      console.log("trigger subdocUpdateHandler");
       let result = (update: any, origin: any) => {
+        console.log("trigger subdocUpdateHandler");
         if (origin === this) return;
         const encoder = encoding.createEncoder();
         encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
