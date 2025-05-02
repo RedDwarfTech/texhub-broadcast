@@ -1,6 +1,6 @@
 {
   "name": "texhub-broadcast",
-  "version": "1.0.70",
+  "version": "1.0.71",
   "description": "",
   "engines": {
     "node": ">=20.0.0"
@@ -43,7 +43,6 @@
     "meilisearch": "^0.35.1",
     "module-alias": "^2.2.3",
     "p-queue": "^8.1.0",
-    "pg": "^8.14.1",
     "prom-client": "^14.2.0",
     "rdlib0": "^0.2.106",
     "rdy-protocols": "^1.0.14",
@@ -72,6 +71,9 @@
     "vite": "^6.3.2",
     "vite-node": "^3.1.1",
     "vitest": "^3.1.1"
+  },
+  "peerDependencies": {
+    "pg": "^8.14.1"
   },
   "engine-strict": true,
   "overrides": {
