@@ -10,11 +10,6 @@ import {
   writeVarUint,
   // @ts-ignore
 } from "rdlib0/dist/encoding.mjs";
-import {
-  createDecoder,
-  readVarUint,
-  // @ts-ignore
-} from "rdlib0/dist/decoding.mjs";
 // @ts-ignore
 import * as syncProtocol from "rdy-protocols/sync";
 // @ts-ignore
@@ -32,59 +27,14 @@ import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
 import { WsCommand } from "@common/ws/WsCommand.js";
 import { setupWebsocket } from "./event/setup_ws.js";
 import { messageHandlers } from "./event/msg_type_handler.js";
+import { broadcastMessage, readMessage, sendMessage } from "./ws_action.js";
 
 // @todo - this should depend on awareness.outdatedTime
 const messageReconnectTimeout = 30000;
 
-export const readMessage = (
-  provider: SocketIOClientProvider,
-  buf: Uint8Array,
-  emitSynced: boolean
-) => {
-  const decoder = createDecoder(buf);
-  const encoder = createEncoder();
-  const messageType = readVarUint(decoder);
-  const messageHandler = provider.messageHandlers[messageType];
-  if (messageHandler) {
-    messageHandler(encoder, decoder, provider, emitSynced, messageType);
-  } else {
-    console.error("Unable to compute message");
-  }
-  return encoder;
-};
-
-/**
- * @param {WebsocketProvider} provider
- * @param {ArrayBuffer} buf
- */
-const broadcastMessage = (
-  provider: SocketIOClientProvider,
-  buf: ArrayBuffer
-) => {
-  const ws = provider.ws;
-  if (provider.wsconnected && ws && ws.connected) {
-    ws.send(buf);
-  }
-  if (provider.bcconnected) {
-    bc.publish(provider.bcChannel, buf, provider);
-  }
-};
-
 type YDocUpdateHandler = (update: any, origin: any) => void;
 
 type UpdateHandlerFactory = (id: string) => YDocUpdateHandler;
-
-/**
- * send message without broadcast
- * @param {WebsocketProvider} provider
- * @param {ArrayBuffer} buf
- */
-const sendMessage = (provider: SocketIOClientProvider, buf: ArrayBuffer) => {
-  const ws = provider.ws;
-  if (provider.wsconnected && ws && ws.connected) {
-    ws.send(buf);
-  }
-};
 
 export class SocketIOClientProvider extends Observable<string> {
   private static instanceCount = 0;
@@ -367,7 +317,10 @@ export class SocketIOClientProvider extends Observable<string> {
    */
   getDoc(id: string) {
     console.log("Getting doc with id:", id);
-    console.log("Current docs state in getDoc:", Array.from(this.docs.entries()));
+    console.log(
+      "Current docs state in getDoc:",
+      Array.from(this.docs.entries())
+    );
     const doc = this.docs.get(id);
     if (!doc) {
       console.error("Document not found for id:", id);
@@ -378,17 +331,17 @@ export class SocketIOClientProvider extends Observable<string> {
   /**
    * @type {boolean}
    */
-  get synced () {
-    return this._synced
+  get synced() {
+    return this._synced;
   }
 
-  set synced (state) {
+  set synced(state) {
     if (this._synced !== state) {
       this._synced = state;
       // @ts-ignore
-      this.emit('synced', [state]);
+      this.emit("synced", [state]);
       // @ts-ignore
-      this.emit('sync', [state]);
+      this.emit("sync", [state]);
     }
   }
 

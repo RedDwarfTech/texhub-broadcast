@@ -1,8 +1,5 @@
-import {
-  readMessage,
-  SocketIOClientProvider,
-} from "../socket_io_client_provider.js";
-import { ManagerOptions, Socket, SocketOptions } from "socket.io-client";
+import { SocketIOClientProvider } from "../socket_io_client_provider.js";
+import { Socket } from "socket.io-client";
 // @ts-ignore
 import { math } from "rdlib0";
 // @ts-ignore
@@ -14,11 +11,12 @@ import * as awarenessProtocol from "rdy-protocols/awareness";
 import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
 // @ts-ignore
 import * as syncProtocol from "rdy-protocols/sync";
+import { readMessage } from "../ws_action.js";
 
 /**
  * @param {SocketIOClientProvider} provider
  */
-export const setupWebsocket = (provider: SocketIOClientProvider) => {  
+export const setupWebsocket = (provider: SocketIOClientProvider) => {
   if (provider.shouldConnect && provider.ws === null) {
     const socketio: Socket = new provider._WS(provider.url, provider.options);
     provider.ws = socketio;

@@ -11,11 +11,71 @@ import * as encoding from "rdlib0/dist/encoding.mjs";
 // @ts-ignore
 import * as decoding from "rdlib0/dist/decoding.mjs";
 // @ts-ignore
+import * as bc from "rdlib0/broadcastchannel";
+import {
+  createEncoder,
+  toUint8Array,
+  writeVarUint,
+  // @ts-ignore
+} from "rdlib0/dist/encoding.mjs";
+// @ts-ignore
 import * as syncProtocol from "rdy-protocols/dist/sync.mjs";
 import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
 import { getTexFileInfo } from "@storage/appfile.js";
 import { handleControlSignals } from "./event/app_control_handler.js";
 import { handleSubDocMsg } from "./event/subdoc_msg_handler.js";
+import { SocketIOClientProvider } from "./socket_io_client_provider.js";
+import {
+  createDecoder,
+  readVarUint,
+  // @ts-ignore
+} from "rdlib0/dist/decoding.mjs";
+
+/**
+ * send message without broadcast
+ * @param {WebsocketProvider} provider
+ * @param {ArrayBuffer} buf
+ */
+export const sendMessage = (provider: SocketIOClientProvider, buf: ArrayBuffer) => {
+  const ws = provider.ws;
+  if (provider.wsconnected && ws && ws.connected) {
+    ws.send(buf);
+  }
+};
+
+/**
+ * @param {WebsocketProvider} provider
+ * @param {ArrayBuffer} buf
+ */
+export const broadcastMessage = (
+  provider: SocketIOClientProvider,
+  buf: ArrayBuffer
+) => {
+  const ws = provider.ws;
+  if (provider.wsconnected && ws && ws.connected) {
+    ws.send(buf);
+  }
+  if (provider.bcconnected) {
+    bc.publish(provider.bcChannel, buf, provider);
+  }
+};
+
+export const readMessage = (
+  provider: SocketIOClientProvider,
+  buf: Uint8Array,
+  emitSynced: boolean
+) => {
+  const decoder = createDecoder(buf);
+  const encoder = createEncoder();
+  const messageType = readVarUint(decoder);
+  const messageHandler = provider.messageHandlers[messageType];
+  if (messageHandler) {
+    messageHandler(encoder, decoder, provider, emitSynced, messageType);
+  } else {
+    console.error("Unable to compute message");
+  }
+  return encoder;
+};
 
 export const closeConn = (doc: WSSharedDoc, conn: Socket) => {
   if (doc.conns.has(conn)) {
