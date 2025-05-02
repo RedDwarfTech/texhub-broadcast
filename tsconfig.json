@@ -25,7 +25,7 @@
     "sourceMap": true
   },
   "include": ["**/*.ts", "**/*.tsx"],
-  "files": ["src/app.ts", "src/index.ts"],
+  "files": ["src/app.ts"],
   "ts-node": {
     "esm": true
   }

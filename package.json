@@ -1,6 +1,6 @@
 {
   "name": "texhub-broadcast",
-  "version": "1.0.69",
+  "version": "1.0.70",
   "description": "",
   "engines": {
     "node": ">=20.0.0"
