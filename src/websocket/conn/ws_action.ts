@@ -2,7 +2,7 @@
 import * as awarenessProtocol from "rdy-protocols/dist/awareness.mjs";
 import { docs, messageSync } from "@collar/yjs_utils.js";
 import { WSSharedDoc } from "@collar/ws_share_doc.js";
-import log4js from "log4js";
+import * as log4js from "log4js";
 import { persistencePostgresql } from "@storage/storage.js";
 import { Socket } from "socket.io";
 var logger = log4js.getLogger();
