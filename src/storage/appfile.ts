@@ -1,4 +1,4 @@
-import * as log4js from "log4js";
+import log4js from "log4js";
 var logger = log4js.getLogger();
 import * as lodash from "lodash";
 import path from "path";

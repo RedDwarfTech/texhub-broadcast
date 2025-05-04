@@ -1,5 +1,5 @@
 import http from "http";
-import * as log4js from "log4js";
+import log4js from "log4js";
 import { FileContent } from "@model/texhub/file_content";
 import { AppResponse } from "../biz/AppResponse";
 var logger = log4js.getLogger();
