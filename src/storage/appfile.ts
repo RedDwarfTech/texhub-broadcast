@@ -1,6 +1,6 @@
 import log4js from "log4js";
 var logger = log4js.getLogger();
-import * as lodash from "lodash";
+import lodash from "lodash";
 import path from "path";
 import fs from "fs";
 // @ts-ignore
