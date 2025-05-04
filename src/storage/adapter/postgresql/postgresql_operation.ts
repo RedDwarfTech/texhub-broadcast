@@ -17,14 +17,28 @@ import {
   createSimpleDocumentStateVectorKeyMap,
 } from "./postgresql_const.js";
 import { TeXSync } from "@model/yjs/storage/sync/tex_sync.js";
-import { createClient } from "redis";
 import { v4 as uuidv4 } from "uuid";
 
-const client = await createClient({
-  url: process.env.REDIS_URL,
-})
-  .on("error", (err) => logger.error("Redis Client Error", err))
-  .connect();
+// Only import and initialize Redis in Node environment
+let client: any = null;
+
+// Check if we're in a Node.js environment
+if (typeof window === 'undefined') {
+  // Import Redis only in Node environment
+  const { createClient } = require('redis');
+  
+  // Initialize Redis client
+  const initRedis = async () => {
+    client = await createClient({
+      url: process.env.REDIS_URL,
+    })
+      .on("error", (err: any) => logger.error("Redis Client Error", err))
+      .connect();
+  };
+  
+  // Execute initialization
+  initRedis().catch((err) => logger.error("Failed to initialize Redis client:", err));
+}
 
 export const getDocAllUpdates = async (
   db: pg.Pool,
@@ -181,6 +195,12 @@ export const flushDocument = async (
 };
 
 const getLock = async (lockKey: string, uniqueValue: string, times: number) => {
+  // If Redis is not available (non-Node environment), pretend we got the lock
+  if (!client) {
+    logger.info("Redis client not available, simulating lock acquisition");
+    return true;
+  }
+
   if (times > 15) {
     logger.error("could not get lock wih 15 times retry");
     return false;
@@ -219,6 +239,12 @@ function sleep(delay: number) {
  * @returns 是否成功释放锁
  */
 async function unlock(lockKey: string, uniqueValue: string) {
+  // If Redis is not available (non-Node environment), do nothing
+  if (!client) {
+    logger.info("Redis client not available, simulating lock release");
+    return;
+  }
+
   const luaScript = `
     if redis.call("GET", KEYS[1]) == ARGV[1] then
       return redis.call("DEL", KEYS[1])
@@ -266,6 +292,7 @@ export const storeUpdate = async (
   const uniqueValue = uuidv4();
   const lockKey = `lock:${docName}:update`;
   try {
+    // Attempt to get lock (will always succeed if Redis is not available)
     if (await getLock(lockKey, uniqueValue, 0)) {
       const clock = await getCurrentUpdateClock(db, docName);
       if (clock === -1) {
@@ -284,10 +311,10 @@ export const storeUpdate = async (
       return clock + 1;
     }
   } catch (error: any) {
-    logger.error(error);
+    logger.error(`Error in storeUpdate: ${error.message || error}`);
   } finally {
-    // release lock
-    unlock(lockKey, uniqueValue);
+    // release lock (will do nothing if Redis is not available)
+    await unlock(lockKey, uniqueValue);
   }
   return 0;
 };
