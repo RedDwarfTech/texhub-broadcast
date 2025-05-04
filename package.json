@@ -1,21 +1,25 @@
 {
   "name": "texhub-broadcast",
-  "version": "1.0.80",
+  "version": "1.0.81",
   "description": "",
   "engines": {
     "node": ">=20.0.0"
   },
-  "main": "./dist/app.js",
-  "module": "./dist/app.js",
-  "types": "./dist/app.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "type": "module",
   "exports": {
     "./dist/websocket/conn/socket_io_client_provider": "./dist/websocket/conn/socket_io_client_provider.js",
     "./dist/websocket/conn/single_client_provider": "./dist/websocket/conn/single_client_provider.js",
     "./dist/model/texhub/app/app_control_type": "./dist/model/texhub/app/app_control_type.js",
     ".": {
-      "import": "./dist/app.js"
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
     }
+  },
+  "browser": {
+    "./dist/index.js": "./browser.js"
   },
   "files": [
     "dist/*"
