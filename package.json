@@ -1,6 +1,6 @@
 {
   "name": "texhub-broadcast",
-  "version": "1.0.82",
+  "version": "1.0.83",
   "description": "",
   "engines": {
     "node": ">=20.0.0"
@@ -20,7 +20,9 @@
     "./model/texhub/app/app_control_type": "./dist/model/texhub/app/app_control_type.js"
   },
   "browser": {
-    "./dist/storage/fulltext.js": "./browser.js"
+    "./dist/storage/fulltext.js": "./browser.js",
+    "./dist/storage/adapter/postgresql/postgresql_operation.js": "./browser.js",
+    "./dist/storage/adapter/postgresql/postgresql_persistance.js": "./browser.js"
   },
   "files": [
     "dist/*",

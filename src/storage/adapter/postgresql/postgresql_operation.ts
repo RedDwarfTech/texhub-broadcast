@@ -6,8 +6,9 @@ import * as binary from "rdlib0/binary.js";
 import * as encoding from "rdlib0/encoding.js";
 // @ts-ignore
 import * as decoding from "rdlib0/decoding.js";
-import * as pg from "pg";
-import { QueryResult } from "pg";
+// 仅导入类型定义，避免在浏览器环境中导入实际模块
+import type * as pg from "pg";
+import type { QueryResult } from "pg";
 import logger from "@common/log4js_config.js";
 import {
   createDocumentStateVectorKey,
@@ -19,25 +20,62 @@ import {
 import { TeXSync } from "@model/yjs/storage/sync/tex_sync.js";
 import { v4 as uuidv4 } from "uuid";
 
-// Only import and initialize Redis in Node environment
+// 仅在Node环境下导入和初始化数据库客户端
+let pgPool: any = null;
 let client: any = null;
 
-// Check if we're in a Node.js environment
+// 检查是否在Node.js环境
 if (typeof window === 'undefined') {
-  // Import Redis only in Node environment
-  const { createClient } = require('redis');
-  
-  // Initialize Redis client
-  const initRedis = async () => {
-    client = await createClient({
-      url: process.env.REDIS_URL,
-    })
-      .on("error", (err: any) => logger.error("Redis Client Error", err))
-      .connect();
-  };
-  
-  // Execute initialization
-  initRedis().catch((err) => logger.error("Failed to initialize Redis client:", err));
+  // 使用动态import导入模块，确保ESM风格
+  try {
+    // 动态导入pg模块
+    const initPg = async () => {
+      const pgModule = await import('pg');
+      // 初始化数据库连接池的函数
+      const initPgPool = () => {
+        // 从环境变量获取配置或使用默认配置
+        const connectionString = process.env.DATABASE_URL;
+        if (connectionString) {
+          pgPool = new pgModule.Pool({ connectionString });
+        } else {
+          pgPool = new pgModule.Pool({
+            host: process.env.POSTGRES_HOST || 'localhost',
+            port: parseInt(process.env.POSTGRES_PORT || '5432'),
+            database: process.env.POSTGRES_DB || 'postgres',
+            user: process.env.POSTGRES_USER || 'postgres',
+            password: process.env.POSTGRES_PASSWORD || 'postgres'
+          });
+        }
+        
+        pgPool.on('error', (err: Error) => {
+          logger.error('Unexpected error on idle client', err);
+        });
+        
+        return pgPool;
+      };
+      
+      // 初始化数据库连接池
+      pgPool = initPgPool();
+    };
+    
+    // 执行pg初始化
+    initPg().catch(err => logger.error("Failed to initialize PG client:", err));
+    
+    // 动态导入Redis模块
+    const initRedis = async () => {
+      const { createClient } = await import('redis');
+      client = await createClient({
+        url: process.env.REDIS_URL,
+      })
+        .on("error", (err: any) => logger.error("Redis Client Error", err))
+        .connect();
+    };
+    
+    // 执行Redis初始化
+    initRedis().catch((err) => logger.error("Failed to initialize Redis client:", err));
+  } catch (error) {
+    logger.error("Error importing database modules:", error);
+  }
 }
 
 export const getDocAllUpdates = async (
@@ -45,6 +83,11 @@ export const getDocAllUpdates = async (
   docName: string,
   opts = { values: true, keys: false, reverse: false }
 ) => {
+  // 在非Node环境中返回空数组
+  if (typeof window !== 'undefined') {
+    return [];
+  }
+  
   return await getPgBulkData(
     db,
     {
