@@ -1,6 +1,5 @@
 import * as log4js from "log4js";
 var logger = log4js.getLogger();
-import { DocumentOptions, MeiliSearch } from "meilisearch";
 
 export const updateFullsearch = async (file: any) => {
   // Only proceed in Node.js environment
@@ -10,8 +9,11 @@ export const updateFullsearch = async (file: any) => {
   }
   
   try {
+    // Dynamically import MeiliSearch only in Node.js environment
+    const { MeiliSearch } = await import('meilisearch');
+    
     const masterKey = process.env.MEILI_MASTER_KEY;
-    let option: DocumentOptions = {
+    let option: any = {
       primaryKey: "file_id",
     };
     const client = new MeiliSearch({
