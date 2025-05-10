@@ -55,9 +55,6 @@ export function setupWSConnection(
     const encoder = createEncoder();
     writeVarUint(encoder, messageSync);
     syncProtocol.writeSyncStep1(encoder, rootDoc);
-    let rootTextDocId = rootDoc.get(docId!);
-    let rootTextDocIdStr = rootTextDocId.toString();
-    logger.info("rootTextDocIdStr:" + rootTextDocIdStr);
     send(rootDoc, conn, toUint8Array(encoder));
     const awarenessStates = rootDoc.awareness.getStates();
     if (awarenessStates.size > 0) {
