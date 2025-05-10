@@ -454,23 +454,15 @@ const pgPutTrans = async (
   keys: any[]
 ) => {
   try {
-    const query = `INSERT INTO tex_sync (key, value, plain_value, version, content_type, doc_name, clock, source) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) `;
-    const decoder = new TextDecoder("utf-8");
-    let text: string = decoder.decode(val);
+    const query = `INSERT INTO tex_sync (key, value, version, content_type, doc_name, clock, source) 
+      VALUES ($1, $2, $4, $5, $6, $7, $8) `;
     let version = keys[0];
     let contentType = keys[2] || "default";
     let docName = keys[1];
     let clock = keys[3] || 0;
-    // https://stackoverflow.com/questions/1347646/postgres-error-on-insert-error-invalid-byte-sequence-for-encoding-utf8-0x0
-    let replacedText = text
-      .replaceAll("", "")
-      .replaceAll("0x00", "")
-      .replaceAll(/\u0000/g, "");
     const values = [
       JSON.stringify(keys),
       Buffer.from(val),
-      replacedText,
       version,
       contentType,
       docName,
@@ -480,7 +472,7 @@ const pgPutTrans = async (
     const res: pg.QueryResult<any> = await db.query(query, values);
   } catch (err: any) {
     logger.error(
-      "Insert tex sync record error:" + JSON.stringify(keys) + ",val:" + val,
+      "pgPutTrans insert tex sync record error:" + JSON.stringify(keys) + ",val:" + val,
       err.stack
     );
   }
@@ -493,23 +485,15 @@ const pgPut = async (
   keys: any[]
 ) => {
   try {
-    const query = `INSERT INTO tex_sync (key, value, plain_value, version, content_type, doc_name, clock, source) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) `;
-    const decoder = new TextDecoder("utf-8");
-    let text: string = decoder.decode(val);
+    const query = `INSERT INTO tex_sync (key, value, version, content_type, doc_name, clock, source) 
+      VALUES ($1, $2, $4, $5, $6, $7, $8) `;
     let version = keys[0];
     let contentType = keys[2] || "default";
     let docName = keys[1];
     let clock = keys[3] || 0;
-    // https://stackoverflow.com/questions/1347646/postgres-error-on-insert-error-invalid-byte-sequence-for-encoding-utf8-0x0
-    let replacedText = text
-      .replaceAll("", "")
-      .replaceAll("0x00", "")
-      .replaceAll(/\u0000/g, "");
     const values = [
       JSON.stringify(keys),
       Buffer.from(val),
-      replacedText,
       version,
       contentType,
       docName,
@@ -519,7 +503,7 @@ const pgPut = async (
     const res: pg.QueryResult<any> = await db.query(query, values);
   } catch (err: any) {
     logger.error(
-      "Insert tex sync record error:" + JSON.stringify(keys) + ",val:" + val,
+      "pgPut insert tex sync record error:" + JSON.stringify(keys) + ",val:" + val,
       err.stack
     );
   }
