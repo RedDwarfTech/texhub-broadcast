@@ -485,12 +485,17 @@ const pgPut = async (
   keys: any[]
 ) => {
   try {
+    // 使用ON CONFLICT语法实现upsert功能
     const query = `INSERT INTO tex_sync (key, value, version, content_type, doc_name, clock, source) 
-      VALUES ($1, $2, $4, $5, $6, $7, $8) `;
+      VALUES ($1, $2, $3, $4, $5, $6, $7) 
+      ON CONFLICT (key) DO UPDATE 
+      SET value = $2, version = $3, content_type = $4, doc_name = $5, clock = $6, source = $7`;
+    
     let version = keys[0];
     let contentType = keys[2] || "default";
     let docName = keys[1];
     let clock = keys[3] || 0;
+    
     const values = [
       JSON.stringify(keys),
       Buffer.from(val),
@@ -500,12 +505,15 @@ const pgPut = async (
       clock,
       source,
     ];
+    
     const res: pg.QueryResult<any> = await db.query(query, values);
+    return res;
   } catch (err: any) {
     logger.error(
-      "pgPut insert tex sync record error:" + JSON.stringify(keys) + ",val:" + val,
+      "pgPut insert/update tex sync record error:" + JSON.stringify(keys) + ",val:" + val,
       err.stack
     );
+    throw err; // 重新抛出错误，让调用者处理
   }
 };
 
