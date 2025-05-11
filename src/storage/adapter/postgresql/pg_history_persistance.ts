@@ -26,20 +26,22 @@ export class PgHisotoryPersistance {
 
   constructor() {
     this.queueMap = new LRUCache({
-      max: 100, 
+      max: 100,
     });
-    
+
     // 仅在Node环境下初始化数据库连接池
-    if (typeof window === 'undefined') {
+    if (typeof window === "undefined") {
       this.initPool();
     } else {
-      logger.info("PostgresqlPersistance running in browser environment, database features disabled");
+      logger.info(
+        "PostgresqlPersistance running in browser environment, database features disabled"
+      );
     }
   }
-  
+
   async initPool() {
     try {
-      const pgModule = await import('pg');
+      const pgModule = await import("pg");
       const { Pool } = pgModule.default || pgModule;
       this.pool = new Pool(dbConfig);
     } catch (error) {
@@ -49,10 +51,10 @@ export class PgHisotoryPersistance {
 
   async getHisotyYDoc(docName: string): Promise<Y.Doc> {
     const ydoc = new Y.Doc();
-    if (typeof window !== 'undefined' || !this.pool) {
+    if (typeof window !== "undefined" || !this.pool) {
       return ydoc;
     }
-    
+
     const updates: Array<TeXSync> = await getDocAllUpdates(this.pool, docName);
     ydoc.transact(() => {
       try {
@@ -77,7 +79,7 @@ export class PgHisotoryPersistance {
   }
 
   flushDocument(docName: string) {
-    if (typeof window !== 'undefined' || !this.pool) {
+    if (typeof window !== "undefined" || !this.pool) {
       return;
     }
     const updates = getDocAllUpdates(this.pool, docName);
@@ -86,14 +88,14 @@ export class PgHisotoryPersistance {
   }
 
   async getStateVector(docName: string) {
-    if (typeof window !== 'undefined' || !this.pool) {
+    if (typeof window !== "undefined" || !this.pool) {
       return null;
     }
-    
+
     const { clock, sv } = await readStateVector(this.pool, docName);
     let curClock = -1;
     if (sv !== null) {
-      curClock = await getCurrentUpdateClock(this.pool, docName);
+      curClock = await getCurrentUpdateClock(docName);
     }
     if (sv !== null && clock === curClock) {
       return sv;
@@ -107,34 +109,34 @@ export class PgHisotoryPersistance {
   }
 
   async storeUpdateTrans(docName: string, update: Uint8Array) {
-    if (typeof window !== 'undefined' || !this.pool) {
+    if (typeof window !== "undefined" || !this.pool) {
       return;
     }
-    
+
     const client: pg.PoolClient = await this.pool.connect();
     try {
-      await client.query('BEGIN')
+      await client.query("BEGIN");
       await storeUpdateTrans(client, docName, update);
-      await client.query('COMMIT')
+      await client.query("COMMIT");
     } catch (e) {
-      await client.query('ROLLBACK')
-      throw e
+      await client.query("ROLLBACK");
+      throw e;
     } finally {
-      client.release()
+      client.release();
     }
   }
 
   async storeUpdate(docName: string, update: Uint8Array) {
-    if (typeof window !== 'undefined' || !this.pool) {
+    if (typeof window !== "undefined" || !this.pool) {
       return;
     }
-    
+
     try {
       const cacheQueue = this.queueMap.get(docName);
       if (cacheQueue) {
         (async () => {
           await cacheQueue.add(async () => {
-            await storeUpdate(this.pool!, docName, update);
+            await storeUpdate(docName, update, true);
           });
         })();
       } else {
@@ -142,7 +144,7 @@ export class PgHisotoryPersistance {
         this.queueMap.set(docName, queue);
         (async () => {
           await queue.add(async () => {
-            await storeUpdate(this.pool!, docName, update);
+            await storeUpdate(docName, update, true);
           });
         })();
       }
@@ -151,19 +153,11 @@ export class PgHisotoryPersistance {
     }
   }
 
-  async storeUpdateWithSource(keys: any[], update: Uint8Array) {
-    if (typeof window !== 'undefined' || !this.pool) {
-      return;
-    }
-    
-    return await storeUpdateBySrc(this.pool, update, keys);
-  }
-
   async insertKeys(keyMap: any[], originalKey: any[]) {
-    if (typeof window !== 'undefined' || !this.pool) {
+    if (typeof window !== "undefined" || !this.pool) {
       return;
     }
-    
+
     return await insertKey(this.pool, keyMap, originalKey);
   }
 

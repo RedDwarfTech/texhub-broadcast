@@ -86,7 +86,6 @@ export const getDocAllUpdates = async (
   }
 
   return await getPgBulkData(
-    db,
     {
       gte: createDocumentUpdateKey(docName, 0),
       lt: createDocumentUpdateKey(docName, binary.BITS32),
@@ -113,12 +112,10 @@ export const getPgUpdatesTrans = async (
 };
 
 export const getPgUpdates = async (
-  db: pg.Pool,
   docName: string,
   opts = { values: true, keys: false, reverse: false, limit: 1 }
 ) => {
   return await getPgBulkData(
-    db,
     {
       gte: createDocumentUpdateKey(docName, 0),
       lt: createDocumentUpdateKey(docName, binary.BITS32),
@@ -170,11 +167,7 @@ export const getPgBulkDataTrans = async (
   }
 };
 
-export const getPgBulkData = async (
-  db: pg.Pool,
-  opts: any,
-  docName: string
-) => {
+export const getPgBulkData = async (opts: any, docName: string) => {
   try {
     let col = [];
     col.push("id");
@@ -204,7 +197,8 @@ export const getPgBulkData = async (
       limitPart = " limit " + opts.limit;
     }
     const sql = queryPart + fromPart + filterPart + orderPart + limitPart;
-    let result: QueryResult<TeXSync> = await db.query(sql);
+    let sysDb = await getPgPool();
+    let result: QueryResult<TeXSync> = await sysDb!.query(sql);
     return result.rows;
   } catch (err) {
     logger.error("Query error:", err);
@@ -228,8 +222,8 @@ export const flushDocument = async (
   stateAsUpdate: any,
   stateVector: any
 ) => {
-  const clock = await storeUpdate(db, docName, stateAsUpdate);
-  await writeStateVector(db, docName, stateVector, clock);
+  const clock = await storeUpdate(docName, stateAsUpdate);
+  await writeStateVector( docName, stateVector, clock);
   await clearUpdatesRange(db, docName, 0, clock); // intentionally not waiting for the promise to resolve!
   return clock;
 };
@@ -325,28 +319,28 @@ export const storeUpdateTrans = async (
 };
 
 export const storeUpdate = async (
-  db: pg.Pool,
   docName: string,
-  update: Uint8Array
+  update: Uint8Array,
+  isHistory: boolean = false
 ) => {
   const uniqueValue = uuidv4();
   const lockKey = `lock:${docName}:update`;
   try {
     // Attempt to get lock (will always succeed if Redis is not available)
     if (await getLock(lockKey, uniqueValue, 0)) {
-      const clock = await getCurrentUpdateClock(db, docName);
+      const clock = await getCurrentUpdateClock(docName);
       if (clock === -1) {
         // make sure that a state vector is aways written, so we can search for available documents
         const ydoc = new Y.Doc();
         Y.applyUpdate(ydoc, update);
         const sv = Y.encodeStateVector(ydoc);
-        await writeStateVector(db, docName, sv, 0);
+        await writeStateVector( docName, sv, 0);
       }
       await pgPut(
-        db,
         update,
         "ws",
-        createDocumentUpdateKeyArray(docName, clock + 1)
+        createDocumentUpdateKeyArray(docName, clock + 1),
+        isHistory
       );
       return clock + 1;
     }
@@ -364,7 +358,7 @@ export const storeUpdateBySrc = async (
   update: Uint8Array,
   keys: any[]
 ) => {
-  await pgPut(db, update, "leveldb", keys);
+  await pgPut(update, "leveldb", keys);
 };
 
 export const insertKey = async (
@@ -394,7 +388,6 @@ const writeStateVectorTrans = async (
 };
 
 const writeStateVector = async (
-  db: pg.Pool,
   docName: string,
   sv: any,
   clock: number
@@ -403,7 +396,6 @@ const writeStateVector = async (
   encoding.writeVarUint(encoder, clock);
   encoding.writeVarUint8Array(encoder, sv);
   await pgPutUpsert(
-    db,
     createDocumentStateVectorKeyMap(docName, clock),
     encoding.toUint8Array(encoder),
     "ws",
@@ -482,15 +474,19 @@ const pgPutTrans = async (
 };
 
 const pgPut = async (
-  db: pg.Pool,
   val: Uint8Array,
   source: string,
-  keys: any[]
+  keys: any[],
+  isHistory: boolean = false
 ) => {
   try {
     // we think there is no need to use on conflict do update
     // it is impossible to conflict with the key
-    const query = `INSERT INTO tex_sync (key, value, version, content_type, doc_name, clock, source) 
+    let tableName = isHistory ? "tex_sync_history" : "tex_sync";
+    const query =
+      `INSERT INTO ` +
+      tableName +
+      ` (key, value, version, content_type, doc_name, clock, source) 
       VALUES ($1, $2, $3, $4, $5, $6, $7) `;
     // on conflict do update
     // const query = `INSERT INTO tex_sync (key, value, version, content_type, doc_name, clock, source)
@@ -558,7 +554,6 @@ const pgPutUpsertTrans = async (
 };
 
 const pgPutUpsert = async (
-  db: pg.Pool,
   key: Map<string, string>,
   val: Uint8Array,
   source: string,
@@ -580,7 +575,8 @@ const pgPutUpsert = async (
       clock,
       source,
     ];
-    const res: pg.QueryResult<any> = await db.query(query, values);
+    let sysDb = await getPgPool();
+    const res: pg.QueryResult<any> = await sysDb!.query(query, values);
   } catch (err: any) {
     logger.error("Insert pgPutUpsert error:" + JSON.stringify(keys), err.stack);
   }
@@ -605,10 +601,9 @@ export const getCurrentUpdateClockTrans = async (
 };
 
 export const getCurrentUpdateClock = async (
-  db: pg.Pool,
   docName: string
 ): Promise<number> => {
-  const result: any[] = await getPgUpdates(db, docName, {
+  const result: any[] = await getPgUpdates(docName, {
     keys: true,
     values: false,
     reverse: true,
