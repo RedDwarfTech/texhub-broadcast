@@ -19,6 +19,7 @@ import {
 } from "./postgresql_const.js";
 import { TeXSync } from "@model/yjs/storage/sync/tex_sync.js";
 import { v4 as uuidv4 } from "uuid";
+import { getPgPool } from "./conf/pg_base.js";
 
 // 仅在Node环境下导入和初始化数据库客户端
 let pgPool: any = null;
@@ -80,7 +81,6 @@ export const getDocAllUpdates = async (
   docName: string,
   opts = { values: true, keys: false, reverse: false }
 ) => {
-  // 在非Node环境中返回空数组
   if (typeof window !== "undefined") {
     return [];
   }
@@ -512,8 +512,8 @@ const pgPut = async (
       clock,
       source,
     ];
-
-    const res: pg.QueryResult<any> = await db.query(query, values);
+    let sysDb = await getPgPool();
+    const res: pg.QueryResult<any> = await sysDb!.query(query, values);
     return res;
   } catch (err: any) {
     logger.error(

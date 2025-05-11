@@ -5,6 +5,7 @@ import { throttledFn } from "./appfile.js";
 import { Persistence } from "../model/yjs/Persistence.js";
 import { PostgresqlPersistance } from "./adapter/postgresql/postgresql_persistance.js";
 import logger from "../common/log4js_config.js";
+import { handleHistoryDoc } from "./feat/version/doc_history.js";
 
 export let persistencePostgresql: Persistence;
 
@@ -26,6 +27,7 @@ if (typeof persistenceDir === "string") {
             throttledFn(docName, postgresqlDb);
           }
         });
+        await handleHistoryDoc(docName);
       } catch (err: any) {
         logger.error("process update failed", err);
       }

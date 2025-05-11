@@ -20,13 +20,13 @@ import logger from "@common/log4js_config.js";
 import PQueue from "p-queue";
 import { LRUCache } from "lru-cache";
 
-export class PostgresqlPersistance {
+export class PgHisotoryPersistance {
   pool: pg.Pool | null = null;
   queueMap: LRUCache<string, PQueue>;
 
   constructor() {
     this.queueMap = new LRUCache({
-      max: 100, // 最大缓存数量
+      max: 100, 
     });
     
     // 仅在Node环境下初始化数据库连接池
@@ -37,10 +37,8 @@ export class PostgresqlPersistance {
     }
   }
   
-  // 使用异步方法初始化连接池
   async initPool() {
     try {
-      // 动态导入pg模块
       const pgModule = await import('pg');
       const { Pool } = pgModule.default || pgModule;
       this.pool = new Pool(dbConfig);
@@ -49,10 +47,8 @@ export class PostgresqlPersistance {
     }
   }
 
-  async getYDoc(docName: string): Promise<Y.Doc> {
+  async getHisotyYDoc(docName: string): Promise<Y.Doc> {
     const ydoc = new Y.Doc();
-    
-    // 在浏览器环境中直接返回空文档
     if (typeof window !== 'undefined' || !this.pool) {
       return ydoc;
     }
@@ -81,18 +77,15 @@ export class PostgresqlPersistance {
   }
 
   flushDocument(docName: string) {
-    // 在浏览器环境中不执行操作
     if (typeof window !== 'undefined' || !this.pool) {
       return;
     }
-    
     const updates = getDocAllUpdates(this.pool, docName);
     const { update, sv } = mergeUpdates(updates);
     flushDocument(this.pool, docName, update, sv);
   }
 
   async getStateVector(docName: string) {
-    // 在浏览器环境中返回null
     if (typeof window !== 'undefined' || !this.pool) {
       return null;
     }
@@ -114,7 +107,6 @@ export class PostgresqlPersistance {
   }
 
   async storeUpdateTrans(docName: string, update: Uint8Array) {
-    // 在浏览器环境中不执行操作
     if (typeof window !== 'undefined' || !this.pool) {
       return;
     }
@@ -133,7 +125,6 @@ export class PostgresqlPersistance {
   }
 
   async storeUpdate(docName: string, update: Uint8Array) {
-    // 在浏览器环境中不执行操作
     if (typeof window !== 'undefined' || !this.pool) {
       return;
     }
@@ -161,7 +152,6 @@ export class PostgresqlPersistance {
   }
 
   async storeUpdateWithSource(keys: any[], update: Uint8Array) {
-    // 在浏览器环境中不执行操作
     if (typeof window !== 'undefined' || !this.pool) {
       return;
     }
@@ -170,7 +160,6 @@ export class PostgresqlPersistance {
   }
 
   async insertKeys(keyMap: any[], originalKey: any[]) {
-    // 在浏览器环境中不执行操作
     if (typeof window !== 'undefined' || !this.pool) {
       return;
     }
@@ -179,7 +168,7 @@ export class PostgresqlPersistance {
   }
 
   async getDiff(docName: any, stateVector: any) {
-    const ydoc: any = await this.getYDoc(docName);
+    const ydoc: any = await this.getHisotyYDoc(docName);
     return Y.encodeStateAsUpdate(ydoc, stateVector);
   }
 }
