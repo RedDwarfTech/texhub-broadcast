@@ -1,5 +1,5 @@
 // @ts-ignore
-import { PgHisotoryPersistance } from "@/storage/adapter/postgresql/pg_history_persistance";
+import { PgHisotoryPersistance } from "@/storage/adapter/postgresql/pg_history_persistance.js";
 import * as Y from "rdyjs";
 
 const pgHistoryDb: PgHisotoryPersistance = new PgHisotoryPersistance();
