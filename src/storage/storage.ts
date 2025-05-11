@@ -27,7 +27,7 @@ if (typeof persistenceDir === "string") {
             throttledFn(docName, postgresqlDb);
           }
         });
-        await handleHistoryDoc(docName);
+        //await handleHistoryDoc(docName);
       } catch (err: any) {
         logger.error("process update failed", err);
       }
