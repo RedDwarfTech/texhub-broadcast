@@ -8,7 +8,7 @@ import logger from "../log4js_config.js";
 import {
   keyEncoding,
   valueEncoding,
-} from "@storage/adapter/postgresql/postgresql_const.js";
+} from "@/storage/adapter/postgresql/conf/postgresql_const.js";
 const persistenceDir =
   process.env.APP_ENV == "development" ? leveldbPath : process.env.YPERSISTENCE;
 var db = levelup(leveldown(persistenceDir));

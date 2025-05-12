@@ -14,7 +14,7 @@ import {
   storeUpdateTrans,
 } from "./postgresql_operation.js";
 import { dbConfig } from "./conf/db_config.js";
-import { PREFERRED_TRIM_SIZE } from "./postgresql_const.js";
+import { PREFERRED_TRIM_SIZE } from "./conf/postgresql_const.js";
 import { TeXSync } from "@model/yjs/storage/sync/tex_sync.js";
 import logger from "@common/log4js_config.js";
 import PQueue from "p-queue";

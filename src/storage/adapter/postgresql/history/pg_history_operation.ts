@@ -16,10 +16,10 @@ import {
   createDocumentUpdateKey,
   createDocumentUpdateKeyArray,
   createSimpleDocumentStateVectorKeyMap,
-} from "./conf/postgresql_const.js";
+} from "../conf/postgresql_const.js";
 import { TeXSync } from "@model/yjs/storage/sync/tex_sync.js";
 import { v4 as uuidv4 } from "uuid";
-import { getPgPool } from "./conf/pg_base.js";
+import { getPgPool } from "../conf/pg_base.js";
 
 // 仅在Node环境下导入和初始化数据库客户端
 let pgPool: any = null;
@@ -76,7 +76,7 @@ if (typeof window === "undefined") {
   }
 }
 
-export const getDocAllUpdates = async (
+export const getHistoryDocAllUpdates = async (
   db: pg.Pool,
   docName: string,
   opts = { values: true, keys: false, reverse: false }
@@ -142,7 +142,7 @@ export const getPgBulkDataTrans = async (
     }
     let col_concat = col.join(",");
     const queryPart = "select " + col_concat;
-    const fromPart = " from tex_sync ";
+    const fromPart = " from tex_sync_history ";
     const filterPart =
       " where doc_name = '" +
       docName +
@@ -180,7 +180,7 @@ export const getPgBulkData = async (opts: any, docName: string) => {
     }
     let col_concat = col.join(",");
     const queryPart = "select " + col_concat;
-    const fromPart = " from tex_sync ";
+    const fromPart = " from tex_sync_history ";
     const filterPart =
       " where doc_name = '" +
       docName +
@@ -339,8 +339,7 @@ export const storeUpdate = async (
       await pgPut(
         update,
         "ws",
-        createDocumentUpdateKeyArray(docName, clock + 1),
-        isHistory
+        createDocumentUpdateKeyArray(docName, clock + 1)
       );
       return clock + 1;
     }
@@ -409,7 +408,7 @@ const pgGet = async (
 ): Promise<Uint8Array> => {
   let res: QueryResult<TeXSync>;
   try {
-    let sql = `select value from tex_sync where key = $1`;
+    let sql = `select value from tex_sync_history where key = $1`;
     let mapValues = key.values();
     const array = Array.from(mapValues);
     const values = [JSON.stringify(array)];
@@ -446,7 +445,7 @@ const pgPutTrans = async (
   keys: any[]
 ) => {
   try {
-    const query = `INSERT INTO tex_sync (key, value, version, content_type, doc_name, clock, source) 
+    const query = `INSERT INTO tex_sync_history (key, value, version, content_type, doc_name, clock, source) 
       VALUES ($1, $2, $3, $4, $5, $6, $7) `;
     let version = keys[0];
     let contentType = keys[2] || "default";
@@ -476,17 +475,13 @@ const pgPutTrans = async (
 const pgPut = async (
   val: Uint8Array,
   source: string,
-  keys: any[],
-  isHistory: boolean = false
+  keys: any[]
 ) => {
   try {
     // we think there is no need to use on conflict do update
     // it is impossible to conflict with the key
-    let tableName = isHistory ? "tex_sync_history" : "tex_sync";
     const query =
-      `INSERT INTO ` +
-      tableName +
-      ` (key, value, version, content_type, doc_name, clock, source) 
+      `INSERT INTO tex_sync_history(key, value, version, content_type, doc_name, clock, source) 
       VALUES ($1, $2, $3, $4, $5, $6, $7) `;
     // on conflict do update
     // const query = `INSERT INTO tex_sync (key, value, version, content_type, doc_name, clock, source)
@@ -531,7 +526,7 @@ const pgPutUpsertTrans = async (
   keys: any[]
 ) => {
   try {
-    const query = `INSERT INTO tex_sync (key, value, version, content_type, doc_name, clock, source) 
+    const query = `INSERT INTO tex_sync_history (key, value, version, content_type, doc_name, clock, source) 
       VALUES ($1, $2, $3 $4, $5, $6, $7) `;
     let version = key.get("version") || "default";
     let contentType = key.get("contentType") || "default";
@@ -560,7 +555,7 @@ const pgPutUpsert = async (
   keys: any[]
 ) => {
   try {
-    const query = `INSERT INTO tex_sync (key, value, version, content_type, doc_name, clock, source) 
+    const query = `INSERT INTO tex_sync_history (key, value, version, content_type, doc_name, clock, source) 
       VALUES ($1, $2, $3, $4, $5, $6, $7) `;
     let version = key.get("version") || "default";
     let contentType = key.get("contentType") || "default";
@@ -631,7 +626,7 @@ const clearRange = async (
   to: number
 ) => {
   try {
-    const query = `delete from tex_sync where doc_name = $1 and content_type=$2 and clock >= $3 and clock < $4`;
+    const query = `delete from tex_sync_history where doc_name = $1 and content_type=$2 and clock >= $3 and clock < $4`;
     const values = [docName, "update", from, to];
     const res: pg.QueryResult<any> = await db.query(query, values);
   } catch (err) {

@@ -5,16 +5,14 @@ import * as Y from "rdyjs";
 import {
   flushDocument,
   getCurrentUpdateClock,
-  getDocAllUpdates,
+  getHistoryDocAllUpdates,
   insertKey,
   mergeUpdates,
   readStateVector,
   storeUpdate,
-  storeUpdateBySrc,
   storeUpdateTrans,
-} from "./postgresql_operation.js";
+} from "./history/pg_history_operation.js";
 import { dbConfig } from "./conf/db_config.js";
-import { PREFERRED_TRIM_SIZE } from "./postgresql_const.js";
 import { TeXSync } from "@model/yjs/storage/sync/tex_sync.js";
 import logger from "@common/log4js_config.js";
 import PQueue from "p-queue";
@@ -55,7 +53,7 @@ export class PgHisotoryPersistance {
       return ydoc;
     }
 
-    const updates: Array<TeXSync> = await getDocAllUpdates(this.pool, docName);
+    const updates: Array<TeXSync> = await getHistoryDocAllUpdates(this.pool, docName);
     ydoc.transact(() => {
       try {
         for (let i = 0; i < updates.length; i++) {
@@ -67,14 +65,6 @@ export class PgHisotoryPersistance {
         logger.error("apply update failed", err);
       }
     });
-    if (updates.length > PREFERRED_TRIM_SIZE) {
-      flushDocument(
-        this.pool,
-        docName,
-        Y.encodeStateAsUpdate(ydoc),
-        Y.encodeStateVector(ydoc)
-      );
-    }
     return ydoc;
   }
 
@@ -82,7 +72,7 @@ export class PgHisotoryPersistance {
     if (typeof window !== "undefined" || !this.pool) {
       return;
     }
-    const updates = getDocAllUpdates(this.pool, docName);
+    const updates = getHistoryDocAllUpdates(this.pool, docName);
     const { update, sv } = mergeUpdates(updates);
     flushDocument(this.pool, docName, update, sv);
   }
@@ -101,7 +91,7 @@ export class PgHisotoryPersistance {
       return sv;
     } else {
       // current state vector is outdated
-      const updates = getDocAllUpdates(this.pool, docName);
+      const updates = getHistoryDocAllUpdates(this.pool, docName);
       const { update, sv } = mergeUpdates(updates);
       flushDocument(this.pool, docName, update, sv);
       return sv;
