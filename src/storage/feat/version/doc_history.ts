@@ -1,7 +1,7 @@
 // @ts-ignore
-import logger from "@/common/log4js_config";
+import logger from "@/common/log4js_config.js";
 import { PgHisotoryPersistance } from "@/storage/adapter/postgresql/pg_history_persistance.js";
-import { throttledHistoryFn } from "@/storage/appfile";
+import { throttledHistoryFn } from "@/storage/appfile.js";
 import * as Y from "rdyjs";
 
 const pgHistoryDb: PgHisotoryPersistance = new PgHisotoryPersistance();
