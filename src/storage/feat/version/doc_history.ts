@@ -1,6 +1,7 @@
 // @ts-ignore
 import logger from "@/common/log4js_config";
 import { PgHisotoryPersistance } from "@/storage/adapter/postgresql/pg_history_persistance.js";
+import { throttledHistoryFn } from "@/storage/appfile";
 import * as Y from "rdyjs";
 
 const pgHistoryDb: PgHisotoryPersistance = new PgHisotoryPersistance();
@@ -18,7 +19,7 @@ export async function handleHistoryDoc(docName: string) {
     const DEFAULT_HISTORY_INTERVAL = 5000;
     // @ts-ignore
     historyDoc.on("update", async (update: Uint8Array) => {
-      await pgHistoryDb.storeUpdate(docName + "_history", update);
+      throttledHistoryFn(docName, pgHistoryDb, update);
     });
   } catch (error: any) {
     logger.error("save history doc error", error);

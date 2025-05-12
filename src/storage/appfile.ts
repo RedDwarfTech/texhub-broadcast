@@ -10,12 +10,20 @@ import { getFileJsonData } from "../texhub/client/texhub_interop.js";
 import { FileContent } from "../model/texhub/file_content.js";
 import { AppResponse } from "../texhub/biz/AppResponse.js";
 import { PostgresqlPersistance } from "./adapter/postgresql/postgresql_persistance.js";
-
+import { PgHisotoryPersistance } from "./adapter/postgresql/pg_history_persistance.js";
 export const throttledFn = lodash.throttle(
   (docName: string, ldb: PostgresqlPersistance) => {
     handleFileSync(docName, ldb);
   },
   2000
+);
+
+// generate document every 15 seconds
+export const throttledHistoryFn = lodash.throttle(
+  async (docName: string, pgHistoryDb: PgHisotoryPersistance, update: Uint8Array) => {
+    await pgHistoryDb.storeUpdate(docName + "_history", update); 
+  },
+  15000
 );
 
 const handleFileSync = async (docName: string, ldb: PostgresqlPersistance) => {
