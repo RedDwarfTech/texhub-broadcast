@@ -222,7 +222,7 @@ export const flushDocument = async (
   stateAsUpdate: any,
   stateVector: any
 ) => {
-  const clock = await storeUpdate(docName, stateAsUpdate);
+  const clock = await storeHistoryUpdate(docName, stateAsUpdate);
   await writeStateVector( docName, stateVector, clock);
   await clearUpdatesRange(db, docName, 0, clock); // intentionally not waiting for the promise to resolve!
   return clock;
@@ -318,13 +318,12 @@ export const storeUpdateTrans = async (
   return clock + 1;
 };
 
-export const storeUpdate = async (
+export const storeHistoryUpdate = async (
   docName: string,
-  update: Uint8Array,
-  isHistory: boolean = false
+  update: Uint8Array
 ) => {
   const uniqueValue = uuidv4();
-  const lockKey = `lock:${docName}:update`;
+  const lockKey = `hist-lock:${docName}:update`;
   try {
     // Attempt to get lock (will always succeed if Redis is not available)
     if (await getLock(lockKey, uniqueValue, 0)) {

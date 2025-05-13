@@ -1,11 +1,11 @@
 const persistenceDir = process.env.YPERSISTENCE;
 // @ts-ignore
 import * as Y from "rdyjs";
-import { throttledFn, throttledHistoryFn } from "./appfile.js";
+import { throttledFn } from "./appfile.js";
 import { Persistence } from "../model/yjs/Persistence.js";
 import { PostgresqlPersistance } from "./adapter/postgresql/postgresql_persistance.js";
 import logger from "../common/log4js_config.js";
-import { handleHistoryDoc } from "./feat/version/doc_history.js";
+import { handleHistoryDoc, pgHistoryDb } from "./feat/version/doc_history.js";
 
 export let persistencePostgresql: Persistence;
 
@@ -20,14 +20,21 @@ if (typeof persistenceDir === "string") {
         const newUpdates: Uint8Array = Y.encodeStateAsUpdate(ydoc);
         await postgresqlDb.storeUpdate(docName, newUpdates);
         Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(persistedYdoc));
+
+        // handle history doc
+        // this history may be low frequency update compare with the online doc
+        // so we store the history seperate with the online doc
+        const historyDoc: Y.Doc = await pgHistoryDb.getHisotyYDoc(
+          docName + "_history"
+        );
         // @ts-ignore
         ydoc.on("update", async (update: Uint8Array) => {
           await postgresqlDb.storeUpdate(docName, update);
           if (persistedYdoc) {
             throttledFn(docName, postgresqlDb);
           }
+          handleHistoryDoc(docName, ydoc, historyDoc);
         });
-        handleHistoryDoc(docName);
       } catch (err: any) {
         logger.error("process update failed", err);
       }

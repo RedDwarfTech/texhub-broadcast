@@ -9,7 +9,7 @@ import {
   insertKey,
   mergeUpdates,
   readStateVector,
-  storeUpdate,
+  storeHistoryUpdate,
   storeUpdateTrans,
 } from "./history/pg_history_operation.js";
 import { dbConfig } from "./conf/db_config.js";
@@ -116,7 +116,7 @@ export class PgHisotoryPersistance {
     }
   }
 
-  async storeUpdate(docName: string, update: Uint8Array) {
+  async storeHisUpdate(docName: string, update: Uint8Array) {
     if (typeof window !== "undefined" || !this.pool) {
       return;
     }
@@ -126,7 +126,7 @@ export class PgHisotoryPersistance {
       if (cacheQueue) {
         (async () => {
           await cacheQueue.add(async () => {
-            await storeUpdate(docName, update, true);
+            await storeHistoryUpdate(docName, update);
           });
         })();
       } else {
@@ -134,7 +134,7 @@ export class PgHisotoryPersistance {
         this.queueMap.set(docName, queue);
         (async () => {
           await queue.add(async () => {
-            await storeUpdate(docName, update, true);
+            await storeHistoryUpdate(docName, update);
           });
         })();
       }

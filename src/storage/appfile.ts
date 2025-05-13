@@ -10,7 +10,8 @@ import { getFileJsonData } from "../texhub/client/texhub_interop.js";
 import { FileContent } from "../model/texhub/file_content.js";
 import { AppResponse } from "../texhub/biz/AppResponse.js";
 import { PostgresqlPersistance } from "./adapter/postgresql/postgresql_persistance.js";
-import { PgHisotoryPersistance } from "./adapter/postgresql/pg_history_persistance.js";
+import { pgHistoryDb } from "./feat/version/doc_history.js";
+
 export const throttledFn = lodash.throttle(
   (docName: string, ldb: PostgresqlPersistance) => {
     handleFileSync(docName, ldb);
@@ -20,8 +21,15 @@ export const throttledFn = lodash.throttle(
 
 // generate document every 15 seconds
 export const throttledHistoryFn = lodash.throttle(
-  async (docName: string, pgHistoryDb: PgHisotoryPersistance, update: Uint8Array) => {
-    await pgHistoryDb.storeUpdate(docName + "_history", update); 
+  async (docName: string, historyDoc: Y.Doc, ydoc: Y.Doc) => {
+    // 历史的状态向量
+    const stateVector = Y.encodeStateVector(historyDoc);
+    const diff = Y.encodeStateAsUpdate(ydoc, stateVector);
+    if(diff && diff.length > 0){
+      await pgHistoryDb.storeHisUpdate(docName + "_history", diff); 
+      // 将上次记录更新到最新版本
+      Y.applyUpdate(historyDoc, diff);
+    }
   },
   15000
 );
