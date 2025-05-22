@@ -140,7 +140,7 @@ export const send = async (doc: WSSharedDoc, conn: Socket, m: Uint8Array) => {
   }
 };
 
-export const messageListener = (
+export const messageListener = async (
   conn: Socket,
   rootDoc: WSSharedDoc,
   message: Uint8Array
@@ -151,7 +151,10 @@ export const messageListener = (
     const messageType: number = decoding.readVarUint(decoder);
     switch (messageType) {
       case SyncMessageType.SubDocMessageSync:
-        handleSubDocMsg(rootDoc, conn, decoder);
+        /**
+         * https://github.com/yjs/y-websocket/issues/81
+         */
+        await handleSubDocMsg(rootDoc, conn, decoder);
         break;
       case SyncMessageType.MessageSync:
         encoding.writeVarUint(encoder, messageSync);

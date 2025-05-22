@@ -27,12 +27,12 @@ const subdocsMap: Map<String, Map<String, WSSharedDoc>> = new Map();
  * @param conn
  * @param message
  */
-export const handleSubDocMsg = (
+export const handleSubDocMsg = async (
   rootDoc: WSSharedDoc,
   conn: Socket,
   decoder: any
 ) => {
-  preHandleSubDoc(decoder, conn, rootDoc);
+  await preHandleSubDoc(decoder, conn, rootDoc);
 };
 
 const preHandleSubDoc = async (
