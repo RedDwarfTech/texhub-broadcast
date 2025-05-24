@@ -354,7 +354,6 @@ export const storeUpdate = async (
 };
 
 export const storeUpdateBySrc = async (
-  db: pg.Pool,
   update: Uint8Array,
   keys: any[]
 ) => {
@@ -519,7 +518,7 @@ const pgPut = async (
         val,
       err.stack
     );
-    throw err; // 重新抛出错误，让调用者处理
+    throw err;
   }
 };
 

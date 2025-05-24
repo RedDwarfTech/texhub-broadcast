@@ -58,7 +58,10 @@ const preHandleSubDoc = async (
       if (subdocTextStr) {
         curSubDoc = memoryOrDiskSubdoc;
       } else {
-        console.log("subdocTextStr is empty,try to get document from database directly,guid:" + subdocGuid);
+        console.log(
+          "subdocTextStr is empty,try to get document from database directly,guid:" +
+            subdocGuid
+        );
         // try to get document from database directly
         const postgresqlDb: PostgresqlPersistance =
           persistencePostgresql.provider;
@@ -117,6 +120,26 @@ const handleSubDoc = async (
     syncProtocol.writeSyncStep1(encoder, curSubDoc);
     send(curSubDoc, conn, encoding.toUint8Array(encoder));
   }
+
+  const broadcastSubDocUpdate = (update: Uint8Array, origin: any) => {
+    if (origin === conn) return; // Don't broadcast back to the sender
+
+    const encoder = encoding.createEncoder();
+    encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
+    encoding.writeVarString(encoder, subdocGuid);
+    syncProtocol.writeUpdate(encoder, update);
+
+    rootDoc.conns.forEach((_, clientConn) => {
+      if (clientConn !== conn) {
+        logger.warn("broadcast....");
+        //send(curSubDoc, clientConn, encoding.toUint8Array(encoder));
+      }
+    });
+  };
+
+  // Register update handler for the subdocument
+  // @ts-ignore - Y.Doc has on method but TypeScript doesn't know about it
+  curSubDoc.on("update", broadcastSubDocUpdate);
 };
 
 /**
