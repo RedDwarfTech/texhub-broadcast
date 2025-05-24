@@ -119,6 +119,9 @@ const handleSubDoc = async (
     encoding.writeVarString(encoder, subdocGuid);
     syncProtocol.writeSyncStep1(encoder, curSubDoc);
     send(curSubDoc, conn, encoding.toUint8Array(encoder));
+    // Register update handler for the subdocument
+    // @ts-ignore - Y.Doc has on method but TypeScript doesn't know about it
+    curSubDoc.on("update", broadcastSubDocUpdate);
   }
 
   const broadcastSubDocUpdate = (update: Uint8Array, origin: any) => {
@@ -136,10 +139,6 @@ const handleSubDoc = async (
       }
     });
   };
-
-  // Register update handler for the subdocument
-  // @ts-ignore - Y.Doc has on method but TypeScript doesn't know about it
-  curSubDoc.on("update", broadcastSubDocUpdate);
 };
 
 /**
