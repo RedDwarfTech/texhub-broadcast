@@ -284,6 +284,7 @@ export class SocketIOClientProvider extends Observable<string> {
    * @param {Y.Doc} subdoc
    */
   removeSubdoc(subdoc: Y.Doc) {
+    console.log("trigger remove subdoc" + subdoc.guid);
     // @ts-ignore
     subdoc.off("update", this.subdocUpdateHandlersMap.get(subdoc.guid));
   }
