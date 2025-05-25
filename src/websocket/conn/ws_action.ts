@@ -106,7 +106,7 @@ export const sendWithType = async (
       // https://stackoverflow.com/questions/16518153/get-connection-status-on-socket-io-client
       conn.send(m);
     } else {
-      logger.warn("connection state is not open, doc:" + doc.name);
+      logger.warn("sendWithType connection state is not open, doc:" + doc.name);
       closeConn(doc, conn);
     }
   } catch (e) {
