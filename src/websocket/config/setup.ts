@@ -18,7 +18,7 @@ import logger from "@common/log4js_config.js";
 import { ws_msg_handle } from "../conn/event/message_handler.js";
 import { URLSearchParams } from "url";
 
-export function setupWSConnection(
+export async function setupWSConnection(
   conn: Socket,
   req: http.IncomingMessage,
   { gc = true } = {}
@@ -27,7 +27,7 @@ export function setupWSConnection(
   let urlParams: URLSearchParams = url.searchParams;
   const docId = urlParams.get("docId");
   // get doc, initialize if it does not exist yet
-  const rootDoc: WSSharedDoc = getYDoc(docId!, gc);
+  const rootDoc: WSSharedDoc = await getYDoc(docId!, gc);
   rootDoc.conns.set(conn, new Set());
   // listen and reply to events
   conn.on("message", (message: Uint8Array) => {

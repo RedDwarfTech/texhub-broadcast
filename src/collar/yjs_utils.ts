@@ -29,18 +29,28 @@ export const messageSync: number = 0;
  *
  * @param {string} docname - the name of the Y.Doc to find or create
  * @param {boolean} gc - whether to allow gc on the doc (applies only when created)
- * @return {WSSharedDoc}
+ * @return {Promise<WSSharedDoc>}
  */
-export const getYDoc = (docname: string, gc: boolean = true): WSSharedDoc =>
-  setIfUndefined(docs, docname, () => {
-    const doc: WSSharedDoc = new WSSharedDoc(docname);
-    doc.gc = gc;
-    if (persistencePostgresql) {
-      persistencePostgresql.bindState(docname, doc);
-    }
-    docs.set(docname, doc);
-    return doc;
-  });
+export const getYDoc = async (docname: string, gc: boolean = true): Promise<WSSharedDoc> => {
+  // Check if doc already exists in memory
+  const existingDoc = docs.get(docname);
+  if (existingDoc) {
+    return existingDoc;
+  }
+
+  // Create new doc
+  const doc: WSSharedDoc = new WSSharedDoc(docname);
+  doc.gc = gc;
+  
+  // Bind to persistence if available
+  if (persistencePostgresql) {
+    await persistencePostgresql.bindState(docname, doc);
+  }
+  
+  // Store in memory map
+  docs.set(docname, doc);
+  return doc;
+};
 
 /**
  * @param {Uint8Array} update

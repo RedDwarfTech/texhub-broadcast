@@ -46,8 +46,8 @@ export const handleControlSignals = (message: Uint8Array, conn: Socket) => {
   }
 };
 
-const handleSwitchFiles = (msg: ControlMsg, conn: Socket) => {
-  const doc: WSSharedDoc = getYDoc(msg.fileId, true);
+const handleSwitchFiles = async (msg: ControlMsg, conn: Socket) => {
+  const doc: WSSharedDoc = await getYDoc(msg.fileId, true);
   const encoder = createEncoder();
   writeVarUint(encoder, SyncMessageType.MessageControl);
   syncProtocol.writeSyncStep1(encoder, doc);
