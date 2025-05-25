@@ -49,7 +49,7 @@ export const handleControlSignals = (message: Uint8Array, conn: Socket) => {
 
 const handleSwitchFiles = async (msg: ControlMsg, conn: Socket) => {
   let syncFileAttr: SyncFileAttr = {
-    doc_name: msg.fileId,
+    docName: msg.fileId,
   };
   const doc: WSSharedDoc = await getYDoc(syncFileAttr, true);
   const encoder = createEncoder();

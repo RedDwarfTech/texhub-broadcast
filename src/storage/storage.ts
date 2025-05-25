@@ -17,7 +17,7 @@ if (typeof persistenceDir === "string") {
     provider: postgresqlDb,
     bindState: async (syncFileAttr: SyncFileAttr, ydoc: Y.Doc) => {
       try {
-        let docName = syncFileAttr.doc_name;
+        let docName = syncFileAttr.docName;
         const persistedYdoc: Y.Doc = await postgresqlDb.getYDoc(docName);
         const newUpdates: Uint8Array = Y.encodeStateAsUpdate(ydoc);
         await postgresqlDb.storeUpdate(docName, newUpdates);

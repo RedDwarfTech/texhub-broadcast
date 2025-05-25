@@ -37,7 +37,7 @@ export const getYDoc = async (
   syncFileAttr: SyncFileAttr,
   gc: boolean = true
 ): Promise<WSSharedDoc> => {
-  let docname = syncFileAttr.doc_name;
+  let docname = syncFileAttr.docName;
   // Check if doc already exists in memory
   const existingDoc = docs.get(docname);
   if (existingDoc) {

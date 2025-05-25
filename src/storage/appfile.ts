@@ -47,7 +47,7 @@ const handleFileSync = async (
     /**
      * https://discuss.yjs.dev/t/how-to-get-the-document-text-the-decode-content-not-binary-content-in-y-websocket/2033/1
      */
-    let docName = syncFileAttr.doc_name;
+    let docName = syncFileAttr.docName;
     const persistedYdoc: Y.Doc = await ldb.getYDoc(docName);
     let text: Y.Text = persistedYdoc.getText(docName);
     if (text == null) {
