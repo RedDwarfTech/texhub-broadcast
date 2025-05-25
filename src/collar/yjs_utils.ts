@@ -13,6 +13,7 @@ import * as Y from "rdyjs";
 import debounce from 'lodash';
 import { PostgresqlPersistance } from "@/storage/adapter/postgresql/postgresql_persistance.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
+import logger from "@/common/log4js_config.js";
 
 const CALLBACK_URL = process.env.CALLBACK_URL
   ? new URL(process.env.CALLBACK_URL)
@@ -37,6 +38,9 @@ export const getYDoc = async (syncFileAttr: SyncFileAttr, gc: boolean = true): P
   // Check if doc already exists in memory
   const existingDoc = docs.get(docname);
   if (existingDoc) {
+    let subdocText = existingDoc.getText(docname);
+    let subdocTextStr = subdocText.toString();
+    logger.info("existingDoc docTxtStr:", subdocTextStr);
     return existingDoc;
   }
 

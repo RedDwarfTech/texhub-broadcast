@@ -64,13 +64,13 @@ const preHandleSubDoc = async (
       } else {
         console.log("subdocTextStr is empty,guid:" + subdocGuid);
         // try to get document from database directly
-        //const postgresqlDb: PostgresqlPersistance =
-        //persistencePostgresql.provider;
-        //const persistedYdoc: any = await postgresqlDb.getYDoc(subdocGuid);
-        //let dbSubdocText = persistedYdoc.getText(subdocGuid);
-        //let dbSubdocTextStr = dbSubdocText.toString();
-        //console.log("dbSubdocTextStr from database:" + dbSubdocTextStr);
-        //curSubDoc = persistedYdoc;
+        const postgresqlDb: PostgresqlPersistance =
+        persistencePostgresql.provider;
+        const persistedYdoc: any = await postgresqlDb.getYDoc(subdocGuid);
+        let dbSubdocText = persistedYdoc.getText(subdocGuid);
+        let dbSubdocTextStr = dbSubdocText.toString();
+        console.log("dbSubdocTextStr from database:" + dbSubdocTextStr);
+        curSubDoc = persistedYdoc;
       }
       await handleSubDoc(curSubDoc, subdocGuid, conn, rootDoc);
     }
