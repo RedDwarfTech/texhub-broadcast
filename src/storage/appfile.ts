@@ -19,7 +19,7 @@ export const throttledFn = lodash.throttle(
     if (syncFileAttr.docType === TeXFileType.PROJECT) {
       return;
     }
-    handleFileSync(syncFileAttr.doc_name, ldb);
+    handleFileSync(syncFileAttr, ldb);
   },
   2000
 );
@@ -39,11 +39,15 @@ export const throttledHistoryFn = lodash.throttle(
   15000
 );
 
-const handleFileSync = async (docName: string, ldb: PostgresqlPersistance) => {
+const handleFileSync = async (
+  syncFileAttr: SyncFileAttr,
+  ldb: PostgresqlPersistance
+) => {
   try {
     /**
      * https://discuss.yjs.dev/t/how-to-get-the-document-text-the-decode-content-not-binary-content-in-y-websocket/2033/1
      */
+    let docName = syncFileAttr.doc_name;
     const persistedYdoc: Y.Doc = await ldb.getYDoc(docName);
     let text: Y.Text = persistedYdoc.getText(docName);
     if (text == null) {
@@ -58,7 +62,9 @@ const handleFileSync = async (docName: string, ldb: PostgresqlPersistance) => {
     if (!fileInfo || !fileInfo.file_path) {
       logger.warn(
         "fileInfo is null or fileInfo.file_path is null" +
-          JSON.stringify(fileInfo)
+          JSON.stringify(fileInfo) +
+          "," +
+          JSON.stringify(syncFileAttr)
       );
       return;
     }
