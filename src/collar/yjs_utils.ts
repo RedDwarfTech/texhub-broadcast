@@ -33,33 +33,16 @@ export const messageSync: number = 0;
  * @param {boolean} gc - whether to allow gc on the doc (applies only when created)
  * @return {Promise<WSSharedDoc>}
  */
-export const getYDoc = async (
-  syncFileAttr: SyncFileAttr,
-  gc: boolean = true
-): Promise<WSSharedDoc> => {
-  let docname = syncFileAttr.docName;
-  // Check if doc already exists in memory
-  const existingDoc = docs.get(docname);
-  if (existingDoc) {
-    let subdocText = existingDoc.getText(docname);
-    let subdocTextStr = subdocText.toString();
-    logger.info("existingDoc docTxtStr:" + subdocTextStr + ",doc:" + docname);
-    return existingDoc;
-  }
-
-  // Create new doc
-  const doc: WSSharedDoc = new WSSharedDoc(docname);
-  doc.gc = gc;
-
-  // Bind to persistence if available
-  if (persistencePostgresql) {
-    await persistencePostgresql.bindState(syncFileAttr, doc);
-  }
-
-  // Store in memory map
-  docs.set(docname, doc);
-  return doc;
-};
+export const getYDoc = (syncFileAttr: SyncFileAttr, gc: boolean = true): WSSharedDoc =>
+  setIfUndefined(docs, syncFileAttr, async () => {
+    const doc: WSSharedDoc = new WSSharedDoc(syncFileAttr.docName);
+    doc.gc = gc;
+    if (persistencePostgresql) {
+      await persistencePostgresql.bindState(syncFileAttr, doc);
+    }
+    docs.set(syncFileAttr.docName, doc);
+    return doc;
+  });
 
 /**
  * @param {Uint8Array} update

@@ -548,7 +548,7 @@ const pgPutUpsertTrans = async (
     ];
     const res: pg.QueryResult<any> = await db.query(query, values);
   } catch (err: any) {
-    logger.error("Insert pgPutUpsert error:" + JSON.stringify(keys), err.stack);
+    logger.error("Insert pgPutUpsertTrans error:" + JSON.stringify(keys), err.stack);
   }
 };
 
