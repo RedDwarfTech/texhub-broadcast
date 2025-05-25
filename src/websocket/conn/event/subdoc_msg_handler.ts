@@ -91,6 +91,7 @@ const preHandleSubDoc = async (
   }
 };
 
+
 const handleSubDoc = async (
   curSubDoc: WSSharedDoc,
   subdocGuid: string,
@@ -114,6 +115,23 @@ const handleSubDoc = async (
       newMap.set(subdocGuid, curSubDoc);
       subdocsMap.set(rootDoc.name, newMap);
     }
+
+    const broadcastSubDocUpdate = (update: Uint8Array, origin: any) => {
+      if (origin === conn) return; // Don't broadcast back to the sender
+  
+      const encoder = encoding.createEncoder();
+      encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
+      encoding.writeVarString(encoder, subdocGuid);
+      syncProtocol.writeUpdate(encoder, update);
+  
+      rootDoc.conns.forEach((_, clientConn) => {
+        if (clientConn !== conn) {
+          logger.warn("broadcast....");
+          //send(curSubDoc, clientConn, encoding.toUint8Array(encoder));
+        }
+      });
+    };
+
     // send sync step 1
     const encoder = encoding.createEncoder();
     encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
@@ -124,22 +142,6 @@ const handleSubDoc = async (
     // @ts-ignore - Y.Doc has on method but TypeScript doesn't know about it
     curSubDoc.on("update", broadcastSubDocUpdate);
   }
-
-  const broadcastSubDocUpdate = (update: Uint8Array, origin: any) => {
-    if (origin === conn) return; // Don't broadcast back to the sender
-
-    const encoder = encoding.createEncoder();
-    encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
-    encoding.writeVarString(encoder, subdocGuid);
-    syncProtocol.writeUpdate(encoder, update);
-
-    rootDoc.conns.forEach((_, clientConn) => {
-      if (clientConn !== conn) {
-        logger.warn("broadcast....");
-        //send(curSubDoc, clientConn, encoding.toUint8Array(encoder));
-      }
-    });
-  };
 };
 
 /**
