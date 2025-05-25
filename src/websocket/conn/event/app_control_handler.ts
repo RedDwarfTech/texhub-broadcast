@@ -12,6 +12,7 @@ import { send } from "../ws_action.js";
 import * as syncProtocol from "rdy-protocols/dist/sync.mjs";
 // @ts-ignore
 import * as decoding from "rdlib0/dist/decoding.mjs";
+import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 
 export const handleControlSignals = (message: Uint8Array, conn: Socket) => {
   try {
@@ -19,7 +20,7 @@ export const handleControlSignals = (message: Uint8Array, conn: Socket) => {
     syncProtocol.readUpdate();
     let msgContent = decoding.readVarString(decoder);
     logger.info(
-      'Message content from server::',
+      "Message content from server::",
       decoding.readVarString(decoder)
     );
     const decoderutf = new TextDecoder("utf-8");
@@ -47,7 +48,10 @@ export const handleControlSignals = (message: Uint8Array, conn: Socket) => {
 };
 
 const handleSwitchFiles = async (msg: ControlMsg, conn: Socket) => {
-  const doc: WSSharedDoc = await getYDoc(msg.fileId, true);
+  let syncFileAttr: SyncFileAttr = {
+    doc_name: msg.fileId,
+  };
+  const doc: WSSharedDoc = await getYDoc(syncFileAttr, true);
   const encoder = createEncoder();
   writeVarUint(encoder, SyncMessageType.MessageControl);
   syncProtocol.writeSyncStep1(encoder, doc);

@@ -12,6 +12,7 @@ import { send } from "../ws_action.js";
 import * as syncProtocol from "rdy-protocols/dist/sync.mjs";
 import { PostgresqlPersistance } from "@/storage/adapter/postgresql/postgresql_persistance.js";
 import { persistencePostgresql } from "@/storage/storage.js";
+import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 
 /**
  * relationship of main doc & sub docs
@@ -43,7 +44,10 @@ const preHandleSubDoc = async (
   try {
     const encoder = encoding.createEncoder();
     const subdocGuid = decoding.readVarString(decoder);
-    let memoryOrDiskSubdoc = await getYDoc(subdocGuid);
+    let syncFileAttr: SyncFileAttr = {
+      doc_name: subdocGuid,
+    };
+    let memoryOrDiskSubdoc = await getYDoc(syncFileAttr);
     let curSubDoc = memoryOrDiskSubdoc;
     if (subdocGuid !== rootDoc.name) {
       // current document id not equal to root document

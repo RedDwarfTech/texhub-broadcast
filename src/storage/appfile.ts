@@ -11,10 +11,15 @@ import { FileContent } from "../model/texhub/file_content.js";
 import { AppResponse } from "../texhub/biz/AppResponse.js";
 import { PostgresqlPersistance } from "./adapter/postgresql/postgresql_persistance.js";
 import { pgHistoryDb } from "./feat/version/doc_history.js";
+import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
+import { TeXFileType } from "@/model/enum/tex_file_type.js";
 
 export const throttledFn = lodash.throttle(
-  (docName: string, ldb: PostgresqlPersistance) => {
-    handleFileSync(docName, ldb);
+  (syncFileAttr: SyncFileAttr, ldb: PostgresqlPersistance) => {
+    if (syncFileAttr.docType === TeXFileType.PROJECT) {
+      return;
+    }
+    handleFileSync(syncFileAttr.doc_name, ldb);
   },
   2000
 );
@@ -25,8 +30,8 @@ export const throttledHistoryFn = lodash.throttle(
     // 历史的状态向量
     const stateVector = Y.encodeStateVector(historyDoc);
     const diff = Y.encodeStateAsUpdate(ydoc, stateVector);
-    if(diff && diff.length > 0){
-      await pgHistoryDb.storeHisUpdate(docName + "_history", diff); 
+    if (diff && diff.length > 0) {
+      await pgHistoryDb.storeHisUpdate(docName + "_history", diff);
       // 将上次记录更新到最新版本
       Y.applyUpdate(historyDoc, diff);
     }

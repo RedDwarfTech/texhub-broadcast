@@ -6,6 +6,7 @@ import { Persistence } from "../model/yjs/Persistence.js";
 import { PostgresqlPersistance } from "./adapter/postgresql/postgresql_persistance.js";
 import logger from "../common/log4js_config.js";
 import { handleHistoryDoc, pgHistoryDb } from "./feat/version/doc_history.js";
+import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 
 export let persistencePostgresql: Persistence;
 
@@ -14,8 +15,9 @@ if (typeof persistenceDir === "string") {
   // postgresql
   persistencePostgresql = {
     provider: postgresqlDb,
-    bindState: async (docName: string, ydoc: Y.Doc) => {
+    bindState: async (syncFileAttr: SyncFileAttr, ydoc: Y.Doc) => {
       try {
+        let docName = syncFileAttr.doc_name;
         const persistedYdoc: Y.Doc = await postgresqlDb.getYDoc(docName);
         const newUpdates: Uint8Array = Y.encodeStateAsUpdate(ydoc);
         await postgresqlDb.storeUpdate(docName, newUpdates);
@@ -31,7 +33,7 @@ if (typeof persistenceDir === "string") {
         ydoc.on("update", async (update: Uint8Array) => {
           await postgresqlDb.storeUpdate(docName, update);
           if (persistedYdoc) {
-            throttledFn(docName, postgresqlDb);
+            throttledFn(syncFileAttr, postgresqlDb);
           }
           handleHistoryDoc(docName, ydoc, historyDoc);
         });

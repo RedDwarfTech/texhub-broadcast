@@ -12,6 +12,7 @@ import * as syncProtocol from "rdy-protocols/dist/sync.mjs";
 import * as Y from "rdyjs";
 import debounce from 'lodash';
 import { PostgresqlPersistance } from "@/storage/adapter/postgresql/postgresql_persistance.js";
+import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 
 const CALLBACK_URL = process.env.CALLBACK_URL
   ? new URL(process.env.CALLBACK_URL)
@@ -31,7 +32,8 @@ export const messageSync: number = 0;
  * @param {boolean} gc - whether to allow gc on the doc (applies only when created)
  * @return {Promise<WSSharedDoc>}
  */
-export const getYDoc = async (docname: string, gc: boolean = true): Promise<WSSharedDoc> => {
+export const getYDoc = async (syncFileAttr: SyncFileAttr, gc: boolean = true): Promise<WSSharedDoc> => {
+  let docname = syncFileAttr.doc_name;
   // Check if doc already exists in memory
   const existingDoc = docs.get(docname);
   if (existingDoc) {
@@ -44,7 +46,7 @@ export const getYDoc = async (docname: string, gc: boolean = true): Promise<WSSh
   
   // Bind to persistence if available
   if (persistencePostgresql) {
-    await persistencePostgresql.bindState(docname, doc);
+    await persistencePostgresql.bindState(syncFileAttr, doc);
   }
   
   // Store in memory map

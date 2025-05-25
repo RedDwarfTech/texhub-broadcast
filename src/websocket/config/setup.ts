@@ -17,17 +17,21 @@ import http from "http";
 import logger from "@common/log4js_config.js";
 import { ws_msg_handle } from "../conn/event/message_handler.js";
 import { URLSearchParams } from "url";
+import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 
 export async function setupWSConnection(
   conn: Socket,
   req: http.IncomingMessage,
   { gc = true } = {}
 ) {
-  let url: URL = new URL(req.url!,`http://${req.headers.host}`);
+  let url: URL = new URL(req.url!, `http://${req.headers.host}`);
   let urlParams: URLSearchParams = url.searchParams;
   const docId = urlParams.get("docId");
+  let syncFileAttr: SyncFileAttr = {
+    doc_name: docId!,
+  };
   // get doc, initialize if it does not exist yet
-  const rootDoc: WSSharedDoc = await getYDoc(docId!, gc);
+  const rootDoc: WSSharedDoc = await getYDoc(syncFileAttr, gc);
   rootDoc.conns.set(conn, new Set());
   // listen and reply to events
   conn.on("message", (message: Uint8Array) => {
