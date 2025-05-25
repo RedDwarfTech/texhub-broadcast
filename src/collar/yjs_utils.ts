@@ -10,7 +10,7 @@ import { callbackRequest, getContent } from "./ydoc_callback.js";
 import * as syncProtocol from "rdy-protocols/dist/sync.mjs";
 // @ts-ignore
 import * as Y from "rdyjs";
-import debounce from 'lodash';
+import debounce from "lodash";
 import { PostgresqlPersistance } from "@/storage/adapter/postgresql/postgresql_persistance.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import logger from "@/common/log4js_config.js";
@@ -33,26 +33,29 @@ export const messageSync: number = 0;
  * @param {boolean} gc - whether to allow gc on the doc (applies only when created)
  * @return {Promise<WSSharedDoc>}
  */
-export const getYDoc = async (syncFileAttr: SyncFileAttr, gc: boolean = true): Promise<WSSharedDoc> => {
+export const getYDoc = async (
+  syncFileAttr: SyncFileAttr,
+  gc: boolean = true
+): Promise<WSSharedDoc> => {
   let docname = syncFileAttr.doc_name;
   // Check if doc already exists in memory
   const existingDoc = docs.get(docname);
   if (existingDoc) {
     let subdocText = existingDoc.getText(docname);
     let subdocTextStr = subdocText.toString();
-    logger.info("existingDoc docTxtStr:", subdocTextStr);
+    logger.info("existingDoc docTxtStr:" + subdocTextStr + ",doc:" + docname);
     return existingDoc;
   }
 
   // Create new doc
   const doc: WSSharedDoc = new WSSharedDoc(docname);
   doc.gc = gc;
-  
+
   // Bind to persistence if available
   if (persistencePostgresql) {
     await persistencePostgresql.bindState(syncFileAttr, doc);
   }
-  
+
   // Store in memory map
   docs.set(docname, doc);
   return doc;
@@ -69,12 +72,12 @@ export const callbackHandler = (
   doc: any,
   t: Y.Transaction
 ) => {
-   debounce(() => {
+  debounce(() => {
     doCallback(doc);
-   });
+  });
 };
 
-const doCallback = (doc: WSSharedDoc) =>{
+const doCallback = (doc: WSSharedDoc) => {
   const room = doc.name;
   const dataToSend = {
     room,
@@ -89,8 +92,7 @@ const doCallback = (doc: WSSharedDoc) =>{
     };
   });
   callbackRequest(CALLBACK_URL!, Number(CALLBACK_TIMEOUT), dataToSend);
-}
-
+};
 
 /**
  * @param {Uint8Array} update
@@ -98,15 +100,24 @@ const doCallback = (doc: WSSharedDoc) =>{
  * @param {WSSharedDoc} doc
  * @param {any} _tr
  */
-export const updateHandler = (update:any, _origin:any, doc:any, _tr:any) => {
-  const encoder = encoding.createEncoder()
-  encoding.writeVarUint(encoder, messageSync)
-  syncProtocol.writeUpdate(encoder, update)
-  const message = encoding.toUint8Array(encoder)
-  doc.conns.forEach((_:any, conn:any) => send(doc, conn, message))
-}
+export const updateHandler = (
+  update: any,
+  _origin: any,
+  doc: any,
+  _tr: any
+) => {
+  const encoder = encoding.createEncoder();
+  encoding.writeVarUint(encoder, messageSync);
+  syncProtocol.writeUpdate(encoder, update);
+  const message = encoding.toUint8Array(encoder);
+  doc.conns.forEach((_: any, conn: any) => send(doc, conn, message));
+};
 
-export const initTpl = async (docId: string, projectId: string, initContext: any) => {
+export const initTpl = async (
+  docId: string,
+  projectId: string,
+  initContext: any
+) => {
   let docOpt = {
     guid: docId,
     collectionid: projectId,
@@ -116,5 +127,5 @@ export const initTpl = async (docId: string, projectId: string, initContext: any
   const ytext = ydoc.getText(docId);
   ytext.insert(0, initContext);
   const newUpdates: Uint8Array = Y.encodeStateAsUpdate(ydoc);
-  await postgresqlDb.storeUpdate(docId, newUpdates); 
+  await postgresqlDb.storeUpdate(docId, newUpdates);
 };

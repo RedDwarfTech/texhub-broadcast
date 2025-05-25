@@ -58,18 +58,23 @@ const preHandleSubDoc = async (
       );
       let subdocText = memoryOrDiskSubdoc.getText(subdocGuid);
       let subdocTextStr = subdocText.toString();
-      logger.info("docTxtStr:", subdocTextStr);
+      logger.info("docTxtStr:" + subdocTextStr + ",subdocGuid:" + subdocGuid);
       if (subdocTextStr) {
         curSubDoc = memoryOrDiskSubdoc;
       } else {
         console.log("subdocTextStr is empty,guid:" + subdocGuid);
         // try to get document from database directly
         const postgresqlDb: PostgresqlPersistance =
-        persistencePostgresql.provider;
+          persistencePostgresql.provider;
         const persistedYdoc: any = await postgresqlDb.getYDoc(subdocGuid);
         let dbSubdocText = persistedYdoc.getText(subdocGuid);
         let dbSubdocTextStr = dbSubdocText.toString();
-        console.log("dbSubdocTextStr from database:" + dbSubdocTextStr);
+        console.log(
+          "dbSubdocTextStr from database:" +
+            dbSubdocTextStr +
+            ",doc:" +
+            subdocGuid
+        );
         curSubDoc = persistedYdoc;
       }
       await handleSubDoc(curSubDoc, subdocGuid, conn, rootDoc);
@@ -90,7 +95,6 @@ const preHandleSubDoc = async (
     logger.error("handle sub doc facing issue:" + rootDoc.name, err);
   }
 };
-
 
 const handleSubDoc = async (
   curSubDoc: WSSharedDoc,
@@ -118,12 +122,12 @@ const handleSubDoc = async (
 
     const broadcastSubDocUpdate = (update: Uint8Array, origin: any) => {
       if (origin === conn) return; // Don't broadcast back to the sender
-  
+
       const encoder = encoding.createEncoder();
       encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
       encoding.writeVarString(encoder, subdocGuid);
       syncProtocol.writeUpdate(encoder, update);
-  
+
       rootDoc.conns.forEach((_, clientConn) => {
         if (clientConn !== conn) {
           logger.warn("broadcast....");
