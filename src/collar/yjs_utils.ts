@@ -34,11 +34,11 @@ export const messageSync: number = 0;
  * @return {Promise<WSSharedDoc>}
  */
 export const getYDoc = (syncFileAttr: SyncFileAttr, gc: boolean = true): WSSharedDoc =>
-  setIfUndefined(docs, syncFileAttr, async () => {
+  setIfUndefined(docs, syncFileAttr, () => {
     const doc: WSSharedDoc = new WSSharedDoc(syncFileAttr.docName);
     doc.gc = gc;
     if (persistencePostgresql) {
-      await persistencePostgresql.bindState(syncFileAttr, doc);
+      persistencePostgresql.bindState(syncFileAttr, doc);
     }
     docs.set(syncFileAttr.docName, doc);
     return doc;

@@ -77,7 +77,6 @@ if (typeof window === "undefined") {
 }
 
 export const getDocAllUpdates = async (
-  db: pg.Pool,
   docName: string,
   opts = { values: true, keys: false, reverse: false }
 ) => {
@@ -197,7 +196,7 @@ export const getPgBulkData = async (opts: any, docName: string) => {
       limitPart = " limit " + opts.limit;
     }
     const sql = queryPart + fromPart + filterPart + orderPart + limitPart;
-    let sysDb = await getPgPool();
+    let sysDb = getPgPool();
     let result: QueryResult<TeXSync> = await sysDb!.query(sql);
     return result.rows;
   } catch (err) {

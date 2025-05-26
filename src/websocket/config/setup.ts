@@ -33,7 +33,7 @@ export async function setupWSConnection(
     docType: Number(docType)
   };
   // get doc, initialize if it does not exist yet
-  const rootDoc: WSSharedDoc = await getYDoc(syncFileAttr, gc);
+  const rootDoc: WSSharedDoc = getYDoc(syncFileAttr, gc);
   rootDoc.conns.set(conn, new Set());
   // listen and reply to events
   conn.on("message", (message: Uint8Array) => {

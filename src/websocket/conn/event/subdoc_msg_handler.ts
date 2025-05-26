@@ -77,7 +77,7 @@ const preHandleSubDoc = async (
         );
         curSubDoc = persistedYdoc;
       }
-      await handleSubDoc(curSubDoc, subdocGuid, conn, rootDoc);
+      handleSubDoc(curSubDoc, subdocGuid, conn, rootDoc);
     }
     try {
       encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
@@ -96,7 +96,7 @@ const preHandleSubDoc = async (
   }
 };
 
-const handleSubDoc = async (
+const handleSubDoc = (
   curSubDoc: WSSharedDoc,
   subdocGuid: string,
   conn: Socket,

@@ -59,7 +59,7 @@ export class PostgresqlPersistance {
       return ydoc;
     }
 
-    const updates: Array<TeXSync> = await getDocAllUpdates(this.pool, docName);
+    const updates: Array<TeXSync> = await getDocAllUpdates(docName);
     ydoc.transact(() => {
       try {
         for (let i = 0; i < updates.length; i++) {
@@ -88,7 +88,7 @@ export class PostgresqlPersistance {
       return;
     }
 
-    const updates = getDocAllUpdates(this.pool, docName);
+    const updates = getDocAllUpdates(docName);
     const { update, sv } = mergeUpdates(updates);
     flushDocument(this.pool, docName, update, sv);
   }
@@ -108,7 +108,7 @@ export class PostgresqlPersistance {
       return sv;
     } else {
       // current state vector is outdated
-      const updates = getDocAllUpdates(this.pool, docName);
+      const updates = getDocAllUpdates(docName);
       const { update, sv } = mergeUpdates(updates);
       flushDocument(this.pool, docName, update, sv);
       return sv;

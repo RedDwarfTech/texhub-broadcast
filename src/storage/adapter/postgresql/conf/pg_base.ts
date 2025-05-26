@@ -4,30 +4,28 @@ import { dbConfig } from "./db_config.js";
 
 let pgPool: pg.Pool | null = null;
 
-export const getPgPool = async (): Promise<pg.Pool | null> => {
-  if (pgPool) {
-    return pgPool;
-  }
+// Initialize pool at module level
+if (typeof window === 'undefined') {
+  (async () => {
+    try {
+      const pgModule = await import('pg');
+      const { Pool } = pgModule.default || pgModule;
+      const pool = new Pool(dbConfig);
+      pool.on('error', (err: Error) => {
+        logger.error('Unexpected error on idle client', err);
+      });
+      pgPool = pool;
+    } catch (error) {
+      logger.error("Failed to initialize PostgreSQL pool:", error);
+    }
+  })();
+}
 
+export const getPgPool = (): pg.Pool | null => {
   if (typeof window !== 'undefined') {
     return null;
   }
-
-  try {
-    const pgModule = await import('pg');
-    const { Pool } = pgModule.default || pgModule;
-
-    pgPool = new Pool(dbConfig);
-
-    pgPool.on('error', (err: Error) => {
-      logger.error('Unexpected error on idle client', err);
-    });
-
-    return pgPool;
-  } catch (error) {
-    logger.error("Failed to initialize PostgreSQL pool:", error);
-    return null;
-  }
+  return pgPool;
 };
 
 export const closePgPool = async (): Promise<void> => {
