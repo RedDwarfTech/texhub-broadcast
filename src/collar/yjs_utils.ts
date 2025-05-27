@@ -33,16 +33,22 @@ export const messageSync: number = 0;
  * @param {boolean} gc - whether to allow gc on the doc (applies only when created)
  * @return {Promise<WSSharedDoc>}
  */
-export const getYDoc = (syncFileAttr: SyncFileAttr, gc: boolean = true): WSSharedDoc =>
-  setIfUndefined(docs, syncFileAttr, () => {
-    const doc: WSSharedDoc = new WSSharedDoc(syncFileAttr.docName);
-    doc.gc = gc;
-    if (persistencePostgresql) {
-      persistencePostgresql.bindState(syncFileAttr, doc);
-    }
-    docs.set(syncFileAttr.docName, doc);
-    return doc;
-  });
+export const getYDoc = (
+  syncFileAttr: SyncFileAttr,
+  gc: boolean = true
+): WSSharedDoc => {
+  let cachedDocs = docs.get(syncFileAttr.docName);
+  if (cachedDocs) {
+    return cachedDocs;
+  }
+  const doc: WSSharedDoc = new WSSharedDoc(syncFileAttr.docName);
+  doc.gc = gc;
+  if (persistencePostgresql) {
+    persistencePostgresql.bindState(syncFileAttr, doc);
+  }
+  docs.set(syncFileAttr.docName, doc);
+  return doc;
+};
 
 /**
  * @param {Uint8Array} update
