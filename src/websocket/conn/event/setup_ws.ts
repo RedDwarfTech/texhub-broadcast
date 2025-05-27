@@ -76,6 +76,7 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
       provider.wsconnecting = false;
       provider.wsconnected = true;
       provider.wsUnsuccessfulReconnects = 0;
+      localStorage.setItem("socket-id", socketio.id || "");
       //provider.emit("status", [
       // {
       //   status: "connected",

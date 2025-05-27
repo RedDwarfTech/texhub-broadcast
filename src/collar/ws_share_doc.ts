@@ -15,6 +15,7 @@ import { send } from "../websocket/conn/ws_action.js";
 import { callbackHandler, updateHandler } from "./yjs_utils.js";
 import { ChangeReq } from "../model/yjs/ChangeReq.js";
 import { Socket } from "socket.io";
+import { enableTracing } from "@/common/tracing/app_trace.js";
 
 const CALLBACK_URL = process.env.CALLBACK_URL
   ? new URL(process.env.CALLBACK_URL)
