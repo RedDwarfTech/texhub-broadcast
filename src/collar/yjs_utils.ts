@@ -37,16 +37,26 @@ export const getYDoc = (
   syncFileAttr: SyncFileAttr,
   gc: boolean = true
 ): WSSharedDoc => {
-  let cachedDocs = docs.get(syncFileAttr.docName);
+  // 确保docName是字符串类型
+  const docName = String(syncFileAttr.docName);
+  
+  // 调试日志
+  logger.debug(`Getting YDoc for docName: ${docName}`);
+  logger.debug(`Current docs keys: ${Array.from(docs.keys())}`);
+  
+  let cachedDocs = docs.get(docName);
   if (cachedDocs) {
+    logger.debug(`Found cached doc for: ${docName}`);
     return cachedDocs;
   }
-  const doc: WSSharedDoc = new WSSharedDoc(syncFileAttr.docName);
+  
+  logger.debug(`Creating new doc for: ${docName}`);
+  const doc: WSSharedDoc = new WSSharedDoc(docName);
   doc.gc = gc;
   if (persistencePostgresql) {
     persistencePostgresql.bindState(syncFileAttr, doc);
   }
-  docs.set(syncFileAttr.docName, doc);
+  docs.set(docName, doc);
   return doc;
 };
 
