@@ -559,7 +559,9 @@ const pgPutUpsert = async (
 ) => {
   try {
     const query = `INSERT INTO tex_sync (key, value, version, content_type, doc_name, clock, source) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7) `;
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      ON CONFLICT (tex_sync_unique) DO UPDATE
+      SET value = $2, version = $3, content_type = $4, doc_name = $5, clock = $6, source = $7`;
     let version = key.get("version") || "default";
     let contentType = key.get("contentType") || "default";
     let docName = key.get("docName") ? key.get("docName") : "default";
@@ -573,7 +575,7 @@ const pgPutUpsert = async (
       clock,
       source,
     ];
-    let sysDb = await getPgPool();
+    let sysDb = getPgPool();
     const res: pg.QueryResult<any> = await sysDb!.query(query, values);
   } catch (err: any) {
     logger.error("Insert pgPutUpsert error:" + JSON.stringify(keys), err.stack);
