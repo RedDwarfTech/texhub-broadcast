@@ -530,12 +530,13 @@ const pgPutUpsertTrans = async (
 ) => {
   try {
     const query = `INSERT INTO tex_sync (key, value, version, content_type, doc_name, clock, source) 
-      VALUES ($1, $2, $3 $4, $5, $6, $7) `;
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      ON CONFLICT (key) DO UPDATE
+      SET value = $2, version = $3, content_type = $4, doc_name = $5, clock = $6, source = $7`;
     let version = key.get("version") || "default";
     let contentType = key.get("contentType") || "default";
     let docName = key.get("docName") ? key.get("docName") : "default";
     let clock = key.get("clock") ? key.get("clock") : -1;
-    // https://stackoverflow.com/questions/1347646/postgres-error-on-insert-error-invalid-byte-sequence-for-encoding-utf8-0x0
     const values = [
       JSON.stringify(keys),
       Buffer.from(val),
@@ -560,7 +561,7 @@ const pgPutUpsert = async (
   try {
     const query = `INSERT INTO tex_sync (key, value, version, content_type, doc_name, clock, source) 
       VALUES ($1, $2, $3, $4, $5, $6, $7)
-      ON CONFLICT (tex_sync_unique) DO UPDATE
+      ON CONFLICT (key) DO UPDATE
       SET value = $2, version = $3, content_type = $4, doc_name = $5, clock = $6, source = $7`;
     let version = key.get("version") || "default";
     let contentType = key.get("contentType") || "default";
