@@ -20,6 +20,7 @@ import {
 import { TeXSync } from "@model/yjs/storage/sync/tex_sync.js";
 import { v4 as uuidv4 } from "uuid";
 import { getPgPool } from "../conf/pg_base.js";
+import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 
 // 仅在Node环境下导入和初始化数据库客户端
 let pgPool: any = null;
@@ -218,11 +219,12 @@ export const mergeUpdates = (updates: any) => {
 
 export const flushDocument = async (
   db: pg.Pool,
-  docName: string,
   stateAsUpdate: any,
-  stateVector: any
+  stateVector: any,
+  syncFileAttr: SyncFileAttr,
 ) => {
-  const clock = await storeHistoryUpdate(docName, stateAsUpdate);
+  let docName = syncFileAttr.docName;
+  const clock = await storeHistoryUpdate(syncFileAttr, stateAsUpdate);
   await writeStateVector( docName, stateVector, clock);
   await clearUpdatesRange(db, docName, 0, clock); // intentionally not waiting for the promise to resolve!
   return clock;
@@ -319,10 +321,11 @@ export const storeUpdateTrans = async (
 };
 
 export const storeHistoryUpdate = async (
-  docName: string,
+  syncFileAttr: SyncFileAttr,
   update: Uint8Array
 ) => {
   const uniqueValue = uuidv4();
+  let docName = syncFileAttr.docName;
   const lockKey = `hist-lock:${docName}:update`;
   try {
     // Attempt to get lock (will always succeed if Redis is not available)
@@ -335,10 +338,11 @@ export const storeHistoryUpdate = async (
         const sv = Y.encodeStateVector(ydoc);
         await writeStateVector( docName, sv, 0);
       }
-      await pgPut(
+      await pgHistoryPut(
         update,
         "ws",
-        createDocumentUpdateKeyArray(docName, clock + 1)
+        createDocumentUpdateKeyArray(docName, clock + 1),
+        syncFileAttr
       );
       return clock + 1;
     }
@@ -352,11 +356,11 @@ export const storeHistoryUpdate = async (
 };
 
 export const storeUpdateBySrc = async (
-  db: pg.Pool,
   update: Uint8Array,
-  keys: any[]
+  keys: any[],
+  syncFileAttr: SyncFileAttr
 ) => {
-  await pgPut(update, "leveldb", keys);
+  await pgHistoryPut(update, "leveldb", keys, syncFileAttr);
 };
 
 export const insertKey = async (
@@ -471,17 +475,18 @@ const pgPutTrans = async (
   }
 };
 
-const pgPut = async (
+const pgHistoryPut = async (
   val: Uint8Array,
   source: string,
-  keys: any[]
+  keys: any[],
+  syncFileAttr: SyncFileAttr
 ) => {
   try {
     // we think there is no need to use on conflict do update
     // it is impossible to conflict with the key
     const query =
-      `INSERT INTO tex_sync_history(key, value, version, content_type, doc_name, clock, source) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7) `;
+      `INSERT INTO tex_sync_history(key, value, version, content_type, doc_name, clock, source, project_id) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) `;
     // on conflict do update
     // const query = `INSERT INTO tex_sync (key, value, version, content_type, doc_name, clock, source)
     //   VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -501,8 +506,9 @@ const pgPut = async (
       docName,
       clock,
       source,
+      syncFileAttr.projectId
     ];
-    let sysDb = await getPgPool();
+    let sysDb = getPgPool();
     const res: pg.QueryResult<any> = await sysDb!.query(query, values);
     return res;
   } catch (err: any) {
@@ -513,7 +519,7 @@ const pgPut = async (
         val,
       err.stack
     );
-    throw err; // 重新抛出错误，让调用者处理
+    throw err;
   }
 };
 

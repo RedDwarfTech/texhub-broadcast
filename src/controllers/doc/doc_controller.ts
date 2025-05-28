@@ -12,6 +12,12 @@ routerDoc.get("/", async (req: Request, res: Response) => {
   res.send(text);
 });
 
+routerDoc.get("/version/proj/scroll", async (req: Request, res: Response) => {
+  const projId = req.params.projId;
+  
+  res.send("");
+});
+
 /**
  * https://discuss.yjs.dev/t/is-it-possible-to-using-http-to-do-some-initial-job/2108/1
  */

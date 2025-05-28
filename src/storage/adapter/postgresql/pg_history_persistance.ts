@@ -17,6 +17,7 @@ import { TeXSync } from "@model/yjs/storage/sync/tex_sync.js";
 import logger from "@common/log4js_config.js";
 import PQueue from "p-queue";
 import { LRUCache } from "lru-cache";
+import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 
 export class PgHisotoryPersistance {
   pool: pg.Pool | null = null;
@@ -68,16 +69,20 @@ export class PgHisotoryPersistance {
     return ydoc;
   }
 
-  flushDocument(docName: string) {
+  flushDocument(docName: string, projId: string) {
     if (typeof window !== "undefined" || !this.pool) {
       return;
     }
     const updates = getHistoryDocAllUpdates(this.pool, docName);
     const { update, sv } = mergeUpdates(updates);
-    flushDocument(this.pool, docName, update, sv);
+    let syncFileAttr : SyncFileAttr={
+      docName: docName,
+      projectId: projId
+    };
+    flushDocument(this.pool, update, sv, syncFileAttr);
   }
 
-  async getStateVector(docName: string) {
+  async getStateVector(docName: string, projId: string) {
     if (typeof window !== "undefined" || !this.pool) {
       return null;
     }
@@ -93,7 +98,11 @@ export class PgHisotoryPersistance {
       // current state vector is outdated
       const updates = getHistoryDocAllUpdates(this.pool, docName);
       const { update, sv } = mergeUpdates(updates);
-      flushDocument(this.pool, docName, update, sv);
+      let syncFileAttr: SyncFileAttr ={
+        docName: docName,
+        projectId: projId
+      };
+      flushDocument(this.pool, update, sv, syncFileAttr);
       return sv;
     }
   }
@@ -116,17 +125,17 @@ export class PgHisotoryPersistance {
     }
   }
 
-  async storeHisUpdate(docName: string, update: Uint8Array) {
+  async storeHisUpdate(syncFileAttr: SyncFileAttr, update: Uint8Array) {
     if (typeof window !== "undefined" || !this.pool) {
       return;
     }
-
+    let docName = syncFileAttr.docName + "_history";
     try {
       const cacheQueue = this.queueMap.get(docName);
       if (cacheQueue) {
         (async () => {
           await cacheQueue.add(async () => {
-            await storeHistoryUpdate(docName, update);
+            await storeHistoryUpdate(syncFileAttr, update);
           });
         })();
       } else {
@@ -134,7 +143,7 @@ export class PgHisotoryPersistance {
         this.queueMap.set(docName, queue);
         (async () => {
           await queue.add(async () => {
-            await storeHistoryUpdate(docName, update);
+            await storeHistoryUpdate(syncFileAttr, update);
           });
         })();
       }

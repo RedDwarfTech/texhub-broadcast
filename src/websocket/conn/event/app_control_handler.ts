@@ -50,8 +50,9 @@ export const handleControlSignals = (message: Uint8Array, conn: Socket) => {
 const handleSwitchFiles = async (msg: ControlMsg, conn: Socket) => {
   let syncFileAttr: SyncFileAttr = {
     docName: msg.fileId,
+    projectId: ""
   };
-  const doc: WSSharedDoc = await getYDoc(syncFileAttr, true);
+  const doc: WSSharedDoc = getYDoc(syncFileAttr, true);
   const encoder = createEncoder();
   writeVarUint(encoder, SyncMessageType.MessageControl);
   syncProtocol.writeSyncStep1(encoder, doc);

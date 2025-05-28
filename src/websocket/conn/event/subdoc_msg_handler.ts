@@ -46,6 +46,7 @@ const preHandleSubDoc = async (
     const subdocGuid = decoding.readVarString(decoder);
     let syncFileAttr: SyncFileAttr = {
       docName: subdocGuid,
+      projectId: rootDoc.name
     };
     let memoryOrDiskSubdoc = await getYDoc(syncFileAttr);
     let curSubDoc = memoryOrDiskSubdoc;

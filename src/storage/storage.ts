@@ -35,7 +35,7 @@ if (typeof persistenceDir === "string") {
           if (persistedYdoc) {
             throttledFn(syncFileAttr, postgresqlDb);
           }
-          handleHistoryDoc(docName, ydoc, historyDoc);
+          handleHistoryDoc(syncFileAttr, ydoc, historyDoc);
         });
       } catch (err: any) {
         logger.error("process update failed", err);

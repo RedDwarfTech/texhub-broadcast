@@ -26,12 +26,12 @@ export const throttledFn = lodash.throttle(
 
 // generate document every 15 seconds
 export const throttledHistoryFn = lodash.throttle(
-  async (docName: string, historyDoc: Y.Doc, ydoc: Y.Doc) => {
+  async (syncFileAttr: SyncFileAttr, historyDoc: Y.Doc, ydoc: Y.Doc) => {
     // 历史的状态向量
     const stateVector = Y.encodeStateVector(historyDoc);
     const diff = Y.encodeStateAsUpdate(ydoc, stateVector);
     if (diff && diff.length > 0) {
-      await pgHistoryDb.storeHisUpdate(docName + "_history", diff);
+      await pgHistoryDb.storeHisUpdate(syncFileAttr, diff);
       // 将上次记录更新到最新版本
       Y.applyUpdate(historyDoc, diff);
     }
