@@ -1,9 +1,9 @@
 const persistenceDir = process.env.YPERSISTENCE;
 import express, { Request, Response, Router } from "express";
 import { initTpl } from "@collar/yjs_utils.js";
-import { getProjectScrollVersion } from "@/service/version_service";
-import { ScrollQueryResult } from "@/common/types/scroll_query";
-import { ProjectScrollVersion } from "@/model/texhub/project_scroll_version";
+import { getProjectScrollVersion } from "@/service/version_service.js";
+import { ScrollQueryResult } from "@/common/types/scroll_query.js";
+import { ProjectScrollVersion } from "@/model/texhub/project_scroll_version.js";
 export const routerDoc: Router = express.Router();
 
 routerDoc.get("/", async (req: Request, res: Response) => {
