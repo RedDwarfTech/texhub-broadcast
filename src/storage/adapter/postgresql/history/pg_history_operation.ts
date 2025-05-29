@@ -221,11 +221,11 @@ export const flushDocument = async (
   db: pg.Pool,
   stateAsUpdate: any,
   stateVector: any,
-  syncFileAttr: SyncFileAttr,
+  syncFileAttr: SyncFileAttr
 ) => {
   let docName = syncFileAttr.docName;
   const clock = await storeHistoryUpdate(syncFileAttr, stateAsUpdate);
-  await writeStateVector( docName, stateVector, clock);
+  await writeStateVector(syncFileAttr, stateVector, clock);
   await clearUpdatesRange(db, docName, 0, clock); // intentionally not waiting for the promise to resolve!
   return clock;
 };
@@ -336,7 +336,7 @@ export const storeHistoryUpdate = async (
         const ydoc = new Y.Doc();
         Y.applyUpdate(ydoc, update);
         const sv = Y.encodeStateVector(ydoc);
-        await writeStateVector( docName, sv, 0);
+        await writeStateVector(syncFileAttr, sv, 0);
       }
       await pgHistoryPut(
         update,
@@ -390,18 +390,20 @@ const writeStateVectorTrans = async (
 };
 
 const writeStateVector = async (
-  docName: string,
+  syncFileAttr: SyncFileAttr,
   sv: any,
   clock: number
 ) => {
   const encoder = encoding.createEncoder();
   encoding.writeVarUint(encoder, clock);
   encoding.writeVarUint8Array(encoder, sv);
+  let docName = syncFileAttr.docName;
   await pgPutUpsert(
     createDocumentStateVectorKeyMap(docName, clock),
     encoding.toUint8Array(encoder),
     "ws",
-    createDocumentStateVectorKey(docName)
+    createDocumentStateVectorKey(docName),
+    syncFileAttr.projectId
   );
 };
 
@@ -484,8 +486,7 @@ const pgHistoryPut = async (
   try {
     // we think there is no need to use on conflict do update
     // it is impossible to conflict with the key
-    const query =
-      `INSERT INTO tex_sync_history(key, value, version, content_type, doc_name, clock, source, project_id) 
+    const query = `INSERT INTO tex_sync_history(key, value, version, content_type, doc_name, clock, source, project_id) 
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) `;
     // on conflict do update
     // const query = `INSERT INTO tex_sync (key, value, version, content_type, doc_name, clock, source)
@@ -506,7 +507,7 @@ const pgHistoryPut = async (
       docName,
       clock,
       source,
-      syncFileAttr.projectId
+      syncFileAttr.projectId,
     ];
     let sysDb = getPgPool();
     const res: pg.QueryResult<any> = await sysDb!.query(query, values);
@@ -549,7 +550,10 @@ const pgPutUpsertTrans = async (
     ];
     const res: pg.QueryResult<any> = await db.query(query, values);
   } catch (err: any) {
-    logger.error("Insert pgPutUpsertTrans error:" + JSON.stringify(keys), err.stack);
+    logger.error(
+      "Insert pgPutUpsertTrans error:" + JSON.stringify(keys),
+      err.stack
+    );
   }
 };
 
@@ -557,11 +561,12 @@ const pgPutUpsert = async (
   key: Map<string, string>,
   val: Uint8Array,
   source: string,
-  keys: any[]
+  keys: any[],
+  project_id: string
 ) => {
   try {
-    const query = `INSERT INTO tex_sync_history (key, value, version, content_type, doc_name, clock, source) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7) `;
+    const query = `INSERT INTO tex_sync_history (key, value, version, content_type, doc_name, clock, source, project_id) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) `;
     let version = key.get("version") || "default";
     let contentType = key.get("contentType") || "default";
     let docName = key.get("docName") ? key.get("docName") : "default";
@@ -574,11 +579,15 @@ const pgPutUpsert = async (
       docName,
       clock,
       source,
+      project_id,
     ];
     let sysDb = await getPgPool();
     const res: pg.QueryResult<any> = await sysDb!.query(query, values);
   } catch (err: any) {
-    logger.error("Insert pgPutUpsert history error:" + JSON.stringify(keys), err.stack);
+    logger.error(
+      "Insert pgPutUpsert history error:" + JSON.stringify(keys),
+      err.stack
+    );
   }
 };
 

@@ -51,15 +51,16 @@
     "meilisearch": "^0.35.1",
     "module-alias": "^2.2.3",
     "p-queue": "^8.1.0",
+    "pg": "8.10.0",
     "prom-client": "^14.2.0",
     "rdlib0": "^0.2.106",
     "rdy-protocols": "^1.0.14",
     "rdyjs": "13.6.30",
     "redis": "^4.7.0",
+    "sequelize": "^6.37.7",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
-    "uuid": "^11.1.0",
-    "pg": "8.10.0"
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.1",
@@ -80,9 +81,6 @@
     "vite": "^6.3.2",
     "vite-node": "^3.1.1",
     "vitest": "^3.1.1"
-  },
-  "peerDependencies": {
-    
   },
   "engine-strict": true,
   "overrides": {
