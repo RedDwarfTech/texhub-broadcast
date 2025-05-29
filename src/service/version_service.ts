@@ -1,12 +1,7 @@
 import { Op } from 'sequelize';
 import { ProjectScrollVersion } from '@/model/texhub/project_scroll_version.js';
+import { ScrollQueryResult } from '@/common/types/scroll_query.js';
 import logger from '@/common/log4js_config.js';
-
-interface ScrollQueryResult {
-  items: ProjectScrollVersion[];
-  nextCursor: string | null;
-  hasMore: boolean;
-}
 
 /**
  * 获取项目滚动版本
@@ -19,7 +14,7 @@ export const getProjectScrollVersion = async (
   projectId: string,
   cursor?: string,
   limit: number = 20
-): Promise<ScrollQueryResult> => {
+): Promise<ScrollQueryResult<ProjectScrollVersion>> => {
   try {
     // 构建查询条件
     const whereClause: any = {

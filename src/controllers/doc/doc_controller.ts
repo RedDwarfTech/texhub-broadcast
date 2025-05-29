@@ -1,6 +1,9 @@
 const persistenceDir = process.env.YPERSISTENCE;
 import express, { Request, Response, Router } from "express";
 import { initTpl } from "@collar/yjs_utils.js";
+import { getProjectScrollVersion } from "@/service/version_service";
+import { ScrollQueryResult } from "@/common/types/scroll_query";
+import { ProjectScrollVersion } from "@/model/texhub/project_scroll_version";
 export const routerDoc: Router = express.Router();
 
 routerDoc.get("/", async (req: Request, res: Response) => {
@@ -14,8 +17,9 @@ routerDoc.get("/", async (req: Request, res: Response) => {
 
 routerDoc.get("/version/proj/scroll", async (req: Request, res: Response) => {
   const projId = req.params.projId;
-  
-  res.send("");
+  const cursor: string = "";
+  let versions: ScrollQueryResult<ProjectScrollVersion> = await getProjectScrollVersion(projId, cursor);
+  res.send(versions);
 });
 
 /**

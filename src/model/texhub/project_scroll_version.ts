@@ -4,12 +4,12 @@ import { sequelize } from '@/storage/adapter/postgresql/conf/sequelize.js';
 export interface ProjectScrollVersionAttributes {
   id: number;
   key: string;
-  value: Buffer | null;
-  version: string | null;
-  content_type: string | null;
-  doc_name: string | null;
-  clock: number | null;
-  source: string | null;
+  value: Buffer;
+  version: string;
+  content_type: string;
+  doc_name: string;
+  clock: number;
+  source: string;
   created_time: Date;
   project_id: string;
 }
@@ -17,12 +17,12 @@ export interface ProjectScrollVersionAttributes {
 export class ProjectScrollVersion extends Model<ProjectScrollVersionAttributes> implements ProjectScrollVersionAttributes {
   public id!: number;
   public key!: string;
-  public value!: Buffer | null;
-  public version!: string | null;
-  public content_type!: string | null;
-  public doc_name!: string | null;
-  public clock!: number | null;
-  public source!: string | null;
+  public value!: Buffer;
+  public version!: string;
+  public content_type!: string;
+  public doc_name!: string;
+  public clock!: number;
+  public source!: string;
   public created_time!: Date;
   public project_id!: string;
 }
@@ -41,27 +41,27 @@ ProjectScrollVersion.init(
     },
     value: {
       type: DataTypes.BLOB,
-      allowNull: true,
+      allowNull: false,
     },
     version: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
     content_type: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
     doc_name: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
     clock: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false,
     },
     source: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
     created_time: {
       type: DataTypes.DATE,
