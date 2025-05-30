@@ -77,15 +77,26 @@ export const getProjectScrollVersion = async (
 
 export const calcFileVersion = async (fileId: string) => {
   try {
-    // 获取文件的所有版本记录
-    const versions = await ProjectScrollVersion.findAll({
-      where: {
-        doc_name: fileId
-      },
-      order: [
-        ["created_time", "ASC"]
-      ]
-    });
+    // 获取文件的所有版本记录，限制数量
+    const versions = await Promise.race([
+      ProjectScrollVersion.findAll({
+        where: {
+          doc_name: fileId
+        },
+        order: [
+          ["created_time", "ASC"]
+        ],
+        limit: 1000, // 限制最多返回1000条记录
+        logging: (sql, timing) => {
+          if (timing && timing > 5000) { // 记录执行时间超过5秒的查询
+            logger.warn(`Slow query detected for file ${fileId}, execution time: ${timing}ms`);
+          }
+        }
+      }),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Query timeout after 10 seconds')), 10000)
+      )
+    ]) as ProjectScrollVersion[];
 
     if (!versions || versions.length === 0) {
       return [];
