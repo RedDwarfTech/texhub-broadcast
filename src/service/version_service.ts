@@ -75,6 +75,77 @@ export const getProjectScrollVersion = async (
   }
 };
 
+export const calcFileVersion = async (fileId: string) => {
+  try {
+    // 获取文件的所有版本记录
+    const versions = await ProjectScrollVersion.findAll({
+      where: {
+        doc_name: fileId
+      },
+      order: [
+        ["created_time", "ASC"]
+      ]
+    });
+
+    if (!versions || versions.length === 0) {
+      return [];
+    }
+
+    // 找到最近的snapshot
+    const latestSnapshot = await getFileLatestSnapshot(fileId);
+    if (!latestSnapshot) {
+      logger.warn(`No snapshot found for file ${fileId}`);
+      return [];
+    }
+
+    // 找到snapshot在版本列表中的位置
+    const snapshotIndex = versions.findIndex(v => v.id === latestSnapshot.id);
+    if (snapshotIndex === -1) {
+      logger.warn(`Snapshot not found in version list for file ${fileId}`);
+      return [];
+    }
+
+    // 从snapshot开始，计算每个版本的内容
+    const results = [];
+    let currentDoc = new Y.Doc();
+    
+    // 首先应用snapshot
+    if (latestSnapshot.value) {
+      try {
+        const snapshot = Y.decodeSnapshot(latestSnapshot.value);
+        Y.createDocFromSnapshot(currentDoc, snapshot);
+      } catch (error) {
+        logger.error(`Failed to apply snapshot for file ${fileId}:`, error);
+        return [];
+      }
+    }
+
+    // 从snapshot之后的版本开始，应用增量更新
+    for (let i = snapshotIndex + 1; i < versions.length; i++) {
+      const version = versions[i];
+      if (version.content_type === 'update' && version.value) {
+        try {
+          Y.applyUpdate(currentDoc, version.value);
+          results.push({
+            versionId: version.id,
+            content: Y.encodeStateAsUpdate(currentDoc),
+            clock: version.clock,
+            createdTime: version.created_time
+          });
+        } catch (error) {
+          logger.error(`Failed to apply update for version ${version.id}:`, error);
+          continue;
+        }
+      }
+    }
+
+    return results;
+  } catch (error) {
+    logger.error(`Failed to calculate file versions for file ${fileId}:`, error);
+    throw error;
+  }
+};
+
 export const calcProjectVersion = async (projectId: string) => {
   try {
     // 获取所有版本记录
