@@ -2,6 +2,8 @@ import { Op } from "sequelize";
 import { ProjectScrollVersion } from "@/model/texhub/project_scroll_version.js";
 import { ScrollQueryResult } from "@/common/types/scroll_query.js";
 import logger from "@/common/log4js_config.js";
+// @ts-ignore
+import * as Y from "rdyjs";
 
 /**
  * 获取项目滚动版本
@@ -69,6 +71,74 @@ export const getProjectScrollVersion = async (
     };
   } catch (error) {
     logger.error("Failed to get project scroll versions:", error);
+    throw error;
+  }
+};
+
+export const calcProjectVersion = async (projectId: string) => {
+  try {
+    // 获取所有版本记录
+    const versions = await getProjectScrollVersion(projectId, undefined, 1000);
+    if (!versions.items || versions.items.length === 0) {
+      return [];
+    }
+
+    // 找到最近的snapshot
+    const latestSnapshot = await getProjectLatestSnapshot(projectId);
+    if (!latestSnapshot) {
+      logger.warn(`No snapshot found for project ${projectId}`);
+      return [];
+    }
+
+    // 按时间正序排序版本列表
+    const sortedVersions = versions.items.sort((a, b) => 
+      a.created_time.getTime() - b.created_time.getTime()
+    );
+
+    // 找到snapshot在版本列表中的位置
+    const snapshotIndex = sortedVersions.findIndex(v => v.id === latestSnapshot.id);
+    if (snapshotIndex === -1) {
+      logger.warn(`Snapshot not found in version list for project ${projectId}`);
+      return [];
+    }
+
+    // 从snapshot开始，计算每个版本的内容
+    const results = [];
+    let currentDoc = new Y.Doc();
+    
+    // 首先应用snapshot
+    if (latestSnapshot.value) {
+      try {
+        const snapshot = Y.decodeSnapshot(latestSnapshot.value);
+        Y.createDocFromSnapshot(currentDoc, snapshot);
+      } catch (error) {
+        logger.error(`Failed to apply snapshot for project ${projectId}:`, error);
+        return [];
+      }
+    }
+
+    // 从snapshot之后的版本开始，应用增量更新
+    for (let i = snapshotIndex + 1; i < sortedVersions.length; i++) {
+      const version = sortedVersions[i];
+      if (version.content_type === 'update' && version.value) {
+        try {
+          Y.applyUpdate(currentDoc, version.value);
+          results.push({
+            versionId: version.id,
+            content: Y.encodeStateAsUpdate(currentDoc),
+            clock: version.clock,
+            createdTime: version.created_time
+          });
+        } catch (error) {
+          logger.error(`Failed to apply update for version ${version.id}:`, error);
+          continue;
+        }
+      }
+    }
+
+    return results;
+  } catch (error) {
+    logger.error(`Failed to calculate project versions for project ${projectId}:`, error);
     throw error;
   }
 };
