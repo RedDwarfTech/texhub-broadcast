@@ -18,6 +18,10 @@ import logger from "@common/log4js_config.js";
 import PQueue from "p-queue";
 import { LRUCache } from "lru-cache";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
+import { Op } from "sequelize";
+import { ProjectScrollVersion } from "@/model/texhub/project_scroll_version.js";
+import { ScrollQueryResult } from "@/common/types/scroll_query.js";
+import { getFileLatestSnapshot, getProjectLatestSnapshot } from "@/service/version_service.js";
 
 export class PgHisotoryPersistance {
   pool: pg.Pool | null = null;
@@ -122,6 +126,54 @@ export class PgHisotoryPersistance {
       throw e;
     } finally {
       client.release();
+    }
+  }
+
+  async storeSnapshot(syncFileAttr: SyncFileAttr, doc: Y.Doc) {
+    if (typeof window !== "undefined" || !this.pool) {
+      return;
+    }
+
+    try {
+      // 获取最新的snapshot
+      const latestSnapshot = await getFileLatestSnapshot(syncFileAttr.docName);
+      // 获取最新的update clock
+      const latestClock = await getCurrentUpdateClock(syncFileAttr.docName);
+
+      // 如果没有snapshot或者clock差距大于500，创建新的snapshot
+      if (!latestSnapshot || (latestClock - latestSnapshot.clock > 500)) {
+        const snapshot = Y.snapshot(doc);
+        const encoded = Y.encodeSnapshot(snapshot);
+        
+        const client = await this.pool.connect();
+        try {
+          await client.query('BEGIN');
+          
+          // 存储新的snapshot
+          await client.query(
+            `INSERT INTO project_scroll_version 
+            (project_id, doc_name, content_type, content, clock, created_time) 
+            VALUES ($1, $2, $3, $4, $5, NOW())`,
+            [
+              syncFileAttr.projectId,
+              syncFileAttr.docName,
+              'snapshot',
+              encoded,
+              latestClock
+            ]
+          );
+          
+          await client.query('COMMIT');
+        } catch (error) {
+          await client.query('ROLLBACK');
+          throw error;
+        } finally {
+          client.release();
+        }
+      }
+    } catch (error) {
+      logger.error('Failed to store snapshot:', error);
+      throw error;
     }
   }
 

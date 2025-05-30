@@ -1,7 +1,7 @@
-import { Op } from 'sequelize';
-import { ProjectScrollVersion } from '@/model/texhub/project_scroll_version.js';
-import { ScrollQueryResult } from '@/common/types/scroll_query.js';
-import logger from '@/common/log4js_config.js';
+import { Op } from "sequelize";
+import { ProjectScrollVersion } from "@/model/texhub/project_scroll_version.js";
+import { ScrollQueryResult } from "@/common/types/scroll_query.js";
+import logger from "@/common/log4js_config.js";
 
 /**
  * 获取项目滚动版本
@@ -23,8 +23,8 @@ export const getProjectScrollVersion = async (
 
     // 如果有游标，添加游标条件
     if (cursor) {
-      const decodedCursor = Buffer.from(cursor, 'base64').toString();
-      const [timestamp, id] = decodedCursor.split('_');
+      const decodedCursor = Buffer.from(cursor, "base64").toString();
+      const [timestamp, id] = decodedCursor.split("_");
       whereClause[Op.or] = [
         {
           created_time: {
@@ -44,8 +44,8 @@ export const getProjectScrollVersion = async (
     const versions = await ProjectScrollVersion.findAll({
       where: whereClause,
       order: [
-        ['created_time', 'DESC'],
-        ['id', 'DESC'],
+        ["created_time", "DESC"],
+        ["id", "DESC"],
       ],
       limit: limit + 1, // 多查询一条用于判断是否还有更多
     });
@@ -59,7 +59,7 @@ export const getProjectScrollVersion = async (
     if (hasMore) {
       const lastItem = items[items.length - 1];
       const cursorString = `${lastItem.created_time.getTime()}_${lastItem.id}`;
-      nextCursor = Buffer.from(cursorString).toString('base64');
+      nextCursor = Buffer.from(cursorString).toString("base64");
     }
 
     return {
@@ -68,10 +68,45 @@ export const getProjectScrollVersion = async (
       hasMore,
     };
   } catch (error) {
-    logger.error('Failed to get project scroll versions:', error);
+    logger.error("Failed to get project scroll versions:", error);
     throw error;
   }
 };
 
+export const getProjectLatestSnapshot = async (
+  projectId: string
+): Promise<ProjectScrollVersion | null> => {
+  try {
+    const snapshot = await ProjectScrollVersion.findOne({
+      where: {
+        project_id: projectId,
+        content_type: "snapshot",
+      },
+      order: [["created_time", "DESC"]],
+    });
 
+    return snapshot;
+  } catch (error) {
+    logger.error("Failed to get project latest snapshot:", error);
+    throw error;
+  }
+};
 
+export const getFileLatestSnapshot = async (
+  fileId: string
+): Promise<ProjectScrollVersion | null> => {
+  try {
+    const snapshot = await ProjectScrollVersion.findOne({
+      where: {
+        doc_name: fileId,
+        content_type: "snapshot",
+      },
+      order: [["created_time", "DESC"]],
+    });
+
+    return snapshot;
+  } catch (error) {
+    logger.error("Failed to get project latest snapshot:", error);
+    throw error;
+  }
+};

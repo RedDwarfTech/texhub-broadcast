@@ -32,6 +32,8 @@ export const throttledHistoryFn = lodash.throttle(
     const diff = Y.encodeStateAsUpdate(ydoc, stateVector);
     if (diff && diff.length > 0) {
       await pgHistoryDb.storeHisUpdate(syncFileAttr, diff);
+      // store snapshot
+      pgHistoryDb.storeSnapshot(syncFileAttr, ydoc);
       // 将上次记录更新到最新版本
       Y.applyUpdate(historyDoc, diff);
     }
