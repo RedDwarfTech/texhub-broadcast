@@ -149,17 +149,23 @@ export class PgHisotoryPersistance {
         try {
           await client.query('BEGIN');
           
+          // 生成唯一的key
+          const key = `snapshot_${syncFileAttr.docName}_${Date.now()}`;
+          
           // 存储新的snapshot
           await client.query(
-            `INSERT INTO project_scroll_version 
-            (project_id, doc_name, content_type, content, clock, created_time) 
-            VALUES ($1, $2, $3, $4, $5, NOW())`,
+            `INSERT INTO tex_sync_history 
+            (key, value, version, content_type, doc_name, clock, source, project_id, created_time) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
             [
-              syncFileAttr.projectId,
-              syncFileAttr.docName,
-              'snapshot',
+              key,
               encoded,
-              latestClock
+              '1.0', // version
+              'snapshot',
+              syncFileAttr.docName,
+              latestClock,
+              'system',
+              syncFileAttr.projectId
             ]
           );
           

@@ -33,7 +33,7 @@ export const throttledHistoryFn = lodash.throttle(
     if (diff && diff.length > 0) {
       await pgHistoryDb.storeHisUpdate(syncFileAttr, diff);
       // store snapshot
-      pgHistoryDb.storeSnapshot(syncFileAttr, ydoc);
+      await pgHistoryDb.storeSnapshot(syncFileAttr, ydoc);
       // 将上次记录更新到最新版本
       Y.applyUpdate(historyDoc, diff);
     }
