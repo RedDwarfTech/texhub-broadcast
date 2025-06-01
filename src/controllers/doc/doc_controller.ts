@@ -1,9 +1,8 @@
 const persistenceDir = process.env.YPERSISTENCE;
 import express, { Request, Response, Router } from "express";
 import { initTpl } from "@collar/yjs_utils.js";
-import { calcFileVersion, calcProjectVersion, getProjectScrollVersion } from "@/service/version_service.js";
-import { ScrollQueryResult } from "@/common/types/scroll_query.js";
-import { ProjectScrollVersion } from "@/model/texhub/project_scroll_version.js";
+import { calcFileVersion, calcProjectVersion } from "@/service/version_service.js";
+import logger from "@/common/log4js_config.js";
 export const routerDoc: Router = express.Router();
 
 routerDoc.get("/", async (req: Request, res: Response) => {
@@ -22,9 +21,17 @@ routerDoc.get("/version/proj/scroll", async (req: Request, res: Response) => {
 });
 
 routerDoc.get("/version/file/scroll", async (req: Request, res: Response) => {
-  const fileId = req.params.fileId;
-  let versions = await calcFileVersion(fileId);
-  res.send(versions);
+  const fileId = req.query.fileId as string;
+  if (!fileId) {
+    return res.status(400).json({ error: 'fileId is required' });
+  }
+  try {
+    let versions = await calcFileVersion(fileId);
+    res.send(versions);
+  } catch (error) {
+    logger.error(`Failed to get file versions for fileId ${fileId}:`, error);
+    res.status(500).json({ error: 'Failed to get file versions' });
+  }
 });
 
 /**
