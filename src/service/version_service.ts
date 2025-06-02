@@ -120,12 +120,13 @@ export const calcFileVersion = async (fileId: string) => {
     const results = [];
     // https://discuss.yjs.dev/t/error-garbage-collection-must-be-disabled-in-origindoc/2313
     let currentDoc = new Y.Doc({ gc: false });
+    let newDoc = new Y.Doc({ gc: false });
     
     // 首先应用snapshot
     if (latestSnapshot.value) {
       try {
         const snapshot = Y.decodeSnapshot(latestSnapshot.value);
-        Y.createDocFromSnapshot(currentDoc, snapshot);
+        let newDoc = Y.createDocFromSnapshot(currentDoc, snapshot);
       } catch (error) {
         logger.error(`Failed to apply snapshot for file ${fileId}:`, error);
         return [];
@@ -137,10 +138,10 @@ export const calcFileVersion = async (fileId: string) => {
       const version = versions[i];
       if (version.content_type === 'update' && version.value) {
         try {
-          Y.applyUpdate(currentDoc, version.value);
+          Y.applyUpdate(newDoc, version.value);
           results.push({
             versionId: version.id,
-            content: Y.encodeStateAsUpdate(currentDoc),
+            content: Y.encodeStateAsUpdate(newDoc),
             clock: version.clock,
             createdTime: version.created_time
           });
@@ -187,13 +188,14 @@ export const calcProjectVersion = async (projectId: string) => {
 
     // 从snapshot开始，计算每个版本的内容
     const results = [];
-    let currentDoc = new Y.Doc();
+    let currentDoc = new Y.Doc({ gc: false });
+    let newDoc = new Y.Doc({ gc: false });
     
     // 首先应用snapshot
     if (latestSnapshot.value) {
       try {
         const snapshot = Y.decodeSnapshot(latestSnapshot.value);
-        Y.createDocFromSnapshot(currentDoc, snapshot);
+        newDoc = Y.createDocFromSnapshot(currentDoc, snapshot);
       } catch (error) {
         logger.error(`Failed to apply snapshot for project ${projectId}:`, error);
         return [];
@@ -205,10 +207,10 @@ export const calcProjectVersion = async (projectId: string) => {
       const version = sortedVersions[i];
       if (version.content_type === 'update' && version.value) {
         try {
-          Y.applyUpdate(currentDoc, version.value);
+          Y.applyUpdate(newDoc, version.value);
           results.push({
             versionId: version.id,
-            content: Y.encodeStateAsUpdate(currentDoc),
+            content: Y.encodeStateAsUpdate(newDoc),
             clock: version.clock,
             createdTime: version.created_time
           });
