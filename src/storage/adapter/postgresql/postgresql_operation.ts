@@ -32,7 +32,12 @@ if (typeof window === "undefined") {
     // 动态导入pg模块
     const initPg = async () => {
       const pgModule = await import("pg");
-      const { Pool } = pgModule;
+      // 处理不同的模块导出格式
+      const Pool = pgModule.default?.Pool || pgModule.Pool;
+      if (!Pool) {
+        throw new Error("Pool constructor not found in pg module");
+      }
+      
       // 初始化数据库连接池的函数
       const initPgPool = () => {
         pgPool = new Pool({
