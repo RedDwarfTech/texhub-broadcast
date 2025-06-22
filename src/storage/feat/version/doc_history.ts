@@ -9,11 +9,10 @@ export const pgHistoryDb: PgHisotoryPersistance = new PgHisotoryPersistance();
 
 export async function handleHistoryDoc(
   syncFileAttr: SyncFileAttr,
-  ydoc: Y.Doc,
-  historyDoc: Y.Doc
+  ydoc: Y.Doc
 ) {
   try {
-    throttledHistoryFn(syncFileAttr, historyDoc, ydoc);
+    throttledHistoryFn(syncFileAttr, ydoc);
   } catch (error: any) {
     logger.error("save history doc error", error);
   }

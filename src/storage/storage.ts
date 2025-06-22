@@ -23,19 +23,13 @@ if (typeof persistenceDir === "string") {
         await postgresqlDb.storeUpdate(docName, newUpdates);
         Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(persistedYdoc));
 
-        // handle history doc
-        // this history may be low frequency update compare with the online doc
-        // so we store the history seperate with the online doc
-        const historyDoc: Y.Doc = await pgHistoryDb.getHisotyYDoc(
-          docName + "_history"
-        );
         // @ts-ignore
         ydoc.on("update", async (update: Uint8Array) => {
           await postgresqlDb.storeUpdate(docName, update);
           if (persistedYdoc) {
             throttledFn(syncFileAttr, postgresqlDb);
           }
-          handleHistoryDoc(syncFileAttr, ydoc, historyDoc);
+          handleHistoryDoc(syncFileAttr, ydoc);
         });
       } catch (err: any) {
         logger.error("process update failed", err);

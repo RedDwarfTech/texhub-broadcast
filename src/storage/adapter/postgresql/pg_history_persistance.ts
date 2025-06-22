@@ -135,12 +135,8 @@ export class PgHisotoryPersistance {
     }
 
     try {
-      // 获取最新的snapshot
       const latestSnapshot = await getFileLatestSnapshot(syncFileAttr.docName);
-      // 获取最新的update clock
       const latestClock = await getCurrentUpdateClock(syncFileAttr.docName);
-
-      // 如果没有snapshot或者clock差距大于500，创建新的snapshot
       if (!latestSnapshot || (latestClock - latestSnapshot.clock > 500)) {
         const snapshot = Y.snapshot(doc);
         const encoded = Y.encodeSnapshot(snapshot);
@@ -148,11 +144,7 @@ export class PgHisotoryPersistance {
         const client = await this.pool.connect();
         try {
           await client.query('BEGIN');
-          
-          // 生成唯一的key
           const key = `snapshot_${syncFileAttr.docName}_${Date.now()}`;
-          
-          // 存储新的snapshot
           await client.query(
             `INSERT INTO tex_sync_history 
             (key, value, version, content_type, doc_name, clock, source, project_id, created_time) 

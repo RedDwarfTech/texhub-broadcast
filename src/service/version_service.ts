@@ -116,7 +116,6 @@ export const calcFileVersion = async (fileId: string) => {
       return [];
     }
 
-    // 从snapshot开始，计算每个版本的内容
     const results = [];
     // https://discuss.yjs.dev/t/error-garbage-collection-must-be-disabled-in-origindoc/2313
     let currentDoc = new Y.Doc({ gc: false });
