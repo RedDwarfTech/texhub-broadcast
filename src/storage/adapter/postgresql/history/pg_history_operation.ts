@@ -19,63 +19,11 @@ import {
 } from "../conf/postgresql_const.js";
 import { TeXSync } from "@model/yjs/storage/sync/tex_sync.js";
 import { v4 as uuidv4 } from "uuid";
-import { getPgPool } from "../conf/pg_base.js";
+import { getPgPool, getRedisClient } from "../conf/database_init.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 
-// 仅在Node环境下导入和初始化数据库客户端
-let pgPool: any = null;
-let client: any = null;
-
-// 检查是否在Node.js环境
-if (typeof window === "undefined") {
-  // 使用动态import导入模块，确保ESM风格
-  try {
-    // 动态导入pg模块
-    const initPg = async () => {
-      const pgModule = await import("pg");
-      const { Pool } = pgModule;
-      // 初始化数据库连接池的函数
-      const initPgPool = () => {
-        pgPool = new Pool({
-          host: process.env.POSTGRES_HOST || "localhost",
-          port: parseInt(process.env.POSTGRES_PORT || "5432"),
-          database: process.env.POSTGRES_DB || "postgres",
-          user: process.env.POSTGRES_USER || "postgres",
-          password: process.env.POSTGRES_PASSWORD || "postgres",
-        });
-        pgPool.on("error", (err: Error) => {
-          logger.error("Unexpected error on idle client", err);
-        });
-        return pgPool;
-      };
-
-      // 初始化数据库连接池
-      pgPool = initPgPool();
-    };
-
-    // 执行pg初始化
-    initPg().catch((err) =>
-      logger.error("Failed to initialize PG client:", err)
-    );
-
-    // 动态导入Redis模块
-    const initRedis = async () => {
-      const { createClient } = await import("redis");
-      client = await createClient({
-        url: process.env.REDIS_URL,
-      })
-        .on("error", (err: any) => logger.error("Redis Client Error", err))
-        .connect();
-    };
-
-    // 执行Redis初始化
-    initRedis().catch((err) =>
-      logger.error("Failed to initialize Redis client:", err)
-    );
-  } catch (error) {
-    logger.error("Error importing database modules:", error);
-  }
-}
+// 获取数据库客户端
+const getClient = () => getRedisClient();
 
 export const getHistoryDocAllUpdates = async (
   db: pg.Pool,
@@ -232,7 +180,7 @@ export const flushDocument = async (
 
 const getLock = async (lockKey: string, uniqueValue: string, times: number) => {
   // If Redis is not available (non-Node environment), pretend we got the lock
-  if (!client) {
+  if (!getClient()) {
     logger.info("Redis client not available, simulating lock acquisition");
     return true;
   }
@@ -251,7 +199,7 @@ const getLock = async (lockKey: string, uniqueValue: string, times: number) => {
       return 0
     end
     `;
-  const result = await client.eval(luaScript, {
+  const result = await getClient()!.eval(luaScript, {
     keys: [lockKey],
     arguments: [uniqueValue, `${expireTime}`],
   });
@@ -276,7 +224,7 @@ function sleep(delay: number) {
  */
 async function unlock(lockKey: string, uniqueValue: string) {
   // If Redis is not available (non-Node environment), do nothing
-  if (!client) {
+  if (!getClient()) {
     logger.info("Redis client not available, simulating lock release");
     return;
   }
@@ -288,7 +236,7 @@ async function unlock(lockKey: string, uniqueValue: string) {
       return 0
     end
   `;
-  const result = await client.eval(luaScript, {
+  const result = await getClient()!.eval(luaScript, {
     keys: [lockKey],
     arguments: [uniqueValue],
   });
@@ -581,7 +529,7 @@ const pgPutUpsert = async (
       source,
       project_id,
     ];
-    let sysDb = await getPgPool();
+    let sysDb = getPgPool();
     const res: pg.QueryResult<any> = await sysDb!.query(query, values);
   } catch (err: any) {
     logger.error(

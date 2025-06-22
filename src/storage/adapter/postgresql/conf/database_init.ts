@@ -1,0 +1,182 @@
+import type * as pg from "pg";
+import logger from "@common/log4js_config.js";
+
+// Global database clients
+let pgPool: pg.Pool | null = null;
+let redisClient: any = null;
+
+// Database configuration
+const pgConfig = {
+  host: process.env.POSTGRES_HOST || "localhost",
+  port: parseInt(process.env.POSTGRES_PORT || "5432"),
+  database: process.env.POSTGRES_DB || "postgres",
+  user: process.env.POSTGRES_USER || "postgres",
+  password: process.env.POSTGRES_PASSWORD || "postgres",
+};
+
+/**
+ * Initialize PostgreSQL connection pool
+ */
+const initializePostgreSQL = async (): Promise<void> => {
+  try {
+    const pgModule = await import("pg");
+    // Handle different module export formats
+    const Pool = pgModule.default?.Pool || pgModule.Pool;
+    if (!Pool) {
+      throw new Error("Pool constructor not found in pg module");
+    }
+
+    pgPool = new Pool(pgConfig);
+    pgPool.on("error", (err: Error) => {
+      logger.error("Unexpected error on idle PostgreSQL client", err);
+    });
+
+    // Test the connection
+    const client = await pgPool.connect();
+    await client.query('SELECT 1');
+    client.release();
+    
+    logger.info("PostgreSQL connection pool initialized successfully");
+  } catch (error) {
+    logger.error("Failed to initialize PostgreSQL connection pool:", error);
+    throw error;
+  }
+};
+
+/**
+ * Initialize Redis client
+ */
+const initializeRedis = async (): Promise<void> => {
+  try {
+    const { createClient } = await import("redis");
+    redisClient = await createClient({
+      url: process.env.REDIS_URL,
+    })
+      .on("error", (err: any) => logger.error("Redis Client Error", err))
+      .connect();
+    
+    logger.info("Redis client initialized successfully");
+  } catch (error) {
+    logger.error("Failed to initialize Redis client:", error);
+    // Redis is optional, so we don't throw error
+  }
+};
+
+/**
+ * Initialize all database connections
+ */
+export const initializeDatabases = async (): Promise<void> => {
+  if (typeof window !== "undefined") {
+    logger.info("Skipping database initialization in browser environment");
+    return;
+  }
+
+  try {
+    logger.info("Starting database initialization...");
+    
+    // Initialize PostgreSQL
+    await initializePostgreSQL();
+    
+    // Initialize Redis (optional)
+    await initializeRedis();
+    
+    logger.info("Database initialization completed successfully");
+  } catch (error) {
+    logger.error("Database initialization failed:", error);
+    throw error;
+  }
+};
+
+/**
+ * Get PostgreSQL connection pool
+ */
+export const getPgPool = (): pg.Pool | null => {
+  if (typeof window !== "undefined") {
+    return null;
+  }
+  return pgPool;
+};
+
+/**
+ * Get Redis client
+ */
+export const getRedisClient = (): any => {
+  if (typeof window !== "undefined") {
+    return null;
+  }
+  return redisClient;
+};
+
+/**
+ * Close all database connections
+ */
+export const closeDatabases = async (): Promise<void> => {
+  if (typeof window !== "undefined") {
+    return;
+  }
+
+  try {
+    // Close PostgreSQL pool
+    if (pgPool) {
+      await pgPool.end();
+      pgPool = null;
+      logger.info("PostgreSQL pool closed successfully");
+    }
+
+    // Close Redis client
+    if (redisClient) {
+      await redisClient.quit();
+      redisClient = null;
+      logger.info("Redis client closed successfully");
+    }
+  } catch (error) {
+    logger.error("Error closing database connections:", error);
+  }
+};
+
+/**
+ * Check if databases are initialized
+ */
+export const isDatabasesInitialized = (): boolean => {
+  return pgPool !== null;
+};
+
+/**
+ * Get database status
+ */
+export const getDatabaseStatus = (): {
+  postgresql: { initialized: boolean };
+  redis: { initialized: boolean };
+  inBrowser: boolean;
+} => {
+  return {
+    postgresql: { initialized: pgPool !== null },
+    redis: { initialized: redisClient !== null },
+    inBrowser: typeof window !== "undefined"
+  };
+};
+
+/**
+ * Wait for database initialization
+ */
+export const waitForDatabases = async (timeout: number = 30000): Promise<void> => {
+  if (typeof window !== "undefined") {
+    return;
+  }
+
+  const startTime = Date.now();
+  while (!isDatabasesInitialized() && (Date.now() - startTime) < timeout) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+
+  if (!isDatabasesInitialized()) {
+    throw new Error("Database initialization timeout");
+  }
+};
+
+// Auto-initialize databases when module is loaded (only in Node.js environment)
+if (typeof window === "undefined") {
+  initializeDatabases().catch((error) => {
+    logger.error("Auto-initialization failed:", error);
+  });
+} 
