@@ -9,7 +9,7 @@ let redisClient: any = null;
 const pgConfig = {
   host: process.env.PG_HOST || "localhost",
   port: parseInt(process.env.POSTGRES_PORT || "5432"),
-  database: process.env.POSTGRES_DB || "postgres",
+  database: process.env.PG_YJS_DATABASE || "yjs",
   user: process.env.PG_USER || "postgres",
   password: process.env.PG_PASSWORD || "postgres",
 };
