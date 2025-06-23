@@ -16,8 +16,8 @@ routerDoc.get("/", async (req: Request, res: Response) => {
 });
 
 routerDoc.get("/version/proj/scroll", async (req: Request, res: Response) => {
-  const projId = req.params.projId;
-  let versions = await getProjectScrollVersion(projId);
+  const projId = req.query.projId;
+  let versions = await getProjectScrollVersion(projId!.toString());
   res.send(versions);
 });
 
