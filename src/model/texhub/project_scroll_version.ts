@@ -4,7 +4,6 @@ import { sequelize } from '@/storage/adapter/postgresql/conf/sequelize.js';
 export interface ProjectScrollVersionAttributes {
   id: number;
   key: string;
-  value: Buffer;
   version: string;
   content_type: string;
   doc_name: string;
@@ -17,7 +16,6 @@ export interface ProjectScrollVersionAttributes {
 export class ProjectScrollVersion extends Model<ProjectScrollVersionAttributes> implements ProjectScrollVersionAttributes {
   public id!: number;
   public key!: string;
-  public value!: Buffer;
   public version!: string;
   public content_type!: string;
   public doc_name!: string;
@@ -38,10 +36,6 @@ ProjectScrollVersion.init(
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
-    },
-    value: {
-      type: DataTypes.BLOB,
-      allowNull: false,
     },
     version: {
       type: DataTypes.STRING,
