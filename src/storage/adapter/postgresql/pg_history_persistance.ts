@@ -21,7 +21,10 @@ import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { Op } from "sequelize";
 import { ProjectScrollVersion } from "@/model/texhub/project_scroll_version.js";
 import { ScrollQueryResult } from "@/common/types/scroll_query.js";
-import { getFileLatestSnapshot, getProjectLatestSnapshot } from "@/service/version_service.js";
+import {
+  getFileLatestSnapshot,
+  getProjectLatestSnapshot,
+} from "@/service/version_service.js";
 import { diffChars } from "diff";
 
 export class PgHisotoryPersistance {
@@ -59,7 +62,10 @@ export class PgHisotoryPersistance {
       return ydoc;
     }
 
-    const updates: Array<TeXSync> = await getHistoryDocAllUpdates(this.pool, docName);
+    const updates: Array<TeXSync> = await getHistoryDocAllUpdates(
+      this.pool,
+      docName
+    );
     ydoc.transact(() => {
       try {
         for (let i = 0; i < updates.length; i++) {
@@ -80,9 +86,9 @@ export class PgHisotoryPersistance {
     }
     const updates = getHistoryDocAllUpdates(this.pool, docName);
     const { update, sv } = mergeUpdates(updates);
-    let syncFileAttr : SyncFileAttr={
+    let syncFileAttr: SyncFileAttr = {
       docName: docName,
-      projectId: projId
+      projectId: projId,
     };
     flushDocument(this.pool, update, sv, syncFileAttr);
   }
@@ -103,9 +109,9 @@ export class PgHisotoryPersistance {
       // current state vector is outdated
       const updates = getHistoryDocAllUpdates(this.pool, docName);
       const { update, sv } = mergeUpdates(updates);
-      let syncFileAttr: SyncFileAttr ={
+      let syncFileAttr: SyncFileAttr = {
         docName: docName,
-        projectId: projId
+        projectId: projId,
       };
       flushDocument(this.pool, update, sv, syncFileAttr);
       return sv;
@@ -138,14 +144,18 @@ export class PgHisotoryPersistance {
     try {
       const latestSnapshot = await getFileLatestSnapshot(syncFileAttr.docName);
       const latestClock = await getCurrentUpdateClock(syncFileAttr.docName);
-      if (!latestSnapshot || (latestClock - latestSnapshot.clock > 500)) {
+      if (!latestSnapshot || latestClock - latestSnapshot.clock > 500) {
         const snapshot: Y.Snapshot = Y.snapshot(doc);
         const encoded = Y.encodeSnapshot(snapshot);
-        const prevSnapshot = latestSnapshot ? Y.decodeSnapshot(latestSnapshot.value) : null;
-        const diff = this.getSnapshotDiff(snapshot, prevSnapshot!);
+        const prevSnapshot = latestSnapshot
+          ? Y.decodeSnapshot(latestSnapshot.value)
+          : null;
+        const diff = latestSnapshot
+          ? this.getSnapshotDiff(snapshot, prevSnapshot!)
+          : "";
         const client = await this.pool.connect();
         try {
-          await client.query('BEGIN');
+          await client.query("BEGIN");
           const key = `snapshot_${syncFileAttr.docName}_${Date.now()}`;
           await client.query(
             `INSERT INTO tex_sync_history 
@@ -154,31 +164,31 @@ export class PgHisotoryPersistance {
             [
               key,
               encoded,
-              '1.0', // version
-              'snapshot',
+              "1.0", // version
+              "snapshot",
               syncFileAttr.docName,
               latestClock,
-              'system',
+              "system",
               syncFileAttr.projectId,
-              diff
+              diff,
             ]
           );
-          
-          await client.query('COMMIT');
+
+          await client.query("COMMIT");
         } catch (error) {
-          await client.query('ROLLBACK');
+          await client.query("ROLLBACK");
           throw error;
         } finally {
           client.release();
         }
       }
     } catch (error) {
-      logger.error('Failed to store snapshot:', error);
+      logger.error("Failed to store snapshot:", error);
       throw error;
     }
   }
 
-  getSnapshotDiff(curSnapshot: Y.Snapshot, prevSnapshot: Y.Snapshot): string{
+  getSnapshotDiff(curSnapshot: Y.Snapshot, prevSnapshot: Y.Snapshot): string {
     let snap: Uint8Array = Y.encodeSnapshot(curSnapshot);
     let prevSnap: Uint8Array = Y.encodeSnapshot(prevSnapshot);
     let content = String.fromCharCode(...new Uint8Array(snap));
