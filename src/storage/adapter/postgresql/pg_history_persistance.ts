@@ -22,6 +22,7 @@ import { Op } from "sequelize";
 import { ProjectScrollVersion } from "@/model/texhub/project_scroll_version.js";
 import { ScrollQueryResult } from "@/common/types/scroll_query.js";
 import { getFileLatestSnapshot, getProjectLatestSnapshot } from "@/service/version_service.js";
+import { diffChars } from "diff";
 
 export class PgHisotoryPersistance {
   pool: pg.Pool | null = null;
@@ -138,17 +139,18 @@ export class PgHisotoryPersistance {
       const latestSnapshot = await getFileLatestSnapshot(syncFileAttr.docName);
       const latestClock = await getCurrentUpdateClock(syncFileAttr.docName);
       if (!latestSnapshot || (latestClock - latestSnapshot.clock > 500)) {
-        const snapshot = Y.snapshot(doc);
+        const snapshot: Y.Snapshot = Y.snapshot(doc);
         const encoded = Y.encodeSnapshot(snapshot);
-        
+        const prevSnapshot = latestSnapshot ? Y.decodeSnapshot(latestSnapshot.value) : null;
+        const diff = this.getSnapshotDiff(snapshot, prevSnapshot!);
         const client = await this.pool.connect();
         try {
           await client.query('BEGIN');
           const key = `snapshot_${syncFileAttr.docName}_${Date.now()}`;
           await client.query(
             `INSERT INTO tex_sync_history 
-            (key, value, version, content_type, doc_name, clock, source, project_id, created_time) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
+            (key, value, version, content_type, doc_name, clock, source, project_id, created_time, diff) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), $9, $10)`,
             [
               key,
               encoded,
@@ -157,7 +159,8 @@ export class PgHisotoryPersistance {
               syncFileAttr.docName,
               latestClock,
               'system',
-              syncFileAttr.projectId
+              syncFileAttr.projectId,
+              diff
             ]
           );
           
@@ -173,6 +176,15 @@ export class PgHisotoryPersistance {
       logger.error('Failed to store snapshot:', error);
       throw error;
     }
+  }
+
+  getSnapshotDiff(curSnapshot: Y.Snapshot, prevSnapshot: Y.Snapshot): string{
+    let snap: Uint8Array = Y.encodeSnapshot(curSnapshot);
+    let prevSnap: Uint8Array = Y.encodeSnapshot(prevSnapshot);
+    let content = String.fromCharCode(...new Uint8Array(snap));
+    let prevContent = String.fromCharCode(...new Uint8Array(prevSnap));
+    let diff = diffChars(prevContent, content);
+    return JSON.stringify(diff);
   }
 
   async storeHisUpdate(syncFileAttr: SyncFileAttr, update: Uint8Array) {

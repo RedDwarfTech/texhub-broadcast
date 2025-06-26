@@ -11,6 +11,12 @@ importers:
       '@socket.io/admin-ui':
         specifier: ^0.5.1
         version: 0.5.1(socket.io@4.8.1)
+      '@types/diff':
+        specifier: ^8.0.0
+        version: 8.0.0
+      diff:
+        specifier: ^8.0.2
+        version: 8.0.2
       dotenv:
         specifier: ^16.5.0
         version: 16.5.0
@@ -48,8 +54,11 @@ importers:
         specifier: ^8.1.0
         version: 8.1.0
       pg:
-        specifier: 8.10.0
+        specifier: ^8.10.0
         version: 8.10.0
+      pg-hstore:
+        specifier: ^2.3.4
+        version: 2.3.4
       prom-client:
         specifier: ^14.2.0
         version: 14.2.0
@@ -67,7 +76,7 @@ importers:
         version: 4.7.1
       sequelize:
         specifier: ^6.37.7
-        version: 6.37.7(pg@8.10.0)
+        version: 6.37.7(pg-hstore@2.3.4)(pg@8.10.0)
       socket.io:
         specifier: ^4.8.1
         version: 4.8.1
@@ -544,6 +553,10 @@ packages:
   '@types/debug@4.1.12':
     resolution: {integrity: sha512-vIChWdVG3LG1SMxEvI/AK+FWJthlrqlTu7fbrlywTkkaONwk/UAGaULXRlf8vkzFBLVm0zkMdCquhL5aOjhXPQ==}
 
+  '@types/diff@8.0.0':
+    resolution: {integrity: sha512-o7jqJM04gfaYrdCecCVMbZhNdG6T1MHg/oQoRFdERLV+4d+V7FijhiEAbFu0Usww84Yijk9yH58U4Jk4HbtzZw==}
+    deprecated: This is a stub types definition. diff provides its own type definitions, so you do not need this installed.
+
   '@types/estree@1.0.7':
     resolution: {integrity: sha512-w28IoSUCJpidD/TGviZwwMJckNESJZXFu7NBZ5YJ4mEUnNraUn9Pm8HSZm/jDF1pDWYKspWE7oVphigUPRakIQ==}
 
@@ -903,6 +916,10 @@ packages:
 
   diff@4.0.2:
     resolution: {integrity: sha512-58lmxKSA4BNyLz+HHMUzlOEpg09FV+ev6ZMe3vJihgdxzgcwZ8VoEEPmALCZG9LmqfVoNMMKpttIYTVG6uDY7A==}
+    engines: {node: '>=0.3.1'}
+
+  diff@8.0.2:
+    resolution: {integrity: sha512-sSuxWU5j5SR9QQji/o2qMvqRNYRDOcBTgsJ/DeCf4iSN4gW+gNMXM7wFIP+fdXZxoNiAnHUTGjCr+TSWXdRDKg==}
     engines: {node: '>=0.3.1'}
 
   dir-glob@3.0.1:
@@ -1489,6 +1506,10 @@ packages:
   pg-connection-string@2.9.0:
     resolution: {integrity: sha512-P2DEBKuvh5RClafLngkAuGe9OUlFV7ebu8w1kmaaOgPcpJd1RIFh7otETfI6hAR8YupOLFTY7nuvvIn7PLciUQ==}
 
+  pg-hstore@2.3.4:
+    resolution: {integrity: sha512-N3SGs/Rf+xA1M2/n0JBiXFDVMzdekwLZLAO0g7mpDY9ouX+fDI7jS6kTq3JujmYbtNSJ53TJ0q4G98KVZSM4EA==}
+    engines: {node: '>= 0.8.x'}
+
   pg-int8@1.0.1:
     resolution: {integrity: sha512-WCtabS6t3c8SkpDBUlb1kjOs7l66xsGdKpIPZsg4wR+B3+u9UAum2odSsF9tnvxg80h4ZxLWMy4pRjOsFIqQpw==}
     engines: {node: '>=4.0.0'}
@@ -1902,6 +1923,9 @@ packages:
     resolution: {integrity: sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ==}
     engines: {node: '>=14.17'}
     hasBin: true
+
+  underscore@1.13.7:
+    resolution: {integrity: sha512-GMXzWtsc57XAtguZgaQViUOzs0KTkk8ojr3/xAxXLITqf/3EMwxC0inyETfDFjH/Krbhuep0HNbbjI9i/q3F3g==}
 
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
@@ -2355,6 +2379,10 @@ snapshots:
     dependencies:
       '@types/ms': 2.1.0
 
+  '@types/diff@8.0.0':
+    dependencies:
+      diff: 8.0.2
+
   '@types/estree@1.0.7': {}
 
   '@types/express-serve-static-core@5.0.6':
@@ -2744,6 +2772,8 @@ snapshots:
   destroy@1.2.0: {}
 
   diff@4.0.2: {}
+
+  diff@8.0.2: {}
 
   dir-glob@3.0.1:
     dependencies:
@@ -3359,6 +3389,10 @@ snapshots:
 
   pg-connection-string@2.9.0: {}
 
+  pg-hstore@2.3.4:
+    dependencies:
+      underscore: 1.13.7
+
   pg-int8@1.0.1: {}
 
   pg-numeric@1.0.2: {}
@@ -3567,7 +3601,7 @@ snapshots:
 
   sequelize-pool@7.1.0: {}
 
-  sequelize@6.37.7(pg@8.10.0):
+  sequelize@6.37.7(pg-hstore@2.3.4)(pg@8.10.0):
     dependencies:
       '@types/debug': 4.1.12
       '@types/validator': 13.15.1
@@ -3587,6 +3621,7 @@ snapshots:
       wkx: 0.5.0
     optionalDependencies:
       pg: 8.10.0
+      pg-hstore: 2.3.4
     transitivePeerDependencies:
       - supports-color
 
@@ -3803,6 +3838,8 @@ snapshots:
       typescript: 5.8.3
 
   typescript@5.8.3: {}
+
+  underscore@1.13.7: {}
 
   undici-types@6.21.0: {}
 

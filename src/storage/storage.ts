@@ -5,7 +5,7 @@ import { throttledFn } from "./appfile.js";
 import { Persistence } from "../model/yjs/Persistence.js";
 import { PostgresqlPersistance } from "./adapter/postgresql/postgresql_persistance.js";
 import logger from "../common/log4js_config.js";
-import { handleHistoryDoc, pgHistoryDb } from "./feat/version/doc_history.js";
+import { handleHistoryDoc } from "./feat/version/doc_history.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 
 export let persistencePostgresql: Persistence;

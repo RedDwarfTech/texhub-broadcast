@@ -6,29 +6,18 @@ import { EngineConnErr } from "@model/socketio/engine_conn_err.js";
 
 export const initial_default = () => {
   websocketServer.on("connection", (socket: Socket) => {
-    logger.warn("connection...");
-    
-    // 监听断开连接事件
     socket.on("disconnect", (reason) => {
       logger.warn(`Client disconnected: ${socket.id}, reason: ${reason}`);
     });
-
-    // 监听错误事件
     socket.on("error", (error) => {
       logger.error(`Socket error for client ${socket.id}:`, error);
     });
-
-    // 监听重连尝试
     socket.on("reconnect_attempt", (attempt) => {
       logger.info(`Client ${socket.id} attempting to reconnect, attempt ${attempt}`);
     });
-
-    // 监听重连成功
     socket.on("reconnect", (attempt) => {
       logger.info(`Client ${socket.id} reconnected after ${attempt} attempts`);
     });
-
-    // 监听重连失败
     socket.on("reconnect_failed", () => {
       logger.error(`Client ${socket.id} failed to reconnect`);
     });
