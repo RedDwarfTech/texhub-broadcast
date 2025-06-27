@@ -137,7 +137,10 @@ export class PgHisotoryPersistance {
   }
 
   async storeSnapshot(syncFileAttr: SyncFileAttr, doc: Y.Doc) {
-    if (typeof window !== "undefined" || !this.pool) {
+    if (typeof window !== "undefined") {
+      return;
+    }
+    if (!this.pool) {
       return;
     }
 
