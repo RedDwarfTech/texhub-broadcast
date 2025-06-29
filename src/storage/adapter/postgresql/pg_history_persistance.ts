@@ -186,6 +186,7 @@ export class PgHisotoryPersistance {
           await client.query("COMMIT");
         } catch (error) {
           await client.query("ROLLBACK");
+          logger.error("storeSnapshot error", error);
           throw error;
         } finally {
           client.release();
