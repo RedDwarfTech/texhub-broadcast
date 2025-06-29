@@ -55,7 +55,7 @@ export const getFileJsonData = (
             const json: AppResponse<FileContent> = JSON.parse(data);
             resolve(json);
           } catch (e) {
-            logger.error("parse json failed" + e + ",data:" + data);
+            logger.error("parse json failed" + e + ",data:" + data + ",url:" + url);
           }
         });
       })
