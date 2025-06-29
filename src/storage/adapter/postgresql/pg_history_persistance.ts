@@ -149,7 +149,9 @@ export class PgHisotoryPersistance {
     logger.info("storeSnapshot pool");
     try {
       const latestSnapshot = await getFileLatestSnapshot(syncFileAttr.docName);
+      logger.info("storeSnapshot latestSnapshot", latestSnapshot);
       const latestClock = await getCurrentUpdateClock(syncFileAttr.docName);
+      logger.info("storeSnapshot latestClock", latestClock);
       if (!latestSnapshot || latestClock - latestSnapshot.clock > 500) {
         logger.info("storeSnapshot latestSnapshot");
         const snapshot: Y.Snapshot = Y.snapshot(doc);
