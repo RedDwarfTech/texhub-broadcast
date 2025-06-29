@@ -137,13 +137,16 @@ export class PgHisotoryPersistance {
   }
 
   async storeSnapshot(syncFileAttr: SyncFileAttr, doc: Y.Doc) {
+    logger.info("storeSnapshot");
     if (typeof window !== "undefined") {
+      logger.info("storeSnapshot in browser");
       return;
     }
     if (!this.pool) {
+      logger.info("storeSnapshot no pool");
       return;
     }
-
+    logger.info("storeSnapshot pool");
     try {
       const latestSnapshot = await getFileLatestSnapshot(syncFileAttr.docName);
       const latestClock = await getCurrentUpdateClock(syncFileAttr.docName);
