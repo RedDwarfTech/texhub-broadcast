@@ -250,6 +250,7 @@ export const getFileLatestSnapshot = async (
   fileId: string
 ): Promise<ProjectScrollVersion | null> => {
   try {
+    logger.info("getFileLatestSnapshot: before findOne", fileId);
     const snapshot = await ProjectScrollVersion.findOne({
       where: {
         doc_name: fileId,
@@ -257,7 +258,7 @@ export const getFileLatestSnapshot = async (
       },
       order: [["created_time", "DESC"]],
     });
-
+    logger.info("getFileLatestSnapshot: after findOne", snapshot);
     return snapshot;
   } catch (error) {
     logger.error("Failed to get project latest snapshot:", error);
