@@ -50,6 +50,7 @@ export const getProjectScrollVersion = async (
         ["id", "DESC"],
       ],
       limit: limit + 1, // 多查询一条用于判断是否还有更多
+      raw: true
     });
 
     // 处理结果
