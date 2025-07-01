@@ -137,60 +137,51 @@ export class PgHisotoryPersistance {
   }
 
   async storeSnapshot(syncFileAttr: SyncFileAttr, doc: Y.Doc) {
-    logger.info("storeSnapshot");
     if (typeof window !== "undefined") {
-      logger.info("storeSnapshot in browser");
       return;
     }
     if (!this.pool) {
-      logger.info("storeSnapshot no pool");
       return;
     }
-    logger.info("storeSnapshot pool");
     try {
       const latestSnapshot = await getFileLatestSnapshot(syncFileAttr.docName);
-      logger.info("storeSnapshot latestSnapshot", latestSnapshot);
       const latestClock = await getCurrentUpdateClock(syncFileAttr.docName);
-      logger.info("storeSnapshot latestClock", latestClock);
-      if (!latestSnapshot || latestClock - latestSnapshot.clock > 500) {
-        logger.info("storeSnapshot latestSnapshot");
-        const snapshot: Y.Snapshot = Y.snapshot(doc);
-        const encoded = Y.encodeSnapshot(snapshot);
-        const prevSnapshot = latestSnapshot
-          ? Y.decodeSnapshot(latestSnapshot.value)
-          : null;
-        const diff = latestSnapshot
-          ? this.getSnapshotDiff(snapshot, prevSnapshot!)
-          : "";
-        const client = await this.pool.connect();
-        try {
-          await client.query("BEGIN");
-          const key = `snapshot_${syncFileAttr.docName}_${Date.now()}`;
-          await client.query(
-            `INSERT INTO tex_sync_history 
+      const snapshot: Y.Snapshot = Y.snapshot(doc);
+      const encoded = Y.encodeSnapshot(snapshot);
+      const prevSnapshot = latestSnapshot
+        ? Y.decodeSnapshot(latestSnapshot.value)
+        : null;
+      const diff = latestSnapshot
+        ? this.getSnapshotDiff(snapshot, prevSnapshot!)
+        : "";
+      const client = await this.pool.connect();
+      try {
+        await client.query("BEGIN");
+        const key = `snapshot_${syncFileAttr.docName}_${Date.now()}`;
+        await client.query(
+          `INSERT INTO tex_sync_history 
             (key, value, version, content_type, doc_name, clock, source, project_id, created_time, diff) 
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), $9)`,
-            [
-              key,
-              encoded,
-              "1.0", // version
-              "snapshot",
-              syncFileAttr.docName,
-              latestClock,
-              "system",
-              syncFileAttr.projectId,
-              diff,
-            ]
-          );
+          [
+            key,
+            encoded,
+            "1.0", // version
+            "snapshot",
+            syncFileAttr.docName,
+            latestClock,
+            "system",
+            syncFileAttr.projectId,
+            diff,
+          ]
+        );
 
-          await client.query("COMMIT");
-        } catch (error) {
-          await client.query("ROLLBACK");
-          logger.error("storeSnapshot error", error);
-          throw error;
-        } finally {
-          client.release();
-        }
+        await client.query("COMMIT");
+      } catch (error) {
+        await client.query("ROLLBACK");
+        logger.error("storeSnapshot error", error);
+        throw error;
+      } finally {
+        client.release();
       }
     } catch (error) {
       logger.error("Failed to store snapshot:", error);
