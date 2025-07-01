@@ -1,5 +1,5 @@
 import { Op } from "sequelize";
-import { ProjectScrollVersion } from "@/model/texhub/project_scroll_version.js";
+import { ProjectScrollVersion, ProjectScrollVersionAttributes } from "@/model/texhub/project_scroll_version.js";
 import { ScrollQueryResult } from "@/common/types/scroll_query.js";
 import logger from "@/common/log4js_config.js";
 // @ts-ignore
@@ -16,7 +16,7 @@ export const getProjectScrollVersion = async (
   projectId: string,
   cursor?: string,
   limit: number = 20
-): Promise<ScrollQueryResult<ProjectScrollVersion>> => {
+): Promise<ScrollQueryResult<ProjectScrollVersionAttributes>> => {
   try {
     // 构建查询条件
     const whereClause: any = {
@@ -52,10 +52,10 @@ export const getProjectScrollVersion = async (
       limit: limit + 1, // 多查询一条用于判断是否还有更多
       raw: true
     });
-
+    const plainVersions = versions.map(v => v.get({ plain: true }));
     // 处理结果
-    const hasMore = versions.length > limit;
-    const items = hasMore ? versions.slice(0, limit) : versions;
+    const hasMore = plainVersions.length > limit;
+    const items = hasMore ? plainVersions.slice(0, limit) : plainVersions;
 
     // 生成下一页游标
     let nextCursor: string | null = null;
