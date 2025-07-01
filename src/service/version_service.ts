@@ -49,8 +49,7 @@ export const getProjectScrollVersion = async (
         ["created_time", "DESC"],
         ["id", "DESC"],
       ],
-      limit: limit + 1, // 多查询一条用于判断是否还有更多
-      raw: true
+      limit: limit + 1
     });
     const plainVersions = versions.map(v => v.get({ plain: true }));
     // 处理结果
