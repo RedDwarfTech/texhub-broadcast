@@ -150,15 +150,20 @@ export class PgHisotoryPersistance {
       const encoded = Y.encodeSnapshot(snapshot);
       const curContent = doc.getText(syncFileAttr.docName).toString();
       const prevSnapshot = latestSnapshot
-        ? Y.decodeSnapshot(latestSnapshot.value)
+        ? Y.decodeSnapshot(new Uint8Array(latestSnapshot.value))
         : null;
       const diff = latestSnapshot
         ? this.getSnapshotDiff(snapshot, prevSnapshot!)
         : "";
       let prevContent = "";
       let prevContent1 = "";
-      if (prevSnapshot) {
+      if (prevSnapshot && latestSnapshot) {
         const originDoc = new Y.Doc({ gc: false });
+        let value = latestSnapshot.value;
+        let arrVal;
+        if (Buffer.isBuffer(value)) {
+          arrVal = new Uint8Array(value);
+        }
         const prevDoc = Y.createDocFromSnapshot(originDoc, prevSnapshot);
         const prevDoc1 = Y.createDocFromSnapshot(doc, prevSnapshot);
         prevContent = prevDoc.getText(syncFileAttr.docName).toString();
