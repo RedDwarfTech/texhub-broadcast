@@ -148,12 +148,24 @@ export class PgHisotoryPersistance {
       const latestClock = await getCurrentUpdateClock(syncFileAttr.docName);
       const snapshot: Y.Snapshot = Y.snapshot(doc);
       const encoded = Y.encodeSnapshot(snapshot);
+      const curContent = doc.getText(syncFileAttr.docName).toString();
       const prevSnapshot = latestSnapshot
         ? Y.decodeSnapshot(latestSnapshot.value)
         : null;
       const diff = latestSnapshot
         ? this.getSnapshotDiff(snapshot, prevSnapshot!)
         : "";
+      let prevContent = "";
+      let prevContent1 = "";
+      if (prevSnapshot) {
+        const originDoc = new Y.Doc({ gc: false });
+        const prevDoc = Y.createDocFromSnapshot(originDoc, prevSnapshot);
+        const prevDoc1 = Y.createDocFromSnapshot(doc, prevSnapshot);
+        prevContent = prevDoc.getText(syncFileAttr.docName).toString();
+        prevContent1 = prevDoc1.getText(syncFileAttr.docName).toString();
+        logger.info("prevContent", prevContent);
+        logger.info("prevContent1", prevContent1);
+      }
       const client = await this.pool.connect();
       try {
         await client.query("BEGIN");
