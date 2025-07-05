@@ -1,7 +1,7 @@
 const persistenceDir = process.env.YPERSISTENCE;
 import express, { Request, Response, Router } from "express";
 import { initTpl } from "@collar/yjs_utils.js";
-import { calcFileVersion, calcProjectVersion, getProjectScrollVersion } from "@/service/version_service.js";
+import { calcFileVersion, calcProjectVersion, getProjectScrollVersion, getProjectVersionDetail } from "@/service/version_service.js";
 import logger from "@/common/log4js_config.js";
 
 export const routerDoc: Router = express.Router();
@@ -18,6 +18,12 @@ routerDoc.get("/", async (req: Request, res: Response) => {
 routerDoc.get("/version/proj/scroll", async (req: Request, res: Response) => {
   const projId = req.query.projId;
   let versions = await getProjectScrollVersion(projId!.toString());
+  res.send(versions);
+});
+
+routerDoc.get("/version/proj/scroll/detail", async (req: Request, res: Response) => {
+  const id = req.query.id;
+  let versions = await getProjectVersionDetail(id!.toString());
   res.send(versions);
 });
 

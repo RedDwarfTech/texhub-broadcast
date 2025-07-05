@@ -5,6 +5,21 @@ import logger from "@/common/log4js_config.js";
 // @ts-ignore
 import * as Y from "rdyjs";
 
+export const getProjectVersionDetail = async (
+  id: string
+): Promise<ProjectScrollVersionAttributes> => {
+  try {
+    const version = await ProjectScrollVersion.findByPk(parseInt(id));
+    if (!version) {
+      throw new Error(`Version with id ${id} not found`);
+    }
+    return version.get({ plain: true });
+  } catch (error) {
+    logger.error("Failed to get project version detail:", error);
+    throw error;
+  }
+};
+
 /**
  * 获取项目滚动版本
  * @param projectId 项目ID
@@ -18,12 +33,9 @@ export const getProjectScrollVersion = async (
   limit: number = 20
 ): Promise<ScrollQueryResult<ProjectScrollVersionAttributes>> => {
   try {
-    // 构建查询条件
     const whereClause: any = {
       project_id: projectId,
     };
-
-    // 如果有游标，添加游标条件
     if (cursor) {
       const decodedCursor = Buffer.from(cursor, "base64").toString();
       const [timestamp, id] = decodedCursor.split("_");
@@ -41,8 +53,6 @@ export const getProjectScrollVersion = async (
         },
       ];
     }
-
-    // 执行查询
     const versions = await ProjectScrollVersion.findAll({
       where: whereClause,
       order: [
@@ -52,11 +62,8 @@ export const getProjectScrollVersion = async (
       limit: limit + 1
     });
     const plainVersions = versions.map(v => v.get({ plain: true }));
-    // 处理结果
     const hasMore = plainVersions.length > limit;
     const items = hasMore ? plainVersions.slice(0, limit) : plainVersions;
-
-    // 生成下一页游标
     let nextCursor: string | null = null;
     if (hasMore) {
       const lastItem = items[items.length - 1];
@@ -77,7 +84,6 @@ export const getProjectScrollVersion = async (
 
 export const calcFileVersion = async (fileId: string) => {
   try {
-    // 获取文件的所有版本记录，限制数量
     const versions = await Promise.race([
       ProjectScrollVersion.findAll({
         where: {
