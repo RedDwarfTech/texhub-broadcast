@@ -9,7 +9,7 @@ export const sequelize = new Sequelize({
   username: dbConfig.user,
   password: dbConfig.password,
   database: dbConfig.database,
-  logging: (msg) => logger.debug(msg),
+  logging: false,
   pool: {
     max: 5,
     min: 0,
