@@ -149,6 +149,9 @@ export class PgHisotoryPersistance {
       const snapshot: Y.Snapshot = Y.snapshot(doc);
       const encoded = Y.encodeSnapshot(snapshot);
       const curContent = doc.getText(syncFileAttr.docName).toString();
+      if(curContent === latestSnapshot?.content){
+        return;
+      }
       const diff = latestSnapshot
         ? this.getSnapshotDiffFromText(curContent, latestSnapshot.content)
         : "";      
