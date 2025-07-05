@@ -173,7 +173,7 @@ export class PgHisotoryPersistance {
         await client.query(
           `INSERT INTO tex_sync_history 
             (key, value, version, content_type, doc_name, clock, source, project_id, created_time, diff, content) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), $9)`,
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), $9, $10)`,
           [
             key,
             encoded,
