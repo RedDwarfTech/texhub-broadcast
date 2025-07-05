@@ -153,17 +153,12 @@ export class PgHisotoryPersistance {
         ? Y.decodeSnapshot(new Uint8Array(latestSnapshot.value))
         : null;
       const diff = latestSnapshot
-        ? this.getSnapshotDiff(snapshot, prevSnapshot!)
+        ? this.getSnapshotDiffFromText(curContent, latestSnapshot.content)
         : "";
       let prevContent = "";
       let prevContent1 = "";
       if (prevSnapshot && latestSnapshot) {
         const originDoc = new Y.Doc({ gc: false });
-        let value = latestSnapshot.value;
-        let arrVal;
-        if (Buffer.isBuffer(value)) {
-          arrVal = new Uint8Array(value);
-        }
         const prevDoc = Y.createDocFromSnapshot(originDoc, prevSnapshot);
         const prevDoc1 = Y.createDocFromSnapshot(doc, prevSnapshot);
         prevContent = prevDoc.getText(syncFileAttr.docName).toString();
@@ -177,7 +172,7 @@ export class PgHisotoryPersistance {
         const key = `snapshot_${syncFileAttr.docName}_${Date.now()}`;
         await client.query(
           `INSERT INTO tex_sync_history 
-            (key, value, version, content_type, doc_name, clock, source, project_id, created_time, diff) 
+            (key, value, version, content_type, doc_name, clock, source, project_id, created_time, diff, content) 
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), $9)`,
           [
             key,
@@ -189,6 +184,7 @@ export class PgHisotoryPersistance {
             "system",
             syncFileAttr.projectId,
             diff,
+            curContent
           ]
         );
 
@@ -212,6 +208,11 @@ export class PgHisotoryPersistance {
     let content = String.fromCharCode(...new Uint8Array(snap));
     let prevContent = String.fromCharCode(...new Uint8Array(prevSnap));
     let diff = diffChars(prevContent, content);
+    return JSON.stringify(diff);
+  }
+
+  getSnapshotDiffFromText(curContent: string, prevContent: string): string {
+    let diff = diffChars(curContent, prevContent);
     return JSON.stringify(diff);
   }
 
