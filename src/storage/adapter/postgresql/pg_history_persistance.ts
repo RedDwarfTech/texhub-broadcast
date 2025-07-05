@@ -154,7 +154,7 @@ export class PgHisotoryPersistance {
       }
       const diff = latestSnapshot
         ? this.getSnapshotDiffFromText(curContent, latestSnapshot.content)
-        : "";      
+        : this.getSnapshotDiffFromText(curContent, "");      
       const client = await this.pool.connect();
       try {
         await client.query("BEGIN");
