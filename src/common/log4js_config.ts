@@ -2,7 +2,6 @@ import log4js, { Configuration } from "log4js";
 
 let logger: any;
 
-// Check if we're in a Node.js environment
 if (typeof window === 'undefined') {
   // Node.js environment
   const logConfig: Configuration = {
@@ -10,12 +9,17 @@ if (typeof window === 'undefined') {
       out: {
         type: "stdout",
         layout: {
-          type: "colored",
+          type: "pattern",
+          pattern: "%d [%p] %f{2}:%l - %m",
         },
       },
       files: {
         type: "file",
         filename: "testing.log",
+        layout: {
+          type: "pattern",
+          pattern: "%d [%p] %f{2}:%l - %m",
+        },
       },
     },
     categories: {
