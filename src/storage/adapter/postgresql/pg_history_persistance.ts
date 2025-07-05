@@ -156,15 +156,11 @@ export class PgHisotoryPersistance {
         ? this.getSnapshotDiffFromText(curContent, latestSnapshot.content)
         : "";
       let prevContent = "";
-      let prevContent1 = "";
       if (prevSnapshot && latestSnapshot) {
         const originDoc = new Y.Doc({ gc: false });
         const prevDoc = Y.createDocFromSnapshot(originDoc, prevSnapshot);
-        const prevDoc1 = Y.createDocFromSnapshot(doc, prevSnapshot);
         prevContent = prevDoc.getText(syncFileAttr.docName).toString();
-        prevContent1 = prevDoc1.getText(syncFileAttr.docName).toString();
         logger.info("prevContent", prevContent);
-        logger.info("prevContent1", prevContent1);
       }
       const client = await this.pool.connect();
       try {

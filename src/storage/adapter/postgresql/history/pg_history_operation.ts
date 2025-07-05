@@ -206,7 +206,7 @@ const getLock = async (lockKey: string, uniqueValue: string, times: number) => {
   if (result === 1) {
     return true;
   } else {
-    logger.warn(`[x] 无法获取锁 ${lockKey}，第${times + 1}次重试`);
+    logger.warn(`[x] 无法获取锁history ${lockKey}，第${times + 1}次重试`);
     await sleep(waitTime);
     return getLock(lockKey, uniqueValue, times + 1);
   }
