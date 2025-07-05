@@ -201,7 +201,7 @@ export class PgHisotoryPersistance {
   }
 
   getSnapshotDiffFromText(curContent: string, prevContent: string): string {
-    let diff = diffChars(curContent, prevContent);
+    let diff = diffChars(prevContent, curContent);
     return JSON.stringify(diff);
   }
 
