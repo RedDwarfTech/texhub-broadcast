@@ -161,8 +161,8 @@ export class PgHisotoryPersistance {
         const key = `snapshot_${syncFileAttr.docName}_${Date.now()}`;
         await client.query(
           `INSERT INTO tex_sync_history 
-            (key, value, version, content_type, doc_name, clock, source, project_id, created_time, diff, content) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), $9, $10)`,
+            (key, value, version, content_type, doc_name, clock, source, project_id, created_time, diff, content, doc_int_id) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), $9, $10, $11)`,
           [
             key,
             encoded,
@@ -173,7 +173,8 @@ export class PgHisotoryPersistance {
             "system",
             syncFileAttr.projectId,
             diff,
-            curContent
+            curContent,
+            syncFileAttr.docIntId
           ]
         );
 
