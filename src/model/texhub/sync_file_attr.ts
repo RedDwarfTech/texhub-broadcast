@@ -3,5 +3,5 @@ export interface SyncFileAttr {
     /** 0: folder 1: tex file 2: project */
     docType?: number;
     projectId: string;
-    docIntId: string;
+    docIntId?: string;
 }
