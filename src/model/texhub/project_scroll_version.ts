@@ -14,6 +14,7 @@ export interface ProjectScrollVersionAttributes {
   value: Buffer;
   diff: string;
   content: string;
+  doc_int_id: string;
 }
 
 export class ProjectScrollVersion extends Model<ProjectScrollVersionAttributes> implements ProjectScrollVersionAttributes {
@@ -29,6 +30,7 @@ export class ProjectScrollVersion extends Model<ProjectScrollVersionAttributes> 
   public value!: Buffer;
   public diff!: string;
   public content!: string;
+  public doc_int_id!: string;
 }
 
 ProjectScrollVersion.init(
@@ -82,6 +84,10 @@ ProjectScrollVersion.init(
     },
     content: {
       type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    doc_int_id: {
+      type: DataTypes.STRING,
       allowNull: true,
     },
   },
