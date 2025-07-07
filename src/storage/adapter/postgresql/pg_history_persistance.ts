@@ -149,12 +149,15 @@ export class PgHisotoryPersistance {
       const snapshot: Y.Snapshot = Y.snapshot(doc);
       const encoded = Y.encodeSnapshot(snapshot);
       const curContent = doc.getText(syncFileAttr.docName).toString();
-      if(curContent === latestSnapshot?.content){
+      if (curContent === latestSnapshot?.content) {
         return;
       }
       const diff = latestSnapshot
         ? this.getSnapshotDiffFromText(curContent, latestSnapshot.content)
-        : this.getSnapshotDiffFromText(curContent, "");      
+        : this.getSnapshotDiffFromText(curContent, "");
+      if (diff === "") {
+        return;
+      }
       const client = await this.pool.connect();
       try {
         await client.query("BEGIN");
@@ -174,7 +177,7 @@ export class PgHisotoryPersistance {
             syncFileAttr.projectId,
             diff,
             curContent,
-            syncFileAttr.docIntId
+            syncFileAttr.docIntId,
           ]
         );
 
@@ -203,8 +206,8 @@ export class PgHisotoryPersistance {
 
   getSnapshotDiffFromText(curContent: string, prevContent: string): string {
     let diff = diffChars(prevContent, curContent);
-    if(diff.length === 0){
-      logger.error("no diff found",curContent,prevContent);
+    if (diff.length === 0) {
+      logger.error("no diff found", curContent, prevContent);
       return "";
     }
     return JSON.stringify(diff);
