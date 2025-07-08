@@ -175,7 +175,7 @@ export const flushDocument = async (
   return clock;
 };
 
-const getLock = async (lockKey: string, uniqueValue: string, times: number) => {
+const getRedisDestriLock = async (lockKey: string, uniqueValue: string, times: number) => {
   // If Redis is not available (non-Node environment), pretend we got the lock
   if (!getClient()) {
     logger.info("Redis client not available, simulating lock acquisition");
@@ -205,7 +205,7 @@ const getLock = async (lockKey: string, uniqueValue: string, times: number) => {
   } else {
     logger.warn(`[x] 无法获取锁 ${lockKey}，第${times + 1}次重试`);
     await sleep(waitTime);
-    return getLock(lockKey, uniqueValue, times + 1);
+    return getRedisDestriLock(lockKey, uniqueValue, times + 1);
   }
 };
 
@@ -274,7 +274,7 @@ export const storeUpdate = async (
   const lockKey = `lock:${docName}:update`;
   try {
     // Attempt to get lock (will always succeed if Redis is not available)
-    if (await getLock(lockKey, uniqueValue, 0)) {
+    if (await getRedisDestriLock(lockKey, uniqueValue, 0)) {
       const clock = await getCurrentUpdateClock(docName);
       if (clock === -1) {
         // make sure that a state vector is aways written, so we can search for available documents
