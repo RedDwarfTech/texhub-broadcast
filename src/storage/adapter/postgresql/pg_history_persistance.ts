@@ -74,11 +74,43 @@ export class PgHisotoryPersistance {
   }
 
   getSnapshotDiffFromText(curContent: string, prevContent: string): string {
-    let diff = diffChars(prevContent, curContent);
-    if (diff.length === 0) {
-      logger.error("no diff found", curContent, prevContent);
+    const contextLen = 20;
+    const diffArr = diffChars(prevContent, curContent);
+    let result: Array<{ value: string, added?: boolean, removed?: boolean, contextBefore: string, contextAfter: string }> = [];
+    for (let i = 0; i < diffArr.length; i++) {
+      const part = diffArr[i];
+      if (part.added || part.removed) {
+        // 前 contextLen 个字符
+        let before = '';
+        let after = '';
+        // 向前找 contextLen 个字符
+        let count = 0, j = i - 1;
+        while (j >= 0 && count < contextLen) {
+          const val = diffArr[j].value;
+          before = val.slice(-Math.min(contextLen - count, val.length)) + before;
+          count += val.length;
+          j--;
+        }
+        // 向后找 contextLen 个字符
+        count = 0; j = i + 1;
+        while (j < diffArr.length && count < contextLen) {
+          const val = diffArr[j].value;
+          after += val.slice(0, contextLen - count);
+          count += val.length;
+          j++;
+        }
+        result.push({
+          value: part.value,
+          added: part.added,
+          removed: part.removed,
+          contextBefore: before,
+          contextAfter: after
+        });
+      }
+    }
+    if (result.length === 0) {
       return "";
     }
-    return JSON.stringify(diff);
+    return JSON.stringify(result);
   }
 }

@@ -30,7 +30,7 @@ export const throttledHistoryFn = lodash.throttle(
     // store snapshot
     await pgHistoryDb.storeSnapshot(syncFileAttr, ydoc);
   },
-  15000
+  25000
 );
 
 const handleFileSync = async (
