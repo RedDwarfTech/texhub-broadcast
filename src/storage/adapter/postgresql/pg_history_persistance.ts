@@ -1,14 +1,9 @@
-// 仅导入类型定义，避免在浏览器环境中导入实际模块
-import type * as pg from "pg";
 // @ts-ignore
 import * as Y from "rdyjs";
 import {
   getCurrentUpdateClock
 } from "./history/pg_history_operation.js";
-import { dbConfig } from "./conf/db_config.js";
 import logger from "@common/log4js_config.js";
-import PQueue from "p-queue";
-import { LRUCache } from "lru-cache";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import {
   getFileLatestSnapshot,
@@ -17,14 +12,6 @@ import { diffChars } from "diff";
 import { getPgPool } from "./conf/database_init.js";
 
 export class PgHisotoryPersistance {
-  queueMap: LRUCache<string, PQueue>;
-
-  constructor() {
-    this.queueMap = new LRUCache({
-      max: 100,
-    });
-    // 不再初始化pool，直接用公共连接
-  }
 
   async storeSnapshot(syncFileAttr: SyncFileAttr, doc: Y.Doc) {
     if (typeof window !== "undefined") {
