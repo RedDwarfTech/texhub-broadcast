@@ -1,14 +1,6 @@
 import type * as pg from "pg";
 import logger from "@common/log4js_config.js";
-import { getPgPool as getUnifiedPgPool, isDatabasesInitialized } from "./database_init.js";
-
-/**
- * Get PostgreSQL connection pool
- * @deprecated Use getPgPool from database_init.js instead
- */
-export const getPgPool = (): pg.Pool | null => {
-  return getUnifiedPgPool();
-};
+import { isDatabasesInitialized } from "./database_init.js";
 
 /**
  * Close PostgreSQL connection pool
