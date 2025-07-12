@@ -28,6 +28,8 @@ import { WsCommand } from "@common/ws/WsCommand.js";
 import { setupWebsocket } from "./event/setup_ws.js";
 import { messageHandlers } from "./event/msg_type_handler.js";
 import { broadcastMessage, readMessage, sendMessage } from "./ws_action.js";
+import { SyncMessageContext } from "@/model/texhub/sync_msg_context.js";
+import { v4 as uuidv4 } from "uuid";
 
 // @todo - this should depend on awareness.outdatedTime
 const messageReconnectTimeout = 30000;
@@ -263,7 +265,14 @@ export class SocketIOClientProvider extends Observable<string> {
         if (origin === this) return;
         const encoder = encoding.createEncoder();
         encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
-        encoding.writeVarString(encoder, id);
+        const uniqueValue = uuidv4();
+        let msg: SyncMessageContext = {
+          doc_name: id,
+          src: "subdocUpdateHandler",
+          trace_id: uniqueValue
+        };
+        let msgStr = JSON.stringify(msg);
+        encoding.writeVarString(encoder, msgStr);
         syncProtocol.writeUpdate(encoder, update);
         broadcastMessage(this, encoding.toUint8Array(encoder));
       };
