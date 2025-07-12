@@ -300,7 +300,7 @@ export const storeUpdate = async (
       let dbSubdocText = persistedYdoc.getText(docName);
       let dbSubdocTextStr = dbSubdocText.toString();
       if (dbSubdocTextStr === "") {
-        logger.warn("doc turn to null,doc id:" + docName);
+        logger.warn("doc turn to null,doc id:" + docName + ",clock:" + clock);
       }
       return clock + 1;
     }
