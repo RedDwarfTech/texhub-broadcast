@@ -1,6 +1,6 @@
 {
   "name": "texhub-broadcast",
-  "version": "1.0.87",
+  "version": "1.0.88",
   "description": "",
   "engines": {
     "node": ">=20.0.0"
@@ -39,7 +39,6 @@
   "license": "ISC",
   "dependencies": {
     "@socket.io/admin-ui": "^0.5.1",
-    "@types/diff": "^8.0.0",
     "diff": "^8.0.2",
     "dotenv": "^16.5.0",
     "esm-module-alias": "^2.2.1",
