@@ -53,8 +53,6 @@ export class PostgresqlPersistance {
 
   async getYDoc(docName: string): Promise<Y.Doc> {
     const ydoc = new Y.Doc();
-
-    // 在浏览器环境中直接返回空文档
     if (typeof window !== "undefined" || !this.pool) {
       return ydoc;
     }

@@ -20,6 +20,8 @@ import {
 import { TeXSync } from "@model/yjs/storage/sync/tex_sync.js";
 import { v4 as uuidv4 } from "uuid";
 import { getPgPool, getRedisClient } from "./conf/database_init.js";
+import { PostgresqlPersistance } from "./postgresql_persistance.js";
+import { persistencePostgresql } from "@/storage/storage.js";
 
 // 获取数据库客户端
 const getClient = () => getRedisClient();
@@ -292,6 +294,14 @@ export const storeUpdate = async (
         createDocumentUpdateKeyArray(docName, clock + 1),
         isHistory
       );
+      const postgresqlDb: PostgresqlPersistance =
+        persistencePostgresql.provider;
+      const persistedYdoc: any = await postgresqlDb.getYDoc(docName);
+      let dbSubdocText = persistedYdoc.getText(docName);
+      let dbSubdocTextStr = dbSubdocText.toString();
+      if (dbSubdocTextStr === "") {
+        logger.warn("doc turn to null,doc id:" + docName);
+      }
       return clock + 1;
     }
   } catch (error: any) {
