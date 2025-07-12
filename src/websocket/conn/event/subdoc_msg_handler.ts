@@ -47,8 +47,18 @@ const preHandleSubDoc = async (
     const encoder = encoding.createEncoder();
     const subdocGuid = decoding.readVarString(decoder);
     let docIntId = "";
-    if (subdocGuid !== rootDoc.name){
-      let fileInfo: FileContent = await getTexFileInfo(subdocGuid);
+    let fileInfo: FileContent = {
+      id: "",
+      project_id: "",
+      name: "",
+      file_path: "",
+      project_created_time: "",
+      created_time: "",
+      updated_time: "",
+      file_id: "",
+    };
+    if (subdocGuid !== rootDoc.name) {
+      fileInfo = await getTexFileInfo(subdocGuid);
       let docIntId = "";
       if (fileInfo) {
         docIntId = fileInfo.id;
@@ -57,7 +67,7 @@ const preHandleSubDoc = async (
     let syncFileAttr: SyncFileAttr = {
       docName: subdocGuid,
       projectId: rootDoc.name,
-      docIntId: docIntId
+      docIntId: docIntId,
     };
     let memoryOrDiskSubdoc = await getYDoc(syncFileAttr);
     let curSubDoc = memoryOrDiskSubdoc;
@@ -66,15 +76,30 @@ const preHandleSubDoc = async (
       // this is a subdocument
       // the subdocument message format: [messageSyncSub][subdocId][messageType][data]
       logger.warn(
-        "this is an subdocument,subDocMessageType,doc guid:" + subdocGuid
+        "this is an subdocument,subDocMessageType,doc guid:" +
+          subdocGuid +
+          ",finfo:" +
+          JSON.stringify(fileInfo!)
       );
       let subdocText = memoryOrDiskSubdoc.getText(subdocGuid);
       let subdocTextStr = subdocText.toString();
-      logger.info("docTxtStr:" + subdocTextStr + ",subdocGuid:" + subdocGuid);
+      logger.info(
+        "docTxtStr:" +
+          subdocTextStr +
+          ",subdocGuid:" +
+          subdocGuid +
+          ",finfo:" +
+          JSON.stringify(fileInfo!)
+      );
       if (subdocTextStr) {
         curSubDoc = memoryOrDiskSubdoc;
       } else {
-        console.log("subdocTextStr is empty,guid:" + subdocGuid);
+        console.warn(
+          "subdocTextStr is empty,guid:" +
+            subdocGuid +
+            ",finfo:" +
+            JSON.stringify(fileInfo!)
+        );
         // try to get document from database directly
         const postgresqlDb: PostgresqlPersistance =
           persistencePostgresql.provider;
@@ -85,7 +110,9 @@ const preHandleSubDoc = async (
           "dbSubdocTextStr from database:" +
             dbSubdocTextStr +
             ",doc:" +
-            subdocGuid
+            subdocGuid +
+            ",finfo:" +
+            JSON.stringify(fileInfo!)
         );
         curSubDoc = persistedYdoc;
       }
