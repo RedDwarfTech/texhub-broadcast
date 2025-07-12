@@ -13,6 +13,8 @@ import * as syncProtocol from "rdy-protocols/dist/sync.mjs";
 import { PostgresqlPersistance } from "@/storage/adapter/postgresql/postgresql_persistance.js";
 import { persistencePostgresql } from "@/storage/storage.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
+import { getTexFileInfo } from "@/storage/appfile.js";
+import { FileContent } from "@/model/texhub/file_content.js";
 
 /**
  * relationship of main doc & sub docs
@@ -44,9 +46,18 @@ const preHandleSubDoc = async (
   try {
     const encoder = encoding.createEncoder();
     const subdocGuid = decoding.readVarString(decoder);
+    let fileInfo: FileContent = await getTexFileInfo(subdocGuid);
+    if (!fileInfo || !fileInfo.file_path) {
+      logger.warn(
+        "fileInfo is null or fileInfo.file_path is null" +
+          JSON.stringify(fileInfo)
+      );
+      return;
+    }
     let syncFileAttr: SyncFileAttr = {
       docName: subdocGuid,
-      projectId: rootDoc.name
+      projectId: rootDoc.name,
+      docIntId: fileInfo.id
     };
     let memoryOrDiskSubdoc = await getYDoc(syncFileAttr);
     let curSubDoc = memoryOrDiskSubdoc;

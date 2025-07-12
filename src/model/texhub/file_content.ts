@@ -1,4 +1,5 @@
 export interface FileContent { 
+    id: string;
     project_id: string; 
     name: string;
     file_path: string;
