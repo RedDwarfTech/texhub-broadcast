@@ -143,7 +143,9 @@ const handleSubDoc = (
 ) => {
   let subdocText = curSubDoc.getText(subdocGuid);
   let subdocTextStr = subdocText.toString();
-  logger.info("handleSubDoc docTxtStr:", subdocTextStr);
+  logger.info(
+    "handleSubDoc docTxtStr:" + subdocTextStr + ",subdocGuid:" + subdocGuid
+  );
   if (!rootDoc.conns.has(conn)) rootDoc.conns.set(conn, new Set());
   const curSubdocMap: Map<String, WSSharedDoc> | undefined = subdocsMap.get(
     rootDoc.name
