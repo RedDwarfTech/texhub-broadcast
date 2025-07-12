@@ -277,13 +277,10 @@ export const storeUpdate = async (
 ) => {
   const uniqueValue = uuidv4();
   const lockKey = `lock:${docName}:update`;
-  const lockStartTime = Date.now();
   try {
-    // Attempt to get lock (will always succeed if Redis is not available)
     if (await getRedisDestriLock(lockKey, uniqueValue, 0)) {
       const clock = await getCurrentUpdateClock(docName);
       if (clock === -1) {
-        // make sure that a state vector is aways written, so we can search for available documents
         const ydoc = new Y.Doc();
         Y.applyUpdate(ydoc, update);
         const sv = Y.encodeStateVector(ydoc);
@@ -295,8 +292,6 @@ export const storeUpdate = async (
         createDocumentUpdateKeyArray(docName, clock + 1),
         isHistory
       );
-      const lockHoldTime = Date.now() - lockStartTime;
-      logger.info(`[锁持有时间] ${lockKey} 持有时间: ${lockHoldTime}ms`);
       return clock + 1;
     }
   } catch (error: any) {
@@ -304,8 +299,6 @@ export const storeUpdate = async (
   } finally {
     // release lock (will do nothing if Redis is not available)
     await unlock(lockKey, uniqueValue);
-    const totalTime = Date.now() - lockStartTime;
-    logger.info(`[锁总时间] ${lockKey} 总耗时: ${totalTime}ms`);
   }
   return 0;
 };

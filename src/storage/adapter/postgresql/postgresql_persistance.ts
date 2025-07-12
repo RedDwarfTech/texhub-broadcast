@@ -83,7 +83,6 @@ export class PostgresqlPersistance {
   }
 
   flushDocument(docName: string) {
-    // 在浏览器环境中不执行操作
     if (typeof window !== "undefined" || !this.pool) {
       return;
     }
@@ -94,7 +93,6 @@ export class PostgresqlPersistance {
   }
 
   async getStateVector(docName: string) {
-    // 在浏览器环境中返回null
     if (typeof window !== "undefined" || !this.pool) {
       return null;
     }
@@ -135,7 +133,6 @@ export class PostgresqlPersistance {
   }
 
   async storeUpdate(docName: string, update: Uint8Array) {
-    // 在浏览器环境中不执行操作
     if (typeof window !== "undefined" || !this.pool) {
       return;
     }
@@ -163,7 +160,6 @@ export class PostgresqlPersistance {
   }
 
   async storeUpdateWithSource(keys: any[], update: Uint8Array) {
-    // 在浏览器环境中不执行操作
     if (typeof window !== "undefined" || !this.pool) {
       return;
     }
@@ -172,7 +168,6 @@ export class PostgresqlPersistance {
   }
 
   async insertKeys(keyMap: any[], originalKey: any[]) {
-    // 在浏览器环境中不执行操作
     if (typeof window !== "undefined" || !this.pool) {
       return;
     }
