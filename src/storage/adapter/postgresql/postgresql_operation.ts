@@ -170,12 +170,16 @@ export const flushDocument = async (
   stateVector: any
 ) => {
   const clock = await storeUpdate(docName, stateAsUpdate);
-  await writeStateVector( docName, stateVector, clock);
+  await writeStateVector(docName, stateVector, clock);
   await clearUpdatesRange(db, docName, 0, clock); // intentionally not waiting for the promise to resolve!
   return clock;
 };
 
-const getRedisDestriLock = async (lockKey: string, uniqueValue: string, times: number) => {
+const getRedisDestriLock = async (
+  lockKey: string,
+  uniqueValue: string,
+  times: number
+) => {
   // If Redis is not available (non-Node environment), pretend we got the lock
   if (!getClient()) {
     logger.info("Redis client not available, simulating lock acquisition");
@@ -220,7 +224,6 @@ function sleep(delay: number) {
  * @returns 是否成功释放锁
  */
 async function unlock(lockKey: string, uniqueValue: string) {
-  // If Redis is not available (non-Node environment), do nothing
   if (!getClient()) {
     logger.info("Redis client not available, simulating lock release");
     return;
@@ -238,6 +241,8 @@ async function unlock(lockKey: string, uniqueValue: string) {
     arguments: [uniqueValue],
   });
   if (result === 1) {
+  } else {
+    logger.error("release lock failed: " + lockKey);
   }
 }
 
@@ -272,6 +277,7 @@ export const storeUpdate = async (
 ) => {
   const uniqueValue = uuidv4();
   const lockKey = `lock:${docName}:update`;
+  const lockStartTime = Date.now();
   try {
     // Attempt to get lock (will always succeed if Redis is not available)
     if (await getRedisDestriLock(lockKey, uniqueValue, 0)) {
@@ -281,7 +287,7 @@ export const storeUpdate = async (
         const ydoc = new Y.Doc();
         Y.applyUpdate(ydoc, update);
         const sv = Y.encodeStateVector(ydoc);
-        await writeStateVector( docName, sv, 0);
+        await writeStateVector(docName, sv, 0);
       }
       await pgPut(
         update,
@@ -289,6 +295,8 @@ export const storeUpdate = async (
         createDocumentUpdateKeyArray(docName, clock + 1),
         isHistory
       );
+      const lockHoldTime = Date.now() - lockStartTime;
+      logger.info(`[锁持有时间] ${lockKey} 持有时间: ${lockHoldTime}ms`);
       return clock + 1;
     }
   } catch (error: any) {
@@ -296,14 +304,13 @@ export const storeUpdate = async (
   } finally {
     // release lock (will do nothing if Redis is not available)
     await unlock(lockKey, uniqueValue);
+    const totalTime = Date.now() - lockStartTime;
+    logger.info(`[锁总时间] ${lockKey} 总耗时: ${totalTime}ms`);
   }
   return 0;
 };
 
-export const storeUpdateBySrc = async (
-  update: Uint8Array,
-  keys: any[]
-) => {
+export const storeUpdateBySrc = async (update: Uint8Array, keys: any[]) => {
   await pgPut(update, "leveldb", keys);
 };
 
@@ -333,11 +340,7 @@ const writeStateVectorTrans = async (
   );
 };
 
-const writeStateVector = async (
-  docName: string,
-  sv: any,
-  clock: number
-) => {
+const writeStateVector = async (docName: string, sv: any, clock: number) => {
   const encoder = encoding.createEncoder();
   encoding.writeVarUint(encoder, clock);
   encoding.writeVarUint8Array(encoder, sv);
@@ -496,7 +499,10 @@ const pgPutUpsertTrans = async (
     ];
     const res: pg.QueryResult<any> = await db.query(query, values);
   } catch (err: any) {
-    logger.error("Insert pgPutUpsertTrans error:" + JSON.stringify(keys), err.stack);
+    logger.error(
+      "Insert pgPutUpsertTrans error:" + JSON.stringify(keys),
+      err.stack
+    );
   }
 };
 
