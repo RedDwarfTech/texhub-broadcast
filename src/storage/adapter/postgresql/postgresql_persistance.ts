@@ -19,6 +19,7 @@ import { TeXSync } from "@model/yjs/storage/sync/tex_sync.js";
 import logger from "@common/log4js_config.js";
 import PQueue from "p-queue";
 import { LRUCache } from "lru-cache";
+import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 
 export class PostgresqlPersistance {
   pool: pg.Pool | null = null;
@@ -51,13 +52,13 @@ export class PostgresqlPersistance {
     }
   }
 
-  async getYDoc(docName: string): Promise<Y.Doc> {
+  async getYDoc(syncFileAttr: SyncFileAttr): Promise<Y.Doc> {
     const ydoc = new Y.Doc();
     if (typeof window !== "undefined" || !this.pool) {
       return ydoc;
     }
 
-    const updates: Array<TeXSync> = await getDocAllUpdates(docName);
+    const updates: Array<TeXSync> = await getDocAllUpdates(syncFileAttr.docName);
     ydoc.transact(() => {
       try {
         for (let i = 0; i < updates.length; i++) {
@@ -72,7 +73,7 @@ export class PostgresqlPersistance {
     if (updates.length > PREFERRED_TRIM_SIZE) {
       flushDocument(
         this.pool,
-        docName,
+        syncFileAttr,
         Y.encodeStateAsUpdate(ydoc),
         Y.encodeStateVector(ydoc)
       );
@@ -80,33 +81,33 @@ export class PostgresqlPersistance {
     return ydoc;
   }
 
-  flushDocument(docName: string) {
+  flushDocument(syncFileAttr: SyncFileAttr) {
     if (typeof window !== "undefined" || !this.pool) {
       return;
     }
 
-    const updates = getDocAllUpdates(docName);
+    const updates = getDocAllUpdates(syncFileAttr.docName);
     const { update, sv } = mergeUpdates(updates);
-    flushDocument(this.pool, docName, update, sv);
+    flushDocument(this.pool, syncFileAttr, update, sv);
   }
 
-  async getStateVector(docName: string) {
+  async getStateVector(syncFileAttr: SyncFileAttr) {
     if (typeof window !== "undefined" || !this.pool) {
       return null;
     }
 
-    const { clock, sv } = await readStateVector(this.pool, docName);
+    const { clock, sv } = await readStateVector(this.pool, syncFileAttr.docName);
     let curClock = -1;
     if (sv !== null) {
-      curClock = await getCurrentUpdateClock(docName);
+      curClock = await getCurrentUpdateClock(syncFileAttr.docName);
     }
     if (sv !== null && clock === curClock) {
       return sv;
     } else {
       // current state vector is outdated
-      const updates = getDocAllUpdates(docName);
+      const updates = getDocAllUpdates(syncFileAttr.docName);
       const { update, sv } = mergeUpdates(updates);
-      flushDocument(this.pool, docName, update, sv);
+      flushDocument(this.pool, syncFileAttr, update, sv);
       return sv;
     }
   }
@@ -130,25 +131,25 @@ export class PostgresqlPersistance {
     }
   }
 
-  async storeUpdate(docName: string, update: Uint8Array) {
+  async storeUpdate(syncFileAttr: SyncFileAttr, update: Uint8Array) {
     if (typeof window !== "undefined" || !this.pool) {
       return;
     }
 
     try {
-      const cacheQueue = this.queueMap.get(docName);
+      const cacheQueue = this.queueMap.get(syncFileAttr.docName);
       if (cacheQueue) {
         (async () => {
           await cacheQueue.add(async () => {
-            await storeUpdate(docName, update);
+            await storeUpdate(syncFileAttr, update);
           });
         })();
       } else {
         const queue = new PQueue({ concurrency: 1 });
-        this.queueMap.set(docName, queue);
+        this.queueMap.set(syncFileAttr.docName, queue);
         (async () => {
           await queue.add(async () => {
-            await storeUpdate(docName, update);
+            await storeUpdate(syncFileAttr, update);
           });
         })();
       }

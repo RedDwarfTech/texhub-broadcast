@@ -22,6 +22,7 @@ import { v4 as uuidv4 } from "uuid";
 import { getPgPool, getRedisClient } from "./conf/database_init.js";
 import { PostgresqlPersistance } from "./postgresql_persistance.js";
 import { persistencePostgresql } from "@/storage/storage.js";
+import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 
 // 获取数据库客户端
 const getClient = () => getRedisClient();
@@ -167,13 +168,13 @@ export const mergeUpdates = (updates: any) => {
 
 export const flushDocument = async (
   db: pg.Pool,
-  docName: string,
+  syncFileAttr: SyncFileAttr,
   stateAsUpdate: any,
   stateVector: any
 ) => {
-  const clock = await storeUpdate(docName, stateAsUpdate);
-  await writeStateVector(docName, stateVector, clock);
-  await clearUpdatesRange(db, docName, 0, clock); // intentionally not waiting for the promise to resolve!
+  const clock = await storeUpdate(syncFileAttr, stateAsUpdate);
+  await writeStateVector(syncFileAttr.docName, stateVector, clock);
+  await clearUpdatesRange(db, syncFileAttr.docName, 0, clock); // intentionally not waiting for the promise to resolve!
   return clock;
 };
 
@@ -273,34 +274,33 @@ export const storeUpdateTrans = async (
 };
 
 export const storeUpdate = async (
-  docName: string,
-  update: Uint8Array,
-  isHistory: boolean = false
+  syncFileAttr: SyncFileAttr,
+  update: Uint8Array
 ) => {
   const uniqueValue = uuidv4();
-  const lockKey = `lock:${docName}:update`;
+  const lockKey = `lock:${syncFileAttr.docName}:update`;
   try {
     if (await getRedisDestriLock(lockKey, uniqueValue, 0)) {
-      const clock = await getCurrentUpdateClock(docName);
+      const clock = await getCurrentUpdateClock(syncFileAttr.docName);
       if (clock === -1) {
         const ydoc = new Y.Doc();
         Y.applyUpdate(ydoc, update);
         const sv = Y.encodeStateVector(ydoc);
-        await writeStateVector(docName, sv, 0);
+        await writeStateVector(syncFileAttr.docName, sv, 0);
       }
       await pgPut(
         update,
         "ws",
-        createDocumentUpdateKeyArray(docName, clock + 1),
-        isHistory
+        createDocumentUpdateKeyArray(syncFileAttr.docName, clock + 1),
+        false
       );
       const postgresqlDb: PostgresqlPersistance =
         persistencePostgresql.provider;
-      const persistedYdoc: any = await postgresqlDb.getYDoc(docName);
-      let dbSubdocText = persistedYdoc.getText(docName);
+      const persistedYdoc: any = await postgresqlDb.getYDoc(syncFileAttr);
+      let dbSubdocText = persistedYdoc.getText(syncFileAttr.docName);
       let dbSubdocTextStr = dbSubdocText.toString();
       if (dbSubdocTextStr === "") {
-        logger.warn("doc turn to null,doc id:" + docName + ",clock:" + clock);
+        logger.warn("doc turn to null,doc id:", + JSON.stringify(syncFileAttr) + ",clock:" + clock);
       }
       return clock + 1;
     }

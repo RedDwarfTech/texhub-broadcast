@@ -119,5 +119,12 @@ export const initTpl = async (
   const ytext = ydoc.getText(docId);
   ytext.insert(0, initContext);
   const newUpdates: Uint8Array = Y.encodeStateAsUpdate(ydoc);
-  await postgresqlDb.storeUpdate(docId, newUpdates);
+  let syncFileAttr: SyncFileAttr = {
+    docName: docId!,
+    /** 1: tex file 2: project 0: folder */
+    docType: 1,
+    projectId: projectId!,
+    docIntId: ""
+  };
+  await postgresqlDb.storeUpdate(syncFileAttr, newUpdates);
 };

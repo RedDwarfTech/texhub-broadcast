@@ -17,15 +17,14 @@ if (typeof persistenceDir === "string") {
     provider: postgresqlDb,
     bindState: async (syncFileAttr: SyncFileAttr, ydoc: Y.Doc) => {
       try {
-        let docName = syncFileAttr.docName;
-        const persistedYdoc: Y.Doc = await postgresqlDb.getYDoc(docName);
+        const persistedYdoc: Y.Doc = await postgresqlDb.getYDoc(syncFileAttr);
         const newUpdates: Uint8Array = Y.encodeStateAsUpdate(ydoc);
-        await postgresqlDb.storeUpdate(docName, newUpdates);
+        await postgresqlDb.storeUpdate(syncFileAttr, newUpdates);
         Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(persistedYdoc));
 
         // @ts-ignore
         ydoc.on("update", async (update: Uint8Array) => {
-          await postgresqlDb.storeUpdate(docName, update);
+          await postgresqlDb.storeUpdate(syncFileAttr, update);
           if (persistedYdoc) {
             throttledFn(syncFileAttr, postgresqlDb);
           }

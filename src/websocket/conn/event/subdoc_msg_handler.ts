@@ -15,6 +15,7 @@ import { persistencePostgresql } from "@/storage/storage.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { getTexFileInfo } from "@/storage/appfile.js";
 import { FileContent } from "@/model/texhub/file_content.js";
+import { SyncMessageContext } from "@/model/texhub/sync_msg_context.js";
 
 /**
  * relationship of main doc & sub docs
@@ -45,7 +46,9 @@ const preHandleSubDoc = async (
 ) => {
   try {
     const encoder = encoding.createEncoder();
-    const subdocGuid = decoding.readVarString(decoder);
+    const context = decoding.readVarString(decoder);
+    const docContext: SyncMessageContext = JSON.parse(context);
+    const subdocGuid = docContext.doc_name;
     let docIntId = "";
     let fileInfo: FileContent = {
       id: "",
@@ -103,7 +106,7 @@ const preHandleSubDoc = async (
         // try to get document from database directly
         const postgresqlDb: PostgresqlPersistance =
           persistencePostgresql.provider;
-        const persistedYdoc: any = await postgresqlDb.getYDoc(subdocGuid);
+        const persistedYdoc: any = await postgresqlDb.getYDoc(syncFileAttr);
         let dbSubdocText = persistedYdoc.getText(subdocGuid);
         let dbSubdocTextStr = dbSubdocText.toString();
         console.log(
