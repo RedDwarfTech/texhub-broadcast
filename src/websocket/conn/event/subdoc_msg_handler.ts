@@ -46,18 +46,18 @@ const preHandleSubDoc = async (
   try {
     const encoder = encoding.createEncoder();
     const subdocGuid = decoding.readVarString(decoder);
-    let fileInfo: FileContent = await getTexFileInfo(subdocGuid);
-    if (!fileInfo || !fileInfo.file_path) {
-      logger.warn(
-        "fileInfo is null or fileInfo.file_path is null" +
-          JSON.stringify(fileInfo)
-      );
-      return;
+    let docIntId = "";
+    if (subdocGuid !== rootDoc.name){
+      let fileInfo: FileContent = await getTexFileInfo(subdocGuid);
+      let docIntId = "";
+      if (fileInfo) {
+        docIntId = fileInfo.id;
+      }
     }
     let syncFileAttr: SyncFileAttr = {
       docName: subdocGuid,
       projectId: rootDoc.name,
-      docIntId: fileInfo.id
+      docIntId: docIntId
     };
     let memoryOrDiskSubdoc = await getYDoc(syncFileAttr);
     let curSubDoc = memoryOrDiskSubdoc;

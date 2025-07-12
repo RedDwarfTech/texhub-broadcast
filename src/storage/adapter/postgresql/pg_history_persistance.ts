@@ -22,6 +22,9 @@ export class PgHisotoryPersistance {
       return;
     }
     try {
+      if(syncFileAttr.docIntId === ""){
+        return;
+      }
       const latestSnapshot = await getFileLatestSnapshot(syncFileAttr.docName);
       const latestClock = await getCurrentUpdateClock(syncFileAttr.docName);
       const snapshot: Y.Snapshot = Y.snapshot(doc);
