@@ -1,4 +1,7 @@
-import { Op } from "sequelize";
+let Op: any;
+if (typeof window === "undefined") {
+  Op = (await import("sequelize")).Op;
+}
 import { ProjectScrollVersion, ProjectScrollVersionAttributes } from "@/model/texhub/project_scroll_version.js";
 import { ScrollQueryResult } from "@/common/types/scroll_query.js";
 import logger from "@/common/log4js_config.js";
