@@ -1,4 +1,9 @@
-import { Model, DataTypes } from 'sequelize';
+let Model: any, DataTypes: any;
+if (typeof window === "undefined") {
+  const sequelizeModule = await import('sequelize');
+  Model = sequelizeModule.Model;
+  DataTypes = sequelizeModule.DataTypes;
+}
 import { sequelize } from '@/storage/adapter/postgresql/conf/sequelize.js';
 
 export interface ProjectScrollVersionAttributes {
@@ -17,24 +22,24 @@ export interface ProjectScrollVersionAttributes {
   doc_int_id: string;
 }
 
-export class ProjectScrollVersion extends Model<ProjectScrollVersionAttributes> implements ProjectScrollVersionAttributes {
-  public id!: number;
-  public key!: string;
-  public version!: string;
-  public content_type!: string;
-  public doc_name!: string;
-  public clock!: number;
-  public source!: string;
-  public created_time!: Date;
-  public project_id!: string;
-  public value!: Buffer;
-  public diff!: string;
-  public content!: string;
-  public doc_int_id!: string;
-}
-
-if (sequelize) {
-  ProjectScrollVersion.init(
+let ProjectScrollVersion: any = {};
+if (typeof window === "undefined" && Model && DataTypes && sequelize) {
+  class _ProjectScrollVersion extends Model<ProjectScrollVersionAttributes> implements ProjectScrollVersionAttributes {
+    public id!: number;
+    public key!: string;
+    public version!: string;
+    public content_type!: string;
+    public doc_name!: string;
+    public clock!: number;
+    public source!: string;
+    public created_time!: Date;
+    public project_id!: string;
+    public value!: Buffer;
+    public diff!: string;
+    public content!: string;
+    public doc_int_id!: string;
+  }
+  _ProjectScrollVersion.init(
     {
       id: {
         type: DataTypes.BIGINT,
@@ -98,4 +103,7 @@ if (sequelize) {
       timestamps: false,
     }
   );
-} 
+  ProjectScrollVersion = _ProjectScrollVersion;
+}
+
+export { ProjectScrollVersion }; 
