@@ -64,7 +64,7 @@ export const getProjectScrollVersion = async (
       ],
       limit: limit + 1
     });
-    const plainVersions = versions.map(v => v.get({ plain: true }));
+    const plainVersions = versions.map((v:any) => v.get({ plain: true }));
     const hasMore = plainVersions.length > limit;
     const items = hasMore ? plainVersions.slice(0, limit) : plainVersions;
     let nextCursor: string | null = null;
@@ -96,7 +96,7 @@ export const calcFileVersion = async (fileId: string) => {
           ["created_time", "ASC"]
         ],
         limit: 1000, // 限制最多返回1000条记录
-        logging: (sql, timing) => {
+        logging: (sql:any, timing:any) => {
           if (timing && timing > 5000) { // 记录执行时间超过5秒的查询
             logger.warn(`Slow query detected for file ${fileId}, execution time: ${timing}ms`);
           }
@@ -105,7 +105,7 @@ export const calcFileVersion = async (fileId: string) => {
       new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Query timeout after 10 seconds')), 10000)
       )
-    ]) as ProjectScrollVersion[];
+    ]) as ProjectScrollVersionAttributes[];
 
     if (!versions || versions.length === 0) {
       return [];
@@ -238,7 +238,7 @@ export const calcProjectVersion = async (projectId: string) => {
 
 export const getProjectLatestSnapshot = async (
   projectId: string
-): Promise<ProjectScrollVersion | null> => {
+): Promise<ProjectScrollVersionAttributes | null> => {
   try {
     const snapshot = await ProjectScrollVersion.findOne({
       where: {
@@ -247,8 +247,7 @@ export const getProjectLatestSnapshot = async (
       },
       order: [["created_time", "DESC"]],
     });
-
-    return snapshot;
+    return snapshot ? snapshot.get({ plain: true }) : null;
   } catch (error) {
     logger.error("Failed to get project latest snapshot:", error);
     throw error;
@@ -257,7 +256,7 @@ export const getProjectLatestSnapshot = async (
 
 export const getFileLatestSnapshot = async (
   fileId: string
-): Promise<ProjectScrollVersion | null> => {
+): Promise<ProjectScrollVersionAttributes | null> => {
   try {
     const snapshot = await ProjectScrollVersion.findOne({
       where: {
@@ -266,7 +265,7 @@ export const getFileLatestSnapshot = async (
       },
       order: [["created_time", "DESC"]],
     });
-    return snapshot;
+    return snapshot ? snapshot.get({ plain: true }) : null;
   } catch (error) {
     logger.error("Failed to get project latest snapshot:", error);
     throw error;
