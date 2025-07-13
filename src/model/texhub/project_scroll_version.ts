@@ -33,67 +33,69 @@ export class ProjectScrollVersion extends Model<ProjectScrollVersionAttributes> 
   public doc_int_id!: string;
 }
 
-ProjectScrollVersion.init(
-  {
-    id: {
-      type: DataTypes.BIGINT,
-      autoIncrement: true,
-      primaryKey: true,
+if (sequelize) {
+  ProjectScrollVersion.init(
+    {
+      id: {
+        type: DataTypes.BIGINT,
+        autoIncrement: true,
+        primaryKey: true,
+      },
+      key: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+      },
+      version: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      content_type: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      doc_name: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      clock: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
+      source: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      created_time: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+      },
+      project_id: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      value: {
+        type: DataTypes.BLOB,
+        allowNull: false,
+      },
+      diff: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      content: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      doc_int_id: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
     },
-    key: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      unique: true,
-    },
-    version: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    content_type: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    doc_name: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    clock: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-    },
-    source: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    created_time: {
-      type: DataTypes.DATE,
-      allowNull: false,
-      defaultValue: DataTypes.NOW,
-    },
-    project_id: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    value: {
-      type: DataTypes.BLOB,
-      allowNull: false,
-    },
-    diff: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    content: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-    },
-    doc_int_id: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-  },
-  {
-    sequelize,
-    tableName: 'tex_sync_history',
-    timestamps: false,
-  }
-); 
+    {
+      sequelize,
+      tableName: 'tex_sync_history',
+      timestamps: false,
+    }
+  );
+} 
