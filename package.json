@@ -1,13 +1,13 @@
 {
   "name": "texhub-broadcast",
-  "version": "1.0.96",
+  "version": "1.0.97",
   "description": "",
   "engines": {
     "node": ">=20.0.0"
   },
-  "main": "./dist/index.js",
-  "browser":"./dist/index.js",
-  "module": "./dist/index.js",
+  "main": "dist/index.js",
+  "browser":"dist/index.js",
+  "module": "dist/index.js",
   "types": "./dist/index.d.ts",
   "type": "module",
   "exports": {
