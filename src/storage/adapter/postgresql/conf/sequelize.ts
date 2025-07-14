@@ -1,10 +1,10 @@
-import { Sequelize } from 'sequelize';
 import { dbConfig } from './db_config.js';
-import logger from '@/common/log4js_config.js';
 
-let sequelize: Sequelize | undefined = undefined;
+let Sequelize: any;
+let sequelize: any = undefined;
 
 if (typeof window === 'undefined') {
+  Sequelize = (await import('sequelize')).Sequelize;
   sequelize = new Sequelize({
     dialect: 'postgres',
     host: dbConfig.host,
