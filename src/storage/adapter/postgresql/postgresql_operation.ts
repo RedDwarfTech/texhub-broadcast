@@ -178,11 +178,7 @@ export const flushDocument = async (
   return clock;
 };
 
-const getRedisDestriLock = async (
-  lockKey: string,
-  uniqueValue: string,
-  times: number
-) => {
+const getRedisDestriLock = async (lockKey: string, uniqueValue: string, times: number) => {
   // If Redis is not available (non-Node environment), pretend we got the lock
   if (!getClient()) {
     logger.info("Redis client not available, simulating lock acquisition");
@@ -210,7 +206,14 @@ const getRedisDestriLock = async (
   if (result === 1) {
     return true;
   } else {
-    logger.warn(`[x] 无法获取锁 ${lockKey}，第${times + 1}次重试`);
+    // 新增：获取当前锁的值
+    let currentValue: string | null = null;
+    try {
+      currentValue = await getClient()!.get(lockKey);
+    } catch (e) {
+      logger.error(`Error getting current lock value for ${lockKey}:`, e);
+    }
+    logger.warn(`[x] 无法获取锁 ${lockKey}，第${times + 1}次重试，currentValue=${currentValue}, expected=${uniqueValue}`);
     await sleep(waitTime);
     return getRedisDestriLock(lockKey, uniqueValue, times + 1);
   }
