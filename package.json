@@ -19,8 +19,7 @@
     "./model/texhub/app/app_control_type": "./dist/model/texhub/app/app_control_type.js"
   },
   "files": [
-    "dist/*",
-    "browser.js"
+    "dist/*"
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

@@ -232,6 +232,14 @@ async function unlock(lockKey: string, uniqueValue: string) {
     return;
   }
 
+  // 新增：获取当前锁的值
+  let currentValue: string | null = null;
+  try {
+    currentValue = await getClient()!.get(lockKey);
+  } catch (e) {
+    logger.error(`Error getting current lock value for ${lockKey}:`, e);
+  }
+
   const luaScript = `
     if redis.call("GET", KEYS[1]) == ARGV[1] then
       return redis.call("DEL", KEYS[1])
@@ -245,7 +253,7 @@ async function unlock(lockKey: string, uniqueValue: string) {
   });
   if (result === 1) {
   } else {
-    logger.error("release lock failed: " + lockKey);
+    logger.error(`release lock failed: ${lockKey}, currentValue=${currentValue}, expected=${uniqueValue}`);
   }
 }
 
