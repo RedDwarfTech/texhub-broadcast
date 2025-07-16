@@ -21,6 +21,8 @@ import {
 import * as awarenessProtocol from "rdy-protocols/awareness";
 import { MessageHandler } from "@/model/yjs/net/msg_handler_fun.js";
 import { enableTracing, logYjsUnwrapMsg } from "@/common/tracing/app_trace.js";
+import { v4 as uuidv4 } from "uuid";
+import { SyncMessageContext } from "@/model/texhub/sync_msg_context.js";
 
 export const messageHandlers: MessageHandler[] = [];
 
@@ -46,8 +48,15 @@ messageHandlers[SyncMessageType.SubDocMessageSync] = (
   }
 
   encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
+  const uniqueValue = uuidv4();
+  let msg: SyncMessageContext = {
+    doc_name: docGuid,
+    src: "messageHandlers",
+    trace_id: uniqueValue,
+  };
+  let msgStr = JSON.stringify(msg);
   // convert to the legacy message without doc guid
-  encoding.writeVarString(encoder, docGuid);
+  encoding.writeVarString(encoder, msgStr);
   const hasContent = decoding.hasContent(decoder);
   if (!hasContent) {
     console.error("sub doc message sync has no content");

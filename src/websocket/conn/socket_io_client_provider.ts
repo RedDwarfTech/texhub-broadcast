@@ -318,7 +318,7 @@ export class SocketIOClientProvider extends Observable<string> {
     const uniqueValue = uuidv4();
     let msg: SyncMessageContext = {
       doc_name: subdoc.guid,
-      src: "subdocUpdateHandler",
+      src: "addSubdoc",
       trace_id: uniqueValue
     };
     let msgStr = JSON.stringify(msg);
