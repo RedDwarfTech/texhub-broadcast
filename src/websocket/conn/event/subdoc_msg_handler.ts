@@ -59,7 +59,7 @@ const preHandleSubDoc = async (
     const encoder = encoding.createEncoder();
     const context = decoding.readVarString(decoder);
     const isJson = hasJsonStructure(context);
-    const docContext: SyncMessageContext = isJson
+    const docContext = isJson
       ? JSON.parse(context)
       : context;
     const subdocGuid = isJson ? docContext.doc_name : docContext;
