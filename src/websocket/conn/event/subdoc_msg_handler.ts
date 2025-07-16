@@ -39,6 +39,17 @@ export const handleSubDocMsg = async (
   await preHandleSubDoc(decoder, conn, rootDoc);
 };
 
+function hasJsonStructure(str: string) {
+  if (typeof str !== "string") return false;
+  try {
+    const result = JSON.parse(str);
+    const type = Object.prototype.toString.call(result);
+    return type === "[object Object]" || type === "[object Array]";
+  } catch (err) {
+    return false;
+  }
+}
+
 const preHandleSubDoc = async (
   decoder: any,
   conn: Socket,
@@ -47,7 +58,9 @@ const preHandleSubDoc = async (
   try {
     const encoder = encoding.createEncoder();
     const context = decoding.readVarString(decoder);
-    const docContext: SyncMessageContext = JSON.parse(context);
+    const docContext: SyncMessageContext = hasJsonStructure(context)
+      ? JSON.parse(context)
+      : context;
     const subdocGuid = docContext.doc_name;
     let docIntId = "";
     let fileInfo: FileContent = {
