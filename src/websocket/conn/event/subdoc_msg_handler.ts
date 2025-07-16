@@ -58,10 +58,11 @@ const preHandleSubDoc = async (
   try {
     const encoder = encoding.createEncoder();
     const context = decoding.readVarString(decoder);
-    const docContext: SyncMessageContext = hasJsonStructure(context)
+    const isJson = hasJsonStructure(context);
+    const docContext: SyncMessageContext = isJson
       ? JSON.parse(context)
       : context;
-    const subdocGuid = docContext.doc_name;
+    const subdocGuid = isJson ? docContext.doc_name : docContext;
     let docIntId = "";
     let fileInfo: FileContent = {
       id: "",
