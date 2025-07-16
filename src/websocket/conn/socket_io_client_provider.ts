@@ -315,7 +315,14 @@ export class SocketIOClientProvider extends Observable<string> {
     // invoke sync step1
     const encoder = encoding.createEncoder();
     encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
-    encoding.writeVarString(encoder, subdoc.guid);
+    const uniqueValue = uuidv4();
+    let msg: SyncMessageContext = {
+      doc_name: subdoc.guid,
+      src: "subdocUpdateHandler",
+      trace_id: uniqueValue
+    };
+    let msgStr = JSON.stringify(msg);
+    encoding.writeVarString(encoder, msgStr);
     syncProtocol.writeSyncStep1(encoder, subdoc);
     broadcastMessage(this, encoding.toUint8Array(encoder));
   }
