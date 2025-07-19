@@ -7,6 +7,7 @@ import { PostgresqlPersistance } from "./adapter/postgresql/postgresql_persistan
 import logger from "../common/log4js_config.js";
 import { handleHistoryDoc } from "./feat/version/doc_history.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
+import { UpdateOrigin } from "@/model/yjs/net/update_origin.js";
 
 export let persistencePostgresql: Persistence;
 
@@ -20,7 +21,11 @@ if (typeof persistenceDir === "string") {
         const persistedYdoc: Y.Doc = await postgresqlDb.getYDoc(syncFileAttr);
         const newUpdates: Uint8Array = Y.encodeStateAsUpdate(ydoc);
         await postgresqlDb.storeUpdate(syncFileAttr, newUpdates);
-        Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(persistedYdoc));
+        let uo: UpdateOrigin = {
+          name: "persistencePostgresql",
+          origin: "server",
+        };
+        Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(persistedYdoc),uo);
 
         // @ts-ignore
         ydoc.on("update", async (update: Uint8Array) => {

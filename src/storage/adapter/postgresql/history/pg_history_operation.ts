@@ -21,6 +21,7 @@ import { TeXSync } from "@model/yjs/storage/sync/tex_sync.js";
 import { v4 as uuidv4 } from "uuid";
 import { getPgPool, getRedisClient } from "../conf/database_init.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
+import { UpdateOrigin } from "@/model/yjs/net/update_origin.js";
 
 // 获取数据库客户端
 const getClient = () => getRedisClient();
@@ -159,7 +160,11 @@ export const mergeUpdates = (updates: any) => {
   const ydoc = new Y.Doc();
   ydoc.transact(() => {
     for (let i = 0; i < updates.length; i++) {
-      Y.applyUpdate(ydoc, updates[i]);
+      let uo: UpdateOrigin = {
+        name: "mergeUpdates-history",
+        origin: "server",
+      };
+      Y.applyUpdate(ydoc, updates[i],uo);
     }
   });
   return { update: Y.encodeStateAsUpdate(ydoc), sv: Y.encodeStateVector(ydoc) };
@@ -255,7 +260,11 @@ export const storeUpdateTrans = async (
   if (clock === -1) {
     // make sure that a state vector is aways written, so we can search for available documents
     const ydoc = new Y.Doc();
-    Y.applyUpdate(ydoc, update);
+    let uo: UpdateOrigin = {
+      name: "storeUpdateTrans-history",
+      origin: "server",
+    };
+    Y.applyUpdate(ydoc, update,uo);
     const sv = Y.encodeStateVector(ydoc);
     await writeStateVectorTrans(db, docName, sv, 0);
   }
@@ -282,7 +291,11 @@ export const storeHistoryUpdate = async (
       if (clock === -1) {
         // make sure that a state vector is aways written, so we can search for available documents
         const ydoc = new Y.Doc();
-        Y.applyUpdate(ydoc, update);
+        let uo: UpdateOrigin = {
+          name: "storeHistoryUpdate-history",
+          origin: "server",
+        };
+        Y.applyUpdate(ydoc, update,uo);
         const sv = Y.encodeStateVector(ydoc);
         await writeStateVector(syncFileAttr, sv, 0);
       }

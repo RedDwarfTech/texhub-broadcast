@@ -2,8 +2,11 @@
 
 // Export SingleClientProvider for external projects
 
-import SingleClientProvider from './websocket/conn/single_client_provider';
+import SingleClientProvider from "./websocket/conn/single_client_provider";
 export { SingleClientProvider };
 
-import { SocketIOClientProvider } from './websocket/conn/socket_io_client_provider';
+import { SocketIOClientProvider } from "./websocket/conn/socket_io_client_provider";
 export { SocketIOClientProvider };
+
+import { UpdateOrigin } from "./model/yjs/net/update_origin";
+export { UpdateOrigin };

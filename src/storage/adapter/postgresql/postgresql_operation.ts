@@ -23,6 +23,7 @@ import { getPgPool, getRedisClient } from "./conf/database_init.js";
 import { PostgresqlPersistance } from "./postgresql_persistance.js";
 import { persistencePostgresql } from "@/storage/storage.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
+import { UpdateOrigin } from "@/model/yjs/net/update_origin.js";
 
 const redis: any = () => getRedisClient();
 
@@ -159,7 +160,11 @@ export const mergeUpdates = (updates: any) => {
   const ydoc = new Y.Doc();
   ydoc.transact(() => {
     for (let i = 0; i < updates.length; i++) {
-      Y.applyUpdate(ydoc, updates[i]);
+      let uo: UpdateOrigin = {
+        name: "mergeUpdates",
+        origin: "server",
+      };
+      Y.applyUpdate(ydoc, updates[i],uo);
     }
   });
   return { update: Y.encodeStateAsUpdate(ydoc), sv: Y.encodeStateVector(ydoc) };
@@ -267,7 +272,11 @@ export const storeUpdateTrans = async (
   if (clock === -1) {
     // make sure that a state vector is aways written, so we can search for available documents
     const ydoc = new Y.Doc();
-    Y.applyUpdate(ydoc, update);
+    let uo: UpdateOrigin = {
+      name: "storeUpdateTrans",
+      origin: "server",
+    };
+    Y.applyUpdate(ydoc, update,uo);
     const sv = Y.encodeStateVector(ydoc);
     await writeStateVectorTrans(db, docName, sv, 0);
   }
@@ -291,7 +300,11 @@ export const storeUpdate = async (
       const processYdoc = new Y.Doc({
         guid: syncFileAttr.docName,
       });
-      Y.applyUpdate(processYdoc, update);
+      let uo: UpdateOrigin = {
+        name: "storeUpdate-processYdoc",
+        origin: "server",
+      };
+      Y.applyUpdate(processYdoc, update,uo);
       const text = processYdoc.getText(syncFileAttr.docName).toString();
       logger.info("process by distribute lock:" + text);
       logger.info('processYdoc update', 2, {
@@ -302,7 +315,11 @@ export const storeUpdate = async (
       const clock = await getCurrentUpdateClock(syncFileAttr.docName);
       if (clock === -1) {
         const ydoc = new Y.Doc();
-        Y.applyUpdate(ydoc, update);
+        let uo1: UpdateOrigin = {
+          name: "storeUpdate-ydoc",
+          origin: "server",
+        };
+        Y.applyUpdate(ydoc, update,uo1);
         const sv = Y.encodeStateVector(ydoc);
         await writeStateVector(syncFileAttr.docName, sv, 0);
       }

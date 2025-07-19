@@ -2,6 +2,7 @@
 import * as Y from "rdyjs";
 // @ts-ignore
 import * as decoding from "rdlib0/decoding.js";
+import { UpdateOrigin } from "@/model/yjs/net/update_origin";
 
 export function logYjsUnwrapMsg(decoder: any) {
   try {
@@ -16,7 +17,11 @@ export function logYjsUnwrapMsg(decoder: any) {
     const structDecoder = new Y.UpdateDecoderV2(update);
     console.log("structDecoder: ", structDecoder);
     let ydoc = new Y.Doc();
-    Y.applyUpdate(ydoc, update);
+    let uo: UpdateOrigin = {
+      name: "logYjsUnwrapMsg",
+      origin: "client",
+    };
+    Y.applyUpdate(ydoc, update, uo);
     let docText = ydoc.getText();
     let ydocText = docText.toString();
     console.log("ydoc text: ", ydocText);

@@ -2,11 +2,15 @@ let Op: any;
 if (typeof window === "undefined") {
   Op = (await import("sequelize")).Op;
 }
-import { ProjectScrollVersion, ProjectScrollVersionAttributes } from "@/model/texhub/project_scroll_version.js";
+import {
+  ProjectScrollVersion,
+  ProjectScrollVersionAttributes,
+} from "@/model/texhub/project_scroll_version.js";
 import { ScrollQueryResult } from "@/common/types/scroll_query.js";
 import logger from "@/common/log4js_config.js";
 // @ts-ignore
 import * as Y from "rdyjs";
+import { UpdateOrigin } from "@/model/yjs/net/update_origin";
 
 export const getProjectVersionDetail = async (
   id: string
@@ -62,9 +66,9 @@ export const getProjectScrollVersion = async (
         ["created_time", "DESC"],
         ["id", "DESC"],
       ],
-      limit: limit + 1
+      limit: limit + 1,
     });
-    const plainVersions = versions.map((v:any) => v.get({ plain: true }));
+    const plainVersions = versions.map((v: any) => v.get({ plain: true }));
     const hasMore = plainVersions.length > limit;
     const items = hasMore ? plainVersions.slice(0, limit) : plainVersions;
     let nextCursor: string | null = null;
@@ -87,25 +91,29 @@ export const getProjectScrollVersion = async (
 
 export const calcFileVersion = async (fileId: string) => {
   try {
-    const versions = await Promise.race([
+    const versions = (await Promise.race([
       ProjectScrollVersion.findAll({
         where: {
-          doc_name: fileId
+          doc_name: fileId,
         },
-        order: [
-          ["created_time", "ASC"]
-        ],
+        order: [["created_time", "ASC"]],
         limit: 1000, // 限制最多返回1000条记录
-        logging: (sql:any, timing:any) => {
-          if (timing && timing > 5000) { // 记录执行时间超过5秒的查询
-            logger.warn(`Slow query detected for file ${fileId}, execution time: ${timing}ms`);
+        logging: (sql: any, timing: any) => {
+          if (timing && timing > 5000) {
+            // 记录执行时间超过5秒的查询
+            logger.warn(
+              `Slow query detected for file ${fileId}, execution time: ${timing}ms`
+            );
           }
-        }
+        },
       }),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Query timeout after 10 seconds')), 10000)
-      )
-    ]) as ProjectScrollVersionAttributes[];
+      new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error("Query timeout after 10 seconds")),
+          10000
+        )
+      ),
+    ])) as ProjectScrollVersionAttributes[];
 
     if (!versions || versions.length === 0) {
       return [];
@@ -119,7 +127,7 @@ export const calcFileVersion = async (fileId: string) => {
     }
 
     // 找到snapshot在版本列表中的位置
-    const snapshotIndex = versions.findIndex(v => v.id === latestSnapshot.id);
+    const snapshotIndex = versions.findIndex((v) => v.id === latestSnapshot.id);
     if (snapshotIndex === -1) {
       logger.warn(`Snapshot not found in version list for file ${fileId}`);
       return [];
@@ -129,7 +137,7 @@ export const calcFileVersion = async (fileId: string) => {
     // https://discuss.yjs.dev/t/error-garbage-collection-must-be-disabled-in-origindoc/2313
     let currentDoc = new Y.Doc({ gc: false });
     let newDoc = new Y.Doc({ gc: false });
-    
+
     // 首先应用snapshot
     if (latestSnapshot.value) {
       try {
@@ -144,17 +152,24 @@ export const calcFileVersion = async (fileId: string) => {
     // 从snapshot之后的版本开始，应用增量更新
     for (let i = snapshotIndex + 1; i < versions.length; i++) {
       const version = versions[i];
-      if (version.content_type === 'update' && version.value) {
+      if (version.content_type === "update" && version.value) {
         try {
-          Y.applyUpdate(newDoc, version.value);
+          let uo: UpdateOrigin = {
+            name: "calcFileVersion",
+            origin: "server",
+          };
+          Y.applyUpdate(newDoc, version.value, uo);
           results.push({
             versionId: version.id,
             content: Y.encodeStateAsUpdate(newDoc),
             clock: version.clock,
-            createdTime: version.created_time
+            createdTime: version.created_time,
           });
         } catch (error) {
-          logger.error(`Failed to apply update for version ${version.id}:`, error);
+          logger.error(
+            `Failed to apply update for version ${version.id}:`,
+            error
+          );
           continue;
         }
       }
@@ -162,7 +177,10 @@ export const calcFileVersion = async (fileId: string) => {
 
     return results;
   } catch (error) {
-    logger.error(`Failed to calculate file versions for file ${fileId}:`, error);
+    logger.error(
+      `Failed to calculate file versions for file ${fileId}:`,
+      error
+    );
     throw error;
   }
 };
@@ -183,14 +201,18 @@ export const calcProjectVersion = async (projectId: string) => {
     }
 
     // 按时间正序排序版本列表
-    const sortedVersions = versions.items.sort((a, b) => 
-      a.created_time.getTime() - b.created_time.getTime()
+    const sortedVersions = versions.items.sort(
+      (a, b) => a.created_time.getTime() - b.created_time.getTime()
     );
 
     // 找到snapshot在版本列表中的位置
-    const snapshotIndex = sortedVersions.findIndex(v => v.id === latestSnapshot.id);
+    const snapshotIndex = sortedVersions.findIndex(
+      (v) => v.id === latestSnapshot.id
+    );
     if (snapshotIndex === -1) {
-      logger.warn(`Snapshot not found in version list for project ${projectId}`);
+      logger.warn(
+        `Snapshot not found in version list for project ${projectId}`
+      );
       return [];
     }
 
@@ -198,14 +220,17 @@ export const calcProjectVersion = async (projectId: string) => {
     const results = [];
     let currentDoc = new Y.Doc({ gc: false });
     let newDoc = new Y.Doc({ gc: false });
-    
+
     // 首先应用snapshot
     if (latestSnapshot.value) {
       try {
         const snapshot = Y.decodeSnapshot(latestSnapshot.value);
         newDoc = Y.createDocFromSnapshot(currentDoc, snapshot);
       } catch (error) {
-        logger.error(`Failed to apply snapshot for project ${projectId}:`, error);
+        logger.error(
+          `Failed to apply snapshot for project ${projectId}:`,
+          error
+        );
         return [];
       }
     }
@@ -213,17 +238,24 @@ export const calcProjectVersion = async (projectId: string) => {
     // 从snapshot之后的版本开始，应用增量更新
     for (let i = snapshotIndex + 1; i < sortedVersions.length; i++) {
       const version = sortedVersions[i];
-      if (version.content_type === 'update' && version.value) {
+      if (version.content_type === "update" && version.value) {
         try {
-          Y.applyUpdate(newDoc, version.value);
+          let uo: UpdateOrigin = {
+            name: "calcProjectVersion",
+            origin: "server",
+          };
+          Y.applyUpdate(newDoc, version.value,uo);
           results.push({
             versionId: version.id,
             content: Y.encodeStateAsUpdate(newDoc),
             clock: version.clock,
-            createdTime: version.created_time
+            createdTime: version.created_time,
           });
         } catch (error) {
-          logger.error(`Failed to apply update for version ${version.id}:`, error);
+          logger.error(
+            `Failed to apply update for version ${version.id}:`,
+            error
+          );
           continue;
         }
       }
@@ -231,7 +263,10 @@ export const calcProjectVersion = async (projectId: string) => {
 
     return results;
   } catch (error) {
-    logger.error(`Failed to calculate project versions for project ${projectId}:`, error);
+    logger.error(
+      `Failed to calculate project versions for project ${projectId}:`,
+      error
+    );
     throw error;
   }
 };

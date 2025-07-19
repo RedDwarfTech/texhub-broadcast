@@ -20,6 +20,7 @@ import logger from "@common/log4js_config.js";
 import PQueue from "p-queue";
 import { LRUCache } from "lru-cache";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
+import { UpdateOrigin } from "@/model/yjs/net/update_origin.js";
 
 export class PostgresqlPersistance {
   pool: pg.Pool | null = null;
@@ -64,7 +65,11 @@ export class PostgresqlPersistance {
         for (let i = 0; i < updates.length; i++) {
           let update: TeXSync = updates[i];
           let updateVal: Uint8Array = update.value;
-          Y.applyUpdate(ydoc, updateVal);
+          let uo: UpdateOrigin = {
+            name: "getYDoc",
+            origin: "server",
+          };
+          Y.applyUpdate(ydoc, updateVal,uo);
         }
       } catch (err) {
         logger.error("apply update failed", err);
