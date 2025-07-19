@@ -305,7 +305,8 @@ export const storeUpdate = async (
       logger.info('processYdoc update', 2, {
         json: processYdoc.toJSON(),
         missing: processYdoc.store.pendingStructs?.missing,
-      })
+      });
+      logger.info('所有text名称:', Array.from(processYdoc.share.keys()));
       const clock = await getCurrentUpdateClock(syncFileAttr.docName);
       if (clock === -1) {
         const ydoc = new Y.Doc();
