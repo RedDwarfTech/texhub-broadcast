@@ -25,9 +25,9 @@ import { persistencePostgresql } from "@/storage/storage.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { Redis } from "ioredis";
 const redis = new Redis({
-  host: 'reddwarf-redis-master.reddwarf-cache.svc.cluster.local',
+  host: "reddwarf-redis-master.reddwarf-cache.svc.cluster.local",
   port: 6379,
-  username: 'default',
+  username: "default",
   password: process.env.REDIS_PASSWORD || "redis",
   db: 1,
 });
@@ -215,7 +215,7 @@ const getRedisDestriLock = async (
     logger.warn(
       `[x] 无法获取锁 ${lockKey}，第${
         times + 1
-      }次重试，currentValue=${currentValue}, expected=${uniqueValue}`
+      }次重试，currentValue=${currentValue}, expected=${uniqueValue}，result=${result}`
     );
     await sleep(waitTime);
     return getRedisDestriLock(lockKey, uniqueValue, times + 1);
@@ -252,7 +252,7 @@ async function unlock(lockKey: string, uniqueValue: string) {
       return 0
     end
   `;
-  const result = await redis.eval(luaScript,1, lockKey, uniqueValue);
+  const result = await redis.eval(luaScript, 1, lockKey, uniqueValue);
   if (result === 1) {
   } else {
     logger.error(
