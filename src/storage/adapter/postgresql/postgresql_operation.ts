@@ -23,9 +23,8 @@ import { getPgPool, getRedisClient } from "./conf/database_init.js";
 import { PostgresqlPersistance } from "./postgresql_persistance.js";
 import { persistencePostgresql } from "@/storage/storage.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
-import { Redis } from "ioredis";
 
-const getClient = () => getRedisClient();
+const redis: any = () => getRedisClient();
 
 export const getDocAllUpdates = async (
   docName: string,
@@ -184,7 +183,7 @@ const getRedisDestriLock = async (
   times: number
 ) => {
   // If Redis is not available (non-Node environment), pretend we got the lock
-  if (!getClient()) {
+  if (!redis) {
     logger.info("Redis client not available, simulating lock acquisition");
     return true;
   }
@@ -204,7 +203,7 @@ const getRedisDestriLock = async (
     // 新增：获取当前锁的值
     let currentValue: string | null = null;
     try {
-      currentValue = await getClient()!.get(lockKey);
+      currentValue = await redis.get(lockKey);
     } catch (e) {
       logger.error(`Error getting current lock value for ${lockKey}:`, e);
     }
@@ -229,7 +228,7 @@ function sleep(delay: number) {
  * @returns 是否成功释放锁
  */
 async function unlock(lockKey: string, uniqueValue: string) {
-  if (!getClient()) {
+  if (!redis) {
     logger.info("Redis client not available, simulating lock release");
     return;
   }
@@ -237,7 +236,7 @@ async function unlock(lockKey: string, uniqueValue: string) {
   // 新增：获取当前锁的值
   let currentValue: string | null = null;
   try {
-    currentValue = await getClient()!.get(lockKey);
+    currentValue = await redis.get(lockKey);
   } catch (e) {
     logger.error(`Error getting current lock value for ${lockKey}:`, e);
   }

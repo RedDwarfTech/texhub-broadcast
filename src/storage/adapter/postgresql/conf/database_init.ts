@@ -1,6 +1,6 @@
 import type * as pg from "pg";
 import logger from "@common/log4js_config.js";
-import Redis from "ioredis";
+let Redis: any = null;
 
 // Global database clients
 let pgPool: pg.Pool | null = null;
@@ -49,6 +49,7 @@ const initializePostgreSQL = async (): Promise<void> => {
  */
 const initializeRedis = async (): Promise<void> => {
   try {
+    Redis = (await import("ioredis")).default;
     redisClient = new Redis({
       host: "reddwarf-redis-master.reddwarf-cache.svc.cluster.local",
       port: 6379,
