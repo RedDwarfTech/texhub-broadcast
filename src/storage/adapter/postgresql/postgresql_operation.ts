@@ -203,6 +203,9 @@ const getRedisDestriLock = async (
   const waitTime = Math.min(200 * Math.pow(1.5, times), 2000);
   const result = await redis.set(lockKey, uniqueValue, "PX", 30000, "NX");
   if (result === "OK") {
+    logger.warn(
+      `[x] 获取锁 ${lockKey}, expected=${uniqueValue}，result=${result}`
+    );
     return true;
   } else {
     // 新增：获取当前锁的值
