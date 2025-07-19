@@ -1,5 +1,6 @@
 import type * as pg from "pg";
 import logger from "@common/log4js_config.js";
+import Redis from "ioredis";
 
 // Global database clients
 let pgPool: pg.Pool | null = null;
@@ -33,9 +34,9 @@ const initializePostgreSQL = async (): Promise<void> => {
 
     // Test the connection
     const client = await pgPool.connect();
-    await client.query('SELECT 1');
+    await client.query("SELECT 1");
     client.release();
-    
+
     logger.info("PostgreSQL connection pool initialized successfully");
   } catch (error) {
     logger.error("Failed to initialize PostgreSQL connection pool:", error);
@@ -48,13 +49,13 @@ const initializePostgreSQL = async (): Promise<void> => {
  */
 const initializeRedis = async (): Promise<void> => {
   try {
-    const { createClient } = await import("redis");
-    redisClient = await createClient({
-      url: process.env.REDIS_URL,
-    })
-      .on("error", (err: any) => logger.error("Redis Client Error", err))
-      .connect();
-    
+    redisClient = new Redis({
+      host: "reddwarf-redis-master.reddwarf-cache.svc.cluster.local",
+      port: 6379,
+      username: "default",
+      password: process.env.REDIS_PASSWORD || "redis",
+      db: 1,
+    });
     logger.info("Redis client initialized successfully");
   } catch (error) {
     logger.error("Failed to initialize Redis client:", error);
@@ -73,13 +74,13 @@ export const initializeDatabases = async (): Promise<void> => {
 
   try {
     logger.info("Starting database initialization...");
-    
+
     // Initialize PostgreSQL
     await initializePostgreSQL();
-    
+
     // Initialize Redis (optional)
     await initializeRedis();
-    
+
     logger.info("Database initialization completed successfully");
   } catch (error) {
     logger.error("Database initialization failed:", error);
@@ -152,21 +153,23 @@ export const getDatabaseStatus = (): {
   return {
     postgresql: { initialized: pgPool !== null },
     redis: { initialized: redisClient !== null },
-    inBrowser: typeof window !== "undefined"
+    inBrowser: typeof window !== "undefined",
   };
 };
 
 /**
  * Wait for database initialization
  */
-export const waitForDatabases = async (timeout: number = 30000): Promise<void> => {
+export const waitForDatabases = async (
+  timeout: number = 30000
+): Promise<void> => {
   if (typeof window !== "undefined") {
     return;
   }
 
   const startTime = Date.now();
-  while (!isDatabasesInitialized() && (Date.now() - startTime) < timeout) {
-    await new Promise(resolve => setTimeout(resolve, 100));
+  while (!isDatabasesInitialized() && Date.now() - startTime < timeout) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
   if (!isDatabasesInitialized()) {
@@ -179,4 +182,4 @@ if (typeof window === "undefined") {
   initializeDatabases().catch((error) => {
     logger.error("Auto-initialization failed:", error);
   });
-} 
+}
