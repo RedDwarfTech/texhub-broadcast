@@ -6,7 +6,7 @@
     "node": ">=20.0.0"
   },
   "main": "dist/index.js",
-  "browser":"dist/browser.js",
+  "browser": "dist/browser.js",
   "module": "dist/index.js",
   "types": "./dist/index.d.ts",
   "type": "module",
@@ -38,6 +38,7 @@
     "express": "^4.21.2",
     "flatted": "^3.3.3",
     "globals": "^15.15.0",
+    "ioredis": "^5.6.1",
     "jsonwebtoken": "^9.0.2",
     "lodash": "^4.17.21",
     "log4js": "^6.9.1",

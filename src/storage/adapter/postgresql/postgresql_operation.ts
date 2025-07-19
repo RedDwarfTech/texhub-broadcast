@@ -23,8 +23,11 @@ import { getPgPool, getRedisClient } from "./conf/database_init.js";
 import { PostgresqlPersistance } from "./postgresql_persistance.js";
 import { persistencePostgresql } from "@/storage/storage.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
+import { Redis } from "ioredis";
+const redis = new Redis({
+  path: process.env.REDIS_URL,
+});
 
-// 获取数据库客户端
 const getClient = () => getRedisClient();
 
 export const getDocAllUpdates = async (
@@ -178,7 +181,11 @@ export const flushDocument = async (
   return clock;
 };
 
-const getRedisDestriLock = async (lockKey: string, uniqueValue: string, times: number) => {
+const getRedisDestriLock = async (
+  lockKey: string,
+  uniqueValue: string,
+  times: number
+) => {
   // If Redis is not available (non-Node environment), pretend we got the lock
   if (!getClient()) {
     logger.info("Redis client not available, simulating lock acquisition");
@@ -190,20 +197,8 @@ const getRedisDestriLock = async (lockKey: string, uniqueValue: string, times: n
     return false;
   }
   const waitTime = Math.min(200 * Math.pow(1.5, times), 2000);
-  // the expire time is seconds
-  const expireTime = 5;
-  const luaScript = `
-    if redis.call('SET', KEYS[1], ARGV[1], 'NX', 'EX', ARGV[2]) then
-      return 1
-    else
-      return 0
-    end
-    `;
-  const result = await getClient()!.eval(luaScript, {
-    keys: [lockKey],
-    arguments: [uniqueValue, `${expireTime}`],
-  });
-  if (result === 1) {
+  const result = await redis.set(lockKey, uniqueValue, "PX", 30000, "NX");
+  if (result === "OK") {
     return true;
   } else {
     // 新增：获取当前锁的值
@@ -213,7 +208,11 @@ const getRedisDestriLock = async (lockKey: string, uniqueValue: string, times: n
     } catch (e) {
       logger.error(`Error getting current lock value for ${lockKey}:`, e);
     }
-    logger.warn(`[x] 无法获取锁 ${lockKey}，第${times + 1}次重试，currentValue=${currentValue}, expected=${uniqueValue}`);
+    logger.warn(
+      `[x] 无法获取锁 ${lockKey}，第${
+        times + 1
+      }次重试，currentValue=${currentValue}, expected=${uniqueValue}`
+    );
     await sleep(waitTime);
     return getRedisDestriLock(lockKey, uniqueValue, times + 1);
   }
@@ -242,7 +241,6 @@ async function unlock(lockKey: string, uniqueValue: string) {
   } catch (e) {
     logger.error(`Error getting current lock value for ${lockKey}:`, e);
   }
-
   const luaScript = `
     if redis.call("GET", KEYS[1]) == ARGV[1] then
       return redis.call("DEL", KEYS[1])
@@ -250,13 +248,12 @@ async function unlock(lockKey: string, uniqueValue: string) {
       return 0
     end
   `;
-  const result = await getClient()!.eval(luaScript, {
-    keys: [lockKey],
-    arguments: [uniqueValue],
-  });
+  const result = await redis.eval(luaScript,1, lockKey, uniqueValue);
   if (result === 1) {
   } else {
-    logger.error(`release lock failed: ${lockKey}, currentValue=${currentValue}, expected=${uniqueValue}`);
+    logger.error(
+      `release lock failed: ${lockKey}, currentValue=${currentValue}, expected=${uniqueValue}`
+    );
   }
 }
 
@@ -311,7 +308,10 @@ export const storeUpdate = async (
       let dbSubdocText = persistedYdoc.getText(syncFileAttr.docName);
       let dbSubdocTextStr = dbSubdocText.toString();
       if (dbSubdocTextStr === "") {
-        logger.warn("doc turn to null,doc id:", + JSON.stringify(syncFileAttr) + ",clock:" + clock);
+        logger.warn(
+          "doc turn to null,doc id:",
+          +JSON.stringify(syncFileAttr) + ",clock:" + clock
+        );
       }
       return clock + 1;
     }
