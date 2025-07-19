@@ -302,6 +302,10 @@ export const storeUpdate = async (
       Y.applyUpdate(processYdoc, update);
       const text = processYdoc.getText(syncFileAttr.docName).toString();
       logger.info("process by distribute lock:" + text);
+      logger.info('processYdoc update', 2, {
+        json: processYdoc.toJSON(),
+        missing: processYdoc.store.pendingStructs?.missing,
+      })
       const clock = await getCurrentUpdateClock(syncFileAttr.docName);
       if (clock === -1) {
         const ydoc = new Y.Doc();
