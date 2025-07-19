@@ -296,6 +296,10 @@ export const storeUpdate = async (
   const lockKey = `lock:${syncFileAttr.docName}:update`;
   try {
     if (await getRedisDestriLock(lockKey, uniqueValue, 0)) {
+      const processYdoc = new Y.Doc();
+      Y.applyUpdate(processYdoc, update);
+      const text = processYdoc.getText(syncFileAttr.docName).toString();
+      logger.info("process by distribute lock:" + text);
       const clock = await getCurrentUpdateClock(syncFileAttr.docName);
       if (clock === -1) {
         const ydoc = new Y.Doc();
