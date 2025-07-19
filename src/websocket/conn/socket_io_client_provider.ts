@@ -30,6 +30,7 @@ import { messageHandlers } from "./event/msg_type_handler.js";
 import { broadcastMessage, readMessage, sendMessage } from "./ws_action.js";
 import { SyncMessageContext } from "@/model/texhub/sync_msg_context.js";
 import { v4 as uuidv4 } from "uuid";
+import { enableDebug } from "@/common/log_util_web.js";
 
 // @todo - this should depend on awareness.outdatedTime
 const messageReconnectTimeout = 30000;
@@ -173,6 +174,9 @@ export class SocketIOClientProvider extends Observable<string> {
       if (origin !== this) {
         const encoder = encoding.createEncoder();
         encoding.writeVarUint(encoder, SyncMessageType.MessageSync);
+        if (enableDebug()) {
+          console.log("trigger updateHandler");
+        }
         syncProtocol.writeUpdate(encoder, update);
         broadcastMessage(this, encoding.toUint8Array(encoder));
       }
@@ -269,7 +273,7 @@ export class SocketIOClientProvider extends Observable<string> {
         let msg: SyncMessageContext = {
           doc_name: id,
           src: "subdocUpdateHandler",
-          trace_id: uniqueValue
+          trace_id: uniqueValue,
         };
         let msgStr = JSON.stringify(msg);
         encoding.writeVarString(encoder, msgStr);
@@ -319,7 +323,7 @@ export class SocketIOClientProvider extends Observable<string> {
     let msg: SyncMessageContext = {
       doc_name: subdoc.guid,
       src: "addSubdoc",
-      trace_id: uniqueValue
+      trace_id: uniqueValue,
     };
     let msgStr = JSON.stringify(msg);
     encoding.writeVarString(encoder, msgStr);
