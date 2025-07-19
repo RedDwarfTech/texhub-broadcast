@@ -25,7 +25,10 @@ import { persistencePostgresql } from "@/storage/storage.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { Redis } from "ioredis";
 const redis = new Redis({
-  path: process.env.REDIS_URL,
+  host: 'reddwarf-redis-master.reddwarf-cache.svc.cluster.local',
+  port: 6379,
+  password: process.env.PG_PASSWORD || "postgres",
+  db: 1,
 });
 
 const getClient = () => getRedisClient();
