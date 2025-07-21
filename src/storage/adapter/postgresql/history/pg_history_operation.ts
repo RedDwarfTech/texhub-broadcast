@@ -22,9 +22,10 @@ import { v4 as uuidv4 } from "uuid";
 import { getPgPool, getRedisClient } from "../conf/database_init.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { UpdateOrigin } from "@/model/yjs/net/update_origin.js";
+import type Redis from "ioredis";
 
 // 获取数据库客户端
-const getClient = () => getRedisClient();
+const redis: Redis | null = getRedisClient();
 
 export const getHistoryDocAllUpdates = async (
   db: pg.Pool,
@@ -185,7 +186,7 @@ export const flushDocument = async (
 
 const getLock = async (lockKey: string, uniqueValue: string, times: number) => {
   // If Redis is not available (non-Node environment), pretend we got the lock
-  if (!getClient()) {
+  if (!redis) {
     logger.info("Redis client not available, simulating lock acquisition");
     return true;
   }
@@ -204,10 +205,7 @@ const getLock = async (lockKey: string, uniqueValue: string, times: number) => {
       return 0
     end
     `;
-  const result = await getClient()!.eval(luaScript, {
-    keys: [lockKey],
-    arguments: [uniqueValue, `${expireTime}`],
-  });
+  const result = await redis.eval(luaScript, 1, lockKey, uniqueValue);
   if (result === 1) {
     return true;
   } else {
@@ -229,7 +227,7 @@ function sleep(delay: number) {
  */
 async function unlock(lockKey: string, uniqueValue: string) {
   // If Redis is not available (non-Node environment), do nothing
-  if (!getClient()) {
+  if (!redis) {
     logger.info("Redis client not available, simulating lock release");
     return;
   }
@@ -241,10 +239,7 @@ async function unlock(lockKey: string, uniqueValue: string) {
       return 0
     end
   `;
-  const result = await getClient()!.eval(luaScript, {
-    keys: [lockKey],
-    arguments: [uniqueValue],
-  });
+  const result = await redis.eval(luaScript, 1, lockKey, uniqueValue);
   if (result === 1) {
   }
 }

@@ -1,6 +1,6 @@
 import type * as pg from "pg";
 import logger from "@common/log4js_config.js";
-let Redis: any = null;
+import type Redis from "ioredis";
 
 // Global database clients
 let pgPool: pg.Pool | null = null;
@@ -49,8 +49,9 @@ const initializePostgreSQL = async (): Promise<void> => {
  */
 const initializeRedis = async (): Promise<void> => {
   try {
+    let Redis: any = null;
     Redis = (await import("ioredis")).default;
-    redisClient = new Redis({
+    redisClient: Redis = new Redis({
       host: "reddwarf-redis-master.reddwarf-cache.svc.cluster.local",
       port: 6379,
       username: "default",
@@ -102,7 +103,7 @@ export const getPgPool = (): pg.Pool | null => {
 /**
  * Get Redis client
  */
-export const getRedisClient = (): any => {
+export const getRedisClient = (): Redis|null => {
   if (typeof window !== "undefined") {
     return null;
   }
@@ -128,7 +129,6 @@ export const closeDatabases = async (): Promise<void> => {
     // Close Redis client
     if (redisClient) {
       await redisClient.quit();
-      redisClient = null;
       logger.info("Redis client closed successfully");
     }
   } catch (error) {
