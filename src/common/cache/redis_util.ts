@@ -1,4 +1,4 @@
-import { getRedisClient } from "@/storage/adapter/postgresql/conf/database_init";
+import { getRedisClient } from "@/storage/adapter/postgresql/conf/database_init.js";
 import type Redis from "ioredis";
 import logger from "@common/log4js_config.js";
 
