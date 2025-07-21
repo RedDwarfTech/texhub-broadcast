@@ -228,7 +228,7 @@ function sleep(delay: number) {
 async function unlock(lockKey: string, uniqueValue: string) {
   // If Redis is not available (non-Node environment), do nothing
   if (!redis) {
-    logger.info("Redis client not available, simulating lock release");
+    logger.info("Redis client not available, simulating lock release",redis);
     return;
   }
 
