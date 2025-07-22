@@ -26,6 +26,7 @@ import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { UpdateOrigin } from "@/model/yjs/net/update_origin.js";
 import type Redis from "ioredis";
 import { getRedisDestriLock, unlock } from "@/common/cache/redis_util.js";
+import { ENABLE_DEBUG } from "@/common/log_util.js";
 
 const redis: Redis | null = getRedisClient();
 
@@ -166,7 +167,7 @@ export const mergeUpdates = (updates: any) => {
         name: "mergeUpdates",
         origin: "server",
       };
-      Y.applyUpdate(ydoc, updates[i],uo);
+      Y.applyUpdate(ydoc, updates[i], uo);
     }
   });
   return { update: Y.encodeStateAsUpdate(ydoc), sv: Y.encodeStateVector(ydoc) };
@@ -199,7 +200,7 @@ export const storeUpdateTrans = async (
       name: "storeUpdateTrans",
       origin: "server",
     };
-    Y.applyUpdate(ydoc, update,uo);
+    Y.applyUpdate(ydoc, update, uo);
     const sv = Y.encodeStateVector(ydoc);
     await writeStateVectorTrans(db, docName, sv, 0);
   }
@@ -223,18 +224,20 @@ export const storeUpdate = async (
       const processYdoc = new Y.Doc({
         guid: syncFileAttr.docName,
       });
-      let uo: UpdateOrigin = {
-        name: "storeUpdate-processYdoc",
-        origin: "server",
-      };
-      Y.applyUpdate(processYdoc, update,uo);
-      const text = processYdoc.getText(syncFileAttr.docName).toString();
-      logger.info("process by distribute lock:" + text);
-      logger.info('processYdoc update', 2, {
-        json: processYdoc.toJSON(),
-        missing: processYdoc.store.pendingStructs?.missing,
-      });
-      logger.info('所有text名称:', Array.from(processYdoc.share.keys()));
+      if (ENABLE_DEBUG) {
+        let uo: UpdateOrigin = {
+          name: "storeUpdate-processYdoc",
+          origin: "server",
+        };
+        Y.applyUpdate(processYdoc, update, uo);
+        const text = processYdoc.getText(syncFileAttr.docName).toString();
+        logger.info("process by distribute lock:" + text);
+        logger.info("processYdoc update", 2, {
+          json: processYdoc.toJSON(),
+          missing: processYdoc.store.pendingStructs?.missing,
+        });
+        logger.info("所有text名称:", Array.from(processYdoc.share.keys()));
+      }
       const clock = await getCurrentUpdateClock(syncFileAttr.docName);
       if (clock === -1) {
         const ydoc = new Y.Doc();
@@ -242,7 +245,7 @@ export const storeUpdate = async (
           name: "storeUpdate-ydoc",
           origin: "server",
         };
-        Y.applyUpdate(ydoc, update,uo1);
+        Y.applyUpdate(ydoc, update, uo1);
         const sv = Y.encodeStateVector(ydoc);
         await writeStateVector(syncFileAttr.docName, sv, 0);
       }
