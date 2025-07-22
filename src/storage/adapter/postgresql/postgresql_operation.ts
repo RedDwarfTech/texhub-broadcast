@@ -24,11 +24,8 @@ import { PostgresqlPersistance } from "./postgresql_persistance.js";
 import { persistencePostgresql } from "@/storage/storage.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { UpdateOrigin } from "@/model/yjs/net/update_origin.js";
-import type Redis from "ioredis";
 import { getRedisDestriLock, unlock } from "@/common/cache/redis_util.js";
 import { ENABLE_DEBUG } from "@/common/log_util.js";
-
-const redis: Redis | null = getRedisClient();
 
 export const getDocAllUpdates = async (
   docName: string,

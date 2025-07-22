@@ -47,11 +47,11 @@ const initializePostgreSQL = async (): Promise<void> => {
 /**
  * Initialize Redis client
  */
-const initializeRedis = async (): Promise<void> => {
+const initializeRedis = async (): Promise<Redis | undefined> => {
   try {
     let Redis: any = null;
     Redis = (await import("ioredis")).default;
-    redisClient: Redis = new Redis({
+    let redisClient: Redis = new Redis({
       host: "reddwarf-redis-master.reddwarf-cache.svc.cluster.local",
       port: 6379,
       username: "default",
@@ -59,6 +59,7 @@ const initializeRedis = async (): Promise<void> => {
       db: 1,
     });
     logger.info("Redis client initialized successfully");
+    return redisClient;
   } catch (error) {
     logger.error("Failed to initialize Redis client:", error);
     // Redis is optional, so we don't throw error
@@ -103,11 +104,11 @@ export const getPgPool = (): pg.Pool | null => {
 /**
  * Get Redis client
  */
-export const getRedisClient = (): Redis|null => {
+export const getRedisClient = async (): Promise<Redis | undefined> => {
   if (typeof window !== "undefined") {
-    return null;
+    return;
   }
-  return redisClient;
+  return await initializeRedis();
 };
 
 /**

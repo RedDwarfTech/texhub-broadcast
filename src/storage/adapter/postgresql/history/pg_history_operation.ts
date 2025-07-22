@@ -25,7 +25,7 @@ import { UpdateOrigin } from "@/model/yjs/net/update_origin.js";
 import type Redis from "ioredis";
 
 // 获取数据库客户端
-const redis: Redis | null = getRedisClient();
+const redis: Redis | undefined = await getRedisClient();
 
 export const getHistoryDocAllUpdates = async (
   db: pg.Pool,

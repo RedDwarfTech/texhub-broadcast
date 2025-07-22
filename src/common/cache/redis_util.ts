@@ -2,7 +2,7 @@ import { getRedisClient } from "@/storage/adapter/postgresql/conf/database_init.
 import type Redis from "ioredis";
 import logger from "@common/log4js_config.js";
 
-const redis: Redis | null = getRedisClient();
+const redis: Redis | undefined = await getRedisClient();
 
 export const getRedisDestriLock = async (
   lockKey: string,
