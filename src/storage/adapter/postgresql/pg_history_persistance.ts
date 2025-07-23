@@ -22,7 +22,7 @@ export class PgHisotoryPersistance {
       return;
     }
     try {
-      if(syncFileAttr.docIntId === ""){
+      if (syncFileAttr.docIntId === "") {
         return;
       }
       const latestSnapshot = await getFileLatestSnapshot(syncFileAttr.docName);
@@ -43,6 +43,9 @@ export class PgHisotoryPersistance {
       try {
         await client.query("BEGIN");
         const key = `snapshot_${syncFileAttr.docName}_${Date.now()}`;
+        if (parseInt(syncFileAttr.docIntId!) > 10000000) {
+          logger.warn(`docIntId 大于 10000000，docIntId=${syncFileAttr.docIntId}`);
+        }
         await client.query(
           `INSERT INTO tex_sync_history 
             (key, value, version, content_type, doc_name, clock, source, project_id, created_time, diff, content, doc_int_id) 
