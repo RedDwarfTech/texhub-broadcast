@@ -1,4 +1,4 @@
-# TexHub Broadcast
+# TeXHub Broadcast
 
 ## Introduce
 
