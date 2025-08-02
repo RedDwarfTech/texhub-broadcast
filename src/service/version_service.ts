@@ -44,27 +44,13 @@ export const getProjectScrollVersion = async (
       project_id: projectId,
     };
     if (cursor) {
-      const decodedCursor = Buffer.from(cursor, "base64").toString();
-      const [timestamp, id] = decodedCursor.split("_");
-      whereClause[Op.or] = [
-        {
-          created_time: {
-            [Op.lt]: new Date(parseInt(timestamp)),
-          },
-        },
-        {
-          created_time: new Date(parseInt(timestamp)),
-          id: {
-            [Op.lt]: parseInt(id),
-          },
-        },
-      ];
+      const lastId = parseInt(cursor);
+      whereClause.id = { [Op.lt]: lastId };
     }
     const versions = await ProjectScrollVersion.findAll({
       where: whereClause,
       order: [
-        ["created_time", "DESC"],
-        ["id", "DESC"],
+        ["id", "DESC"]
       ],
       limit: limit + 1,
     });
@@ -74,8 +60,7 @@ export const getProjectScrollVersion = async (
     let nextCursor: string | null = null;
     if (hasMore) {
       const lastItem = items[items.length - 1];
-      const cursorString = `${lastItem.created_time.getTime()}_${lastItem.id}`;
-      nextCursor = Buffer.from(cursorString).toString("base64");
+      nextCursor = String(lastItem.id);
     }
 
     return {
