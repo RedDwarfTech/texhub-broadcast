@@ -24,12 +24,11 @@ export const throttledFn = lodash.throttle(
   2000
 );
 
-// generate document every 15 seconds
 export const throttledHistoryFn = lodash.throttle(
   async (syncFileAttr: SyncFileAttr, ydoc: Y.Doc) => {
     await pgHistoryDb.storeSnapshot(syncFileAttr, ydoc);
   },
-  25000,
+  60000,
   { leading: false, trailing: true }
 );
 
