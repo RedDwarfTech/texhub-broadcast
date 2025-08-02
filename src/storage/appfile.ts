@@ -10,7 +10,6 @@ import { getFileJsonData } from "../texhub/client/texhub_interop.js";
 import { FileContent } from "../model/texhub/file_content.js";
 import { AppResponse } from "../texhub/biz/AppResponse.js";
 import { PostgresqlPersistance } from "./adapter/postgresql/postgresql_persistance.js";
-import { pgHistoryDb } from "./feat/version/doc_history.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { TeXFileType } from "@/model/enum/tex_file_type.js";
 
@@ -22,14 +21,6 @@ export const throttledFn = lodash.throttle(
     handleFileSync(syncFileAttr, ldb);
   },
   2000
-);
-
-export const throttledHistoryFn = lodash.throttle(
-  async (syncFileAttr: SyncFileAttr, ydoc: Y.Doc) => {
-    await pgHistoryDb.storeSnapshot(syncFileAttr, ydoc);
-  },
-  60000,
-  { leading: false, trailing: true }
 );
 
 const handleFileSync = async (

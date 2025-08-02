@@ -6,16 +6,16 @@ import * as Y from "rdyjs";
 
 const throttlePool = new Map<string, ReturnType<typeof _.throttle>>();
 
-export const getThrottledFn = (docId: string) => {
-  if (!throttlePool.has(docId)) {
-    throttlePool.set(docId, _.throttle(
+export const getThrottledFn = (docIntId: string) => {
+  if (!throttlePool.has(docIntId)) {
+    throttlePool.set(docIntId, _.throttle(
       async (syncFileAttr: SyncFileAttr, ydoc: Y.Doc) => {
         await pgHistoryDb.storeSnapshot(syncFileAttr, ydoc);
-        throttlePool.delete(docId); 
+        throttlePool.delete(docIntId); 
       },
       60000,
       { leading: false, trailing: true }
     ));
   }
-  return throttlePool.get(docId)!;
+  return throttlePool.get(docIntId)!;
 };
