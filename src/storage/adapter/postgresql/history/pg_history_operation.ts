@@ -23,28 +23,9 @@ import { getPgPool, getRedisClient } from "../conf/database_init.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { UpdateOrigin } from "@/model/yjs/net/update_origin.js";
 import type Redis from "ioredis";
+import { getRedisDestriLock, unlock } from "@/common/cache/redis_util.js";
 
-// 获取数据库客户端
 const redis: Redis | undefined = await getRedisClient();
-
-export const getHistoryDocAllUpdates = async (
-  db: pg.Pool,
-  docName: string,
-  opts = { values: true, keys: false, reverse: false }
-) => {
-  if (typeof window !== "undefined") {
-    return [];
-  }
-
-  return await getPgBulkData(
-    {
-      gte: createDocumentUpdateKey(docName, 0),
-      lt: createDocumentUpdateKey(docName, binary.BITS32),
-      ...opts,
-    },
-    docName
-  );
-};
 
 export const getPgUpdatesTrans = async (
   db: pg.PoolClient,
@@ -184,94 +165,6 @@ export const flushDocument = async (
   return clock;
 };
 
-const getLock = async (lockKey: string, uniqueValue: string, times: number) => {
-  // If Redis is not available (non-Node environment), pretend we got the lock
-  if (!redis) {
-    logger.info("Redis client not available, simulating lock acquisition");
-    return true;
-  }
-
-  if (times > 15) {
-    logger.error("could not get lock wih 15 times retry");
-    return false;
-  }
-  const waitTime = Math.min(200 * Math.pow(1.5, times), 2000);
-  // the expire time is seconds
-  const expireTime = 5;
-  const luaScript = `
-    if redis.call('SET', KEYS[1], ARGV[1], 'NX', 'EX', ARGV[2]) then
-      return 1
-    else
-      return 0
-    end
-    `;
-  const result = await redis.eval(luaScript, 1, lockKey, uniqueValue);
-  if (result === 1) {
-    return true;
-  } else {
-    logger.warn(`[x] 无法获取锁history ${lockKey}，第${times + 1}次重试`);
-    await sleep(waitTime);
-    return getLock(lockKey, uniqueValue, times + 1);
-  }
-};
-
-function sleep(delay: number) {
-  return new Promise((resolve) => setTimeout(resolve, delay));
-}
-
-/**
- * 释放锁
- * @param resourceKey 资源键名
- * @param uniqueValue 唯一值，用于验证锁的所有者(建议:UUID)
- * @returns 是否成功释放锁
- */
-async function unlock(lockKey: string, uniqueValue: string) {
-  // If Redis is not available (non-Node environment), do nothing
-  if (!redis) {
-    logger.info("Redis client not available, simulating lock release",redis);
-    return;
-  }
-
-  const luaScript = `
-    if redis.call("GET", KEYS[1]) == ARGV[1] then
-      return redis.call("DEL", KEYS[1])
-    else
-      return 0
-    end
-  `;
-  const result = await redis.eval(luaScript, 1, lockKey, uniqueValue);
-  if (result === 1) {
-  }
-}
-
-export const storeUpdateTrans = async (
-  db: pg.PoolClient,
-  docName: string,
-  update: Uint8Array
-) => {
-  console.time("getlock");
-  const clock = await getCurrentUpdateClockTrans(db, docName);
-  console.timeEnd("getlock");
-  if (clock === -1) {
-    // make sure that a state vector is aways written, so we can search for available documents
-    const ydoc = new Y.Doc();
-    let uo: UpdateOrigin = {
-      name: "storeUpdateTrans-history",
-      origin: "server",
-    };
-    Y.applyUpdate(ydoc, update,uo);
-    const sv = Y.encodeStateVector(ydoc);
-    await writeStateVectorTrans(db, docName, sv, 0);
-  }
-  await pgPutTrans(
-    db,
-    update,
-    "ws",
-    createDocumentUpdateKeyArray(docName, clock + 1)
-  );
-  return clock + 1;
-};
-
 export const storeHistoryUpdate = async (
   syncFileAttr: SyncFileAttr,
   update: Uint8Array
@@ -281,7 +174,7 @@ export const storeHistoryUpdate = async (
   const lockKey = `hist-lock:${docName}:update`;
   try {
     // Attempt to get lock (will always succeed if Redis is not available)
-    if (await getLock(lockKey, uniqueValue, 0)) {
+    if (await getRedisDestriLock(lockKey, uniqueValue, 0)) {
       const clock = await getCurrentUpdateClock(docName);
       if (clock === -1) {
         // make sure that a state vector is aways written, so we can search for available documents
@@ -305,7 +198,6 @@ export const storeHistoryUpdate = async (
   } catch (error: any) {
     logger.error(`Error in storeUpdate: ${error.message || error}`);
   } finally {
-    // release lock (will do nothing if Redis is not available)
     await unlock(lockKey, uniqueValue);
   }
   return 0;
@@ -325,24 +217,6 @@ export const insertKey = async (
   originalKey: any[]
 ) => {
   await pgPutKey(db, keyMap, originalKey);
-};
-
-const writeStateVectorTrans = async (
-  db: pg.PoolClient,
-  docName: string,
-  sv: any,
-  clock: number
-) => {
-  const encoder = encoding.createEncoder();
-  encoding.writeVarUint(encoder, clock);
-  encoding.writeVarUint8Array(encoder, sv);
-  await pgPutUpsertTrans(
-    db,
-    createDocumentStateVectorKeyMap(docName, clock),
-    encoding.toUint8Array(encoder),
-    "ws",
-    createDocumentStateVectorKey(docName)
-  );
 };
 
 const writeStateVector = async (
