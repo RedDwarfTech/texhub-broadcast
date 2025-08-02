@@ -259,8 +259,10 @@ export const storeUpdate = async (
       let dbSubdocTextStr = dbSubdocText.toString();
       if (dbSubdocTextStr === "") {
         logger.warn(
-          "doc turn to null,doc id:",
-          +JSON.stringify(syncFileAttr) + ",clock:" + clock
+          "doc turn to null,doc id:" +
+            JSON.stringify(syncFileAttr) +
+            ",clock:" +
+            clock
         );
       }
       return clock + 1;
