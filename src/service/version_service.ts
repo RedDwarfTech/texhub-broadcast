@@ -50,7 +50,7 @@ export const getProjectScrollVersion = async (
     }
     const versions = await ProjectScrollVersion.findAll({
       where: whereClause,
-      order: [["id", "DESC"]],
+      order: [["created_time", "DESC"]],
       limit: limit + 1,
     });
     const plainVersions = versions.map((v: any) => v.get({ plain: true }));
