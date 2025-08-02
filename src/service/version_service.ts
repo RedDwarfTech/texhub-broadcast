@@ -11,6 +11,7 @@ import logger from "@/common/log4js_config.js";
 // @ts-ignore
 import * as Y from "rdyjs";
 import { UpdateOrigin } from "@/model/yjs/net/update_origin";
+import { MAX_I64 } from "@/common/app/global_constant.js";
 
 export const getProjectVersionDetail = async (
   id: string
@@ -44,14 +45,12 @@ export const getProjectScrollVersion = async (
       project_id: projectId,
     };
     if (cursor) {
-      const lastId = parseInt(cursor);
+      let lastId = BigInt(cursor) > MAX_I64 ? MAX_I64 : BigInt(cursor);
       whereClause.id = { [Op.lt]: lastId };
     }
     const versions = await ProjectScrollVersion.findAll({
       where: whereClause,
-      order: [
-        ["id", "DESC"]
-      ],
+      order: [["id", "DESC"]],
       limit: limit + 1,
     });
     const plainVersions = versions.map((v: any) => v.get({ plain: true }));
@@ -229,7 +228,7 @@ export const calcProjectVersion = async (projectId: string) => {
             name: "calcProjectVersion",
             origin: "server",
           };
-          Y.applyUpdate(newDoc, version.value,uo);
+          Y.applyUpdate(newDoc, version.value, uo);
           results.push({
             versionId: version.id,
             content: Y.encodeStateAsUpdate(newDoc),
