@@ -1,5 +1,5 @@
 // @ts-ignore
-import { getThrottledFn } from "@/common/app/throttle_util.js";
+import { getHistoryDocsThrottledFn } from "@/common/app/throttle_util.js";
 import logger from "@/common/log4js_config.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr";
 import { PgHisotoryPersistance } from "@/storage/adapter/postgresql/pg_history_persistance.js";
@@ -13,7 +13,7 @@ export async function handleHistoryDoc(
 ) {
   try {
     const docIntId = syncFileAttr.docIntId!;
-    const throttledSave =  getThrottledFn(docIntId)(syncFileAttr, ydoc);
+    const throttledSave =  getHistoryDocsThrottledFn(docIntId)(syncFileAttr, ydoc);
     if (typeof throttledSave === 'function') {
       await throttledSave(syncFileAttr, ydoc);
     }

@@ -4,18 +4,18 @@ import _ from "lodash";
 //@ts-ignore
 import * as Y from "rdyjs";
 
-const throttlePool = new Map<string, ReturnType<typeof _.throttle>>();
+const historyDocsThrottlePool = new Map<string, ReturnType<typeof _.throttle>>();
 
-export const getThrottledFn = (docIntId: string) => {
-  if (!throttlePool.has(docIntId)) {
-    throttlePool.set(docIntId, _.throttle(
+export const getHistoryDocsThrottledFn = (docIntId: string) => {
+  if (!historyDocsThrottlePool.has(docIntId)) {
+    historyDocsThrottlePool.set(docIntId, _.throttle(
       async (syncFileAttr: SyncFileAttr, ydoc: Y.Doc) => {
         await pgHistoryDb.storeSnapshot(syncFileAttr, ydoc);
-        throttlePool.delete(docIntId); 
+        historyDocsThrottlePool.delete(docIntId); 
       },
       60000,
       { leading: false, trailing: true }
     ));
   }
-  return throttlePool.get(docIntId)!;
+  return historyDocsThrottlePool.get(docIntId)!;
 };
