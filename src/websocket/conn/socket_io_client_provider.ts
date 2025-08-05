@@ -64,8 +64,6 @@ export class SocketIOClientProvider extends Observable<string> {
   shouldConnect: boolean;
   _resyncInterval: any;
   bcSubscriber: (data: any, origin: any) => void;
-  updateHandler: (update: any, origin: any) => void;
-  sendExtMsg: (msg: any) => void;
   _awarenessUpdateHandler: (
     { added, updated, removed }: { added: any; updated: any; removed: any },
     _origin: any
@@ -74,6 +72,7 @@ export class SocketIOClientProvider extends Observable<string> {
   _checkInterval: NodeJS.Timeout;
   subdocUpdateHandlersMap: Map<string, YDocUpdateHandler>;
   subdocUpdateHandler: UpdateHandlerFactory;
+  updateHandler: (update: any, origin: any) => void;
   /**
    * manage all sub docs with main doc self
    * @type {Map}
@@ -196,25 +195,6 @@ export class SocketIOClientProvider extends Observable<string> {
     this.doc.on("update", this.updateHandler);
 
     /**
-     * send control message to the server side
-     */
-    this.sendExtMsg = (msg: WsCommand) => {
-      const encoded = new TextEncoder().encode(JSON.stringify(msg));
-      const encoder = encoding.createEncoder();
-      encoding.writeVarUint(encoder, SyncMessageType.MessageControl);
-      syncProtocol.writeUpdate(encoder, encoded);
-      sendMessage(this, encoding.toUint8Array(encoder));
-      let docOpt = {
-        guid: msg.fileId,
-        collectionid: msg.projectId,
-        gc: false,
-      };
-      let ydoc = new Y.Doc(docOpt);
-      console.debug("set the currentdoc to" + msg.fileId);
-      this.doc = ydoc;
-    };
-
-    /**
      * @param {any} changed
      * @param {any} _origin
      */
@@ -321,11 +301,12 @@ export class SocketIOClientProvider extends Observable<string> {
       console.error("Subdoc guid is missing!");
       return;
     }
-    let updateHandler = this.subdocUpdateHandler(subdoc.guid);
+    let subDocUpdateHandler = this.subdocUpdateHandler(subdoc.guid);
     // @ts-ignore
-    subdoc.on("update", updateHandler);
-    this.docs.set(subdoc.guid, subdoc);
-    this.subdocUpdateHandlersMap.set(subdoc.guid, updateHandler);
+    subdoc.on("update", subDocUpdateHandler);
+    //this.docs.set(subdoc.guid, subdoc);
+    this.doc.getMap("texhubsubdoc").set(subdoc.guid, subdoc);
+    this.subdocUpdateHandlersMap.set(subdoc.guid, subDocUpdateHandler);
 
     // invoke sync step1
     const encoder = encoding.createEncoder();
