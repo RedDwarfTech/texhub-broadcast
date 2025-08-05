@@ -304,8 +304,7 @@ export class SocketIOClientProvider extends Observable<string> {
     let subDocUpdateHandler = this.subdocUpdateHandler(subdoc.guid);
     // @ts-ignore
     subdoc.on("update", subDocUpdateHandler);
-    //this.docs.set(subdoc.guid, subdoc);
-    this.doc.getMap("texhubsubdoc").set(subdoc.guid, subdoc);
+    
     this.subdocUpdateHandlersMap.set(subdoc.guid, subDocUpdateHandler);
 
     // invoke sync step1
