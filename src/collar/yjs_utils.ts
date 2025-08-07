@@ -37,7 +37,6 @@ export const getYDoc = (
   syncFileAttr: SyncFileAttr,
   gc: boolean = true
 ): WSSharedDoc => {
-  // 确保docName是字符串类型
   const docName = String(syncFileAttr.docName);
   let cachedDocs = docs.get(docName);
   if (cachedDocs) {

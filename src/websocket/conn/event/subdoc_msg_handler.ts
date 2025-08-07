@@ -59,9 +59,7 @@ const preHandleSubDoc = async (
     const encoder = encoding.createEncoder();
     const context = decoding.readVarString(decoder);
     const isJson = hasJsonStructure(context);
-    const docContext = isJson
-      ? JSON.parse(context)
-      : context;
+    const docContext = isJson ? JSON.parse(context) : context;
     const subdocGuid = isJson ? docContext.doc_name : docContext;
     let docIntId = "";
     let fileInfo: FileContent = {
@@ -171,6 +169,7 @@ const handleSubDoc = (
     // sync step 1 done before.
   } else {
     if (curSubdocMap) {
+      rootDoc.getMap("texhubsubdocs").set(subdocGuid, curSubDoc);
       curSubdocMap.set(subdocGuid, curSubDoc);
     } else {
       const newMap = new Map<String, WSSharedDoc>();

@@ -35,6 +35,18 @@ if (typeof persistenceDir === "string") {
           }
           handleHistoryDoc(syncFileAttr, ydoc);
         });
+
+        // @ts-ignore
+        ydoc.on("subdocs", (event: { added: Set<Y.Doc>, removed: Set<Y.Doc> }) => {
+          event.added.forEach(subdoc => {
+            // @ts-ignore
+            subdoc.on("update", async (update: Uint8Array) => {
+              logger.info("trigger subdoc update", subdoc);
+              //await postgresqlDb.storeUpdate(syncFileAttr, update);
+              //handleHistoryDoc(syncFileAttr, ydoc);
+            });
+          });
+        });
       } catch (err: any) {
         logger.error("process update failed", err);
       }

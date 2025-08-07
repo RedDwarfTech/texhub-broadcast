@@ -28,7 +28,7 @@ export class PostgresqlPersistance {
 
   constructor() {
     this.queueMap = new LRUCache({
-      max: 100, // 最大缓存数量
+      max: 100, 
     });
 
     // 仅在Node环境下初始化数据库连接池
