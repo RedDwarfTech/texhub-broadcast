@@ -306,6 +306,7 @@ export class SocketIOClientProvider extends Observable<string> {
     subdoc.on("update", subDocUpdateHandler);
     
     this.subdocUpdateHandlersMap.set(subdoc.guid, subDocUpdateHandler);
+    this.docs.set(subdoc.guid, subdoc);
 
     // invoke sync step1
     const encoder = encoding.createEncoder();
