@@ -23,6 +23,7 @@ export class PgHisotoryPersistance {
     }
     try {
       if (syncFileAttr.docIntId === "") {
+        logger.error("docIntId is empty, cannot store snapshot");
         return;
       }
       const latestSnapshot = await getFileLatestSnapshot(syncFileAttr.docName);
