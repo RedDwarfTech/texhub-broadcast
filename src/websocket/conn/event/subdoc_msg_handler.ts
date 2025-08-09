@@ -113,14 +113,7 @@ const preHandleSubDoc = async (
         const persistedYdoc: any = await postgresqlDb.getYDoc(syncFileAttr);
         let dbSubdocText = persistedYdoc.getText(subdocGuid);
         let dbSubdocTextStr = dbSubdocText.toString();
-        console.log(
-          "dbSubdocTextStr from database:" +
-            dbSubdocTextStr +
-            ",doc:" +
-            subdocGuid +
-            ",finfo:" +
-            JSON.stringify(fileInfo!)
-        );
+
         curSubDoc = persistedYdoc;
       }
       handleSubDoc(curSubDoc, subdocGuid, conn, rootDoc);
