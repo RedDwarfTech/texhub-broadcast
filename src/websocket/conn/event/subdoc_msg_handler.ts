@@ -98,14 +98,6 @@ const preHandleSubDoc = async (
       );
       let subdocText = memoryOrDiskSubdoc.getText(subdocGuid);
       let subdocTextStr = subdocText.toString();
-      logger.info(
-        "docTxtStr:" +
-          subdocTextStr +
-          ",subdocGuid:" +
-          subdocGuid +
-          ",finfo:" +
-          JSON.stringify(fileInfo!)
-      );
       if (subdocTextStr) {
         curSubDoc = memoryOrDiskSubdoc;
       } else {
@@ -156,11 +148,6 @@ const handleSubDoc = (
   conn: Socket,
   rootDoc: WSSharedDoc
 ) => {
-  let subdocText = curSubDoc.getText(subdocGuid);
-  let subdocTextStr = subdocText.toString();
-  logger.info(
-    "handleSubDoc docTxtStr:" + subdocTextStr + ",subdocGuid:" + subdocGuid
-  );
   if (!rootDoc.conns.has(conn)) rootDoc.conns.set(conn, new Set());
   const curSubdocMap: Map<String, WSSharedDoc> | undefined = subdocsMap.get(
     rootDoc.name
