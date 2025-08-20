@@ -37,6 +37,7 @@ export const getProjectVersionDetail = async (
  */
 export const getProjectScrollVersion = async (
   projectId: string,
+  fileId: string,
   cursor?: string,
   limit: number = 20
 ): Promise<ScrollQueryResult<ProjectScrollVersionAttributes>> => {
@@ -47,6 +48,9 @@ export const getProjectScrollVersion = async (
     if (cursor) {
       let lastId = BigInt(cursor) > MAX_I64 ? MAX_I64 : BigInt(cursor);
       whereClause.id = { [Op.lt]: lastId };
+    }
+    if(fileId){
+      whereClause.doc_int_id = fileId;
     }
     const versions = await ProjectScrollVersion.findAll({
       where: whereClause,

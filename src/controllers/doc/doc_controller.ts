@@ -25,6 +25,7 @@ routerDoc.get("/", async (req: Request, res: Response) => {
 
 routerDoc.get("/version/proj/scroll", async (req: Request, res: Response) => {
   const projId = req.query.projId;
+  const fileId = req.query.fileId?.toString() || "";
   const offset = req.query.offset
     ? req.query.offset?.toString()!
     : MAX_I64.toString();
@@ -33,6 +34,7 @@ routerDoc.get("/version/proj/scroll", async (req: Request, res: Response) => {
     : 10;
   let versions = await getProjectScrollVersion(
     projId!.toString(),
+    fileId,
     offset,
     pageSize
   );

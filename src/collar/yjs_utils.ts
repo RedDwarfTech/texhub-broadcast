@@ -40,7 +40,6 @@ export const getYDoc = (
   const docName = String(syncFileAttr.docName);
   let cachedDocs = docs.get(docName);
   if (cachedDocs) {
-    logger.debug(`Found cached doc for: ${docName}`);
     return cachedDocs;
   }
   const doc: WSSharedDoc = new WSSharedDoc(docName);
