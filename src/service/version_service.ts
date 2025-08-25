@@ -49,7 +49,7 @@ export const getProjectScrollVersion = async (
       let lastId = BigInt(cursor) > MAX_I64 ? MAX_I64 : BigInt(cursor);
       whereClause.id = { [Op.lt]: lastId };
     }
-    if(fileId){
+    if (fileId) {
       whereClause.doc_int_id = fileId;
     }
     const versions = await ProjectScrollVersion.findAll({
@@ -176,7 +176,12 @@ export const calcFileVersion = async (fileId: string) => {
 export const calcProjectVersion = async (projectId: string) => {
   try {
     // 获取所有版本记录
-    const versions = await getProjectScrollVersion(projectId, undefined, 1000);
+    const versions = await getProjectScrollVersion(
+      projectId,
+      "",
+      undefined,
+      1000
+    );
     if (!versions.items || versions.items.length === 0) {
       return [];
     }
