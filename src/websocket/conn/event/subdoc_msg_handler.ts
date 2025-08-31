@@ -3,6 +3,8 @@ import { WSSharedDoc } from "@collar/ws_share_doc.js";
 // @ts-ignore
 import * as encoding from "rdlib0/dist/encoding.mjs";
 // @ts-ignore
+import * as Y from "rdyjs";
+// @ts-ignore
 import * as decoding from "rdlib0/dist/decoding.mjs";
 import logger from "@common/log4js_config.js";
 import { getYDoc } from "@collar/yjs_utils.js";
@@ -107,7 +109,8 @@ const preHandleSubDoc = async (
             JSON.stringify(fileInfo!)
         );
         // try to get document from database directly
-        const postgresqlDb: PostgresqlPersistance = persistencePostgresql.provider;
+        const postgresqlDb: PostgresqlPersistance =
+          persistencePostgresql.provider;
         const persistedYdoc: any = await postgresqlDb.getYDoc(syncFileAttr);
         curSubDoc = persistedYdoc;
       }
@@ -177,6 +180,15 @@ const handleSubDoc = (
     // Register update handler for the subdocument
     // @ts-ignore - Y.Doc has on method but TypeScript doesn't know about it
     curSubDoc.on("update", broadcastSubDocUpdate);
+    const subDocText = curSubDoc.getText(subdocGuid);
+    subDocText.observe((event: Y.YTextEvent, tr: Y.Transaction) => {
+      logger.warn(
+        "sub document text changed,docGuid:" +
+          subdocGuid +
+          ",delta:" +
+          JSON.stringify(event.delta)
+      );
+    });
   }
 };
 
