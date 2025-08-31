@@ -143,6 +143,21 @@ const handleSubDoc = (
   const curSubdocMap: Map<String, WSSharedDoc> | undefined = subdocsMap.get(
     rootDoc.name
   );
+  const broadcastSubDocUpdate = (update: Uint8Array, origin: any) => {
+    if (origin === conn) return; // Don't broadcast back to the sender
+
+    const encoder = encoding.createEncoder();
+    encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
+    encoding.writeVarString(encoder, subdocGuid);
+    syncProtocol.writeUpdate(encoder, update);
+
+    rootDoc.conns.forEach((_, clientConn) => {
+      if (clientConn !== conn) {
+        logger.warn("broadcast....");
+        //send(curSubDoc, clientConn, encoding.toUint8Array(encoder));
+      }
+    });
+  };
   // @ts-ignore
   curSubDoc.on("update", broadcastSubDocUpdate);
   const subDocText = curSubDoc.getText(subdocGuid);
@@ -165,22 +180,6 @@ const handleSubDoc = (
       newMap.set(subdocGuid, curSubDoc);
       subdocsMap.set(rootDoc.name, newMap);
     }
-
-    const broadcastSubDocUpdate = (update: Uint8Array, origin: any) => {
-      if (origin === conn) return; // Don't broadcast back to the sender
-
-      const encoder = encoding.createEncoder();
-      encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
-      encoding.writeVarString(encoder, subdocGuid);
-      syncProtocol.writeUpdate(encoder, update);
-
-      rootDoc.conns.forEach((_, clientConn) => {
-        if (clientConn !== conn) {
-          logger.warn("broadcast....");
-          //send(curSubDoc, clientConn, encoding.toUint8Array(encoder));
-        }
-      });
-    };
 
     // send sync step 1
     const encoder = encoding.createEncoder();
