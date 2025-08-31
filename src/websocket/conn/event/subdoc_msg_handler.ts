@@ -143,6 +143,17 @@ const handleSubDoc = (
   const curSubdocMap: Map<String, WSSharedDoc> | undefined = subdocsMap.get(
     rootDoc.name
   );
+  // @ts-ignore
+  curSubDoc.on("update", broadcastSubDocUpdate);
+  const subDocText = curSubDoc.getText(subdocGuid);
+  subDocText.observe((event: Y.YTextEvent, tr: Y.Transaction) => {
+    logger.warn(
+      "sub document text changed,docGuid:" +
+        subdocGuid +
+        ",delta:" +
+        JSON.stringify(event.delta)
+    );
+  });
   if (curSubdocMap && curSubdocMap.has(subdocGuid)) {
     // sync step 1 done before.
   } else {
@@ -179,16 +190,6 @@ const handleSubDoc = (
     send(curSubDoc, conn, encoding.toUint8Array(encoder));
     // Register update handler for the subdocument
     // @ts-ignore - Y.Doc has on method but TypeScript doesn't know about it
-    curSubDoc.on("update", broadcastSubDocUpdate);
-    const subDocText = curSubDoc.getText(subdocGuid);
-    subDocText.observe((event: Y.YTextEvent, tr: Y.Transaction) => {
-      logger.warn(
-        "sub document text changed,docGuid:" +
-          subdocGuid +
-          ",delta:" +
-          JSON.stringify(event.delta)
-      );
-    });
   }
 };
 
