@@ -13,11 +13,12 @@ import { send } from "../ws_action.js";
 // @ts-ignore
 import * as syncProtocol from "rdy-protocols/dist/sync.mjs";
 import { PostgresqlPersistance } from "@/storage/adapter/postgresql/postgresql_persistance.js";
-import { persistencePostgresql } from "@/storage/storage.js";
+import { persistencePostgresql, postgresqlDb } from "@/storage/storage.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { getTexFileInfo } from "@/storage/appfile.js";
 import { FileContent } from "@/model/texhub/file_content.js";
 import { SyncMessageContext } from "@/model/texhub/sync_msg_context.js";
+import { handleYDocUpdate } from "@/storage/handler/ydoc_action_handler.js";
 
 /**
  * relationship of main doc & sub docs
@@ -114,7 +115,7 @@ const preHandleSubDoc = async (
         const persistedYdoc: any = await postgresqlDb.getYDoc(syncFileAttr);
         curSubDoc = persistedYdoc;
       }
-      handleSubDoc(curSubDoc, subdocGuid, conn, rootDoc);
+      handleSubDoc(curSubDoc, subdocGuid, conn, rootDoc, syncFileAttr);
     }
     try {
       encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
@@ -137,13 +138,14 @@ const handleSubDoc = (
   curSubDoc: WSSharedDoc,
   subdocGuid: string,
   conn: Socket,
-  rootDoc: WSSharedDoc
+  rootDoc: WSSharedDoc,
+  syncFileAttr: SyncFileAttr
 ) => {
   if (!rootDoc.conns.has(conn)) rootDoc.conns.set(conn, new Set());
   const curSubdocMap: Map<String, WSSharedDoc> | undefined = subdocsMap.get(
     rootDoc.name
   );
-  const broadcastSubDocUpdate = (update: Uint8Array, origin: any) => {
+  const broadcastSubDocUpdate = async (update: Uint8Array, origin: any) => {
     if (origin === conn) return; // Don't broadcast back to the sender
 
     const encoder = encoding.createEncoder();
@@ -157,6 +159,8 @@ const handleSubDoc = (
         send(curSubDoc, clientConn, encoding.toUint8Array(encoder));
       }
     });
+    const persistedYdoc: Y.Doc = await postgresqlDb.getYDoc(syncFileAttr);
+    handleYDocUpdate(update, curSubDoc, syncFileAttr, persistedYdoc);
   };
   // @ts-ignore
   curSubDoc.on("update", broadcastSubDocUpdate);

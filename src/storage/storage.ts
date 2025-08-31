@@ -8,11 +8,12 @@ import logger from "../common/log4js_config.js";
 import { handleHistoryDoc } from "./feat/version/doc_history.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { UpdateOrigin } from "@/model/yjs/net/update_origin.js";
+import { handleYDocUpdate } from "./handler/ydoc_action_handler.js";
 
 export let persistencePostgresql: Persistence;
+export const postgresqlDb: PostgresqlPersistance = new PostgresqlPersistance();
 
 if (typeof persistenceDir === "string") {
-  const postgresqlDb: PostgresqlPersistance = new PostgresqlPersistance();
   // postgresql
   persistencePostgresql = {
     provider: postgresqlDb,
@@ -25,15 +26,11 @@ if (typeof persistenceDir === "string") {
           name: "persistencePostgresql",
           origin: "server",
         };
-        Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(persistedYdoc),uo);
+        Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(persistedYdoc), uo);
 
         // @ts-ignore
         ydoc.on("update", async (update: Uint8Array) => {
-          await postgresqlDb.storeUpdate(syncFileAttr, update);
-          if (persistedYdoc) {
-            throttledFn(syncFileAttr, postgresqlDb);
-          }
-          handleHistoryDoc(syncFileAttr, ydoc);
+          handleYDocUpdate(update, ydoc, syncFileAttr, persistedYdoc);
         });
       } catch (err: any) {
         logger.error("process update failed", err);
