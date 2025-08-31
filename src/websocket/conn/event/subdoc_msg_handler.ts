@@ -107,12 +107,8 @@ const preHandleSubDoc = async (
             JSON.stringify(fileInfo!)
         );
         // try to get document from database directly
-        const postgresqlDb: PostgresqlPersistance =
-          persistencePostgresql.provider;
+        const postgresqlDb: PostgresqlPersistance = persistencePostgresql.provider;
         const persistedYdoc: any = await postgresqlDb.getYDoc(syncFileAttr);
-        let dbSubdocText = persistedYdoc.getText(subdocGuid);
-        let dbSubdocTextStr = dbSubdocText.toString();
-
         curSubDoc = persistedYdoc;
       }
       handleSubDoc(curSubDoc, subdocGuid, conn, rootDoc);
