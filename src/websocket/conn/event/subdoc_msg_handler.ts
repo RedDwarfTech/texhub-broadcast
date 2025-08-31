@@ -154,7 +154,7 @@ const handleSubDoc = (
     rootDoc.conns.forEach((_, clientConn) => {
       if (clientConn !== conn) {
         logger.warn("broadcast....");
-        //send(curSubDoc, clientConn, encoding.toUint8Array(encoder));
+        send(curSubDoc, clientConn, encoding.toUint8Array(encoder));
       }
     });
   };
