@@ -10,21 +10,23 @@ export const handleYDocUpdate = async (
   update: Uint8Array,
   ydoc: Y.Doc,
   syncFileAttr: SyncFileAttr,
-  persistedYdoc: Y.Doc
+  persistedYdoc: Y.Doc,
+  isSubdoc: boolean = false
 ) => {
-  preCheckBeforeFlush(syncFileAttr, update, ydoc, persistedYdoc);
+  preCheckBeforeFlush(syncFileAttr, update, ydoc, persistedYdoc, isSubdoc);
 };
 
 export const preCheckBeforeFlush = async (
   syncFileAttr: SyncFileAttr,
   update: Uint8Array,
   ydoc: Y.Doc,
-  persistedYdoc: Y.Doc
+  persistedYdoc: Y.Doc,
+  isSubdoc: boolean = false
 ) => {
   Y.applyUpdateV2(persistedYdoc, update);
   let dbSubdocText = persistedYdoc.getText(syncFileAttr.docName);
   let dbSubdocTextStr = dbSubdocText.toString();
-  if (dbSubdocTextStr === "") {
+  if (dbSubdocTextStr === "" && isSubdoc) {
     /**
      * empty content, do not store
      * when we introduce the subdocument, the document will be cleared unexpectedly

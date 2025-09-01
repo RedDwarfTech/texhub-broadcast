@@ -160,7 +160,7 @@ const handleSubDoc = (
       }
     });
     const persistedYdoc: Y.Doc = await postgresqlDb.getYDoc(syncFileAttr);
-    handleYDocUpdate(update, curSubDoc, syncFileAttr, persistedYdoc);
+    handleYDocUpdate(update, curSubDoc, syncFileAttr, persistedYdoc, true);
   };
 // @ts-ignore
 curSubDoc.on("update", handleSubDocUpdate);
