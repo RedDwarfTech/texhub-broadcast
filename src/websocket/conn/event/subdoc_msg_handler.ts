@@ -145,7 +145,7 @@ const handleSubDoc = (
   const curSubdocMap: Map<String, WSSharedDoc> | undefined = subdocsMap.get(
     rootDoc.name
   );
-  const broadcastSubDocUpdate = async (update: Uint8Array, origin: any) => {
+  const handleSubDocUpdate = async (update: Uint8Array, origin: any) => {
     if (origin === conn) return; // Don't broadcast back to the sender
 
     const encoder = encoding.createEncoder();
@@ -162,17 +162,17 @@ const handleSubDoc = (
     const persistedYdoc: Y.Doc = await postgresqlDb.getYDoc(syncFileAttr);
     handleYDocUpdate(update, curSubDoc, syncFileAttr, persistedYdoc);
   };
-  // @ts-ignore
-  curSubDoc.on("update", broadcastSubDocUpdate);
-  const subDocText = curSubDoc.getText(subdocGuid);
-  subDocText.observe((event: Y.YTextEvent, tr: Y.Transaction) => {
-    logger.warn(
-      "sub document text changed,docGuid:" +
-        subdocGuid +
-        ",delta:" +
-        JSON.stringify(event.delta)
-    );
-  });
+// @ts-ignore
+curSubDoc.on("update", handleSubDocUpdate);
+const subDocText = curSubDoc.getText(subdocGuid);
+subDocText.observe((event: Y.YTextEvent, tr: Y.Transaction) => {
+  logger.warn(
+    "sub document text changed,docGuid:" +
+      subdocGuid +
+      ",delta:" +
+      JSON.stringify(event.delta)
+  );
+});
   if (curSubdocMap && curSubdocMap.has(subdocGuid)) {
     // sync step 1 done before.
   } else {
