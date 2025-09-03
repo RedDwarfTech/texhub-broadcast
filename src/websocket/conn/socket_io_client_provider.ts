@@ -301,11 +301,30 @@ export class SocketIOClientProvider extends Observable<string> {
       console.error("Subdoc guid is missing!");
       return;
     }
-    let subDocUpdateHandler = this.subdocUpdateHandler(subdoc.guid);
+    //let subDocUpdateHandler = this.subdocUpdateHandler(subdoc.guid);
+    const subdocUpdateHandler = (id: string) => {
+      let result = (update: any, origin: any) => {
+        console.log("trigger 2222subdocUpdateHandler:" + id);
+        if (origin === this) return;
+        const encoder = encoding.createEncoder();
+        encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
+        const uniqueValue = uuidv4();
+        let msg: SyncMessageContext = {
+          doc_name: id,
+          src: "subdocUpdateHandler",
+          trace_id: uniqueValue,
+        };
+        let msgStr = JSON.stringify(msg);
+        encoding.writeVarString(encoder, msgStr);
+        syncProtocol.writeUpdate(encoder, update);
+        broadcastMessage(this, encoding.toUint8Array(encoder));
+      };
+      return result;
+    };
     // @ts-ignore
-    subdoc.on("update", subDocUpdateHandler);
-    
-    this.subdocUpdateHandlersMap.set(subdoc.guid, subDocUpdateHandler);
+    subdoc.on("update", subdocUpdateHandler);
+
+    this.subdocUpdateHandlersMap.set(subdoc.guid, subdocUpdateHandler);
     this.docs.set(subdoc.guid, subdoc);
 
     // invoke sync step1
