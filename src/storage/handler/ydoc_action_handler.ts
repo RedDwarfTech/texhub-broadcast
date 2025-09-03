@@ -23,7 +23,7 @@ export const preCheckBeforeFlush = async (
   persistedYdoc: Y.Doc,
   isSubdoc: boolean = false
 ) => {
-  Y.applyUpdateV2(persistedYdoc, update);
+  Y.applyUpdate(persistedYdoc, update);
   let dbSubdocText = persistedYdoc.getText(syncFileAttr.docName);
   let dbSubdocTextStr = dbSubdocText.toString();
   if (dbSubdocTextStr === "" && isSubdoc) {
