@@ -322,8 +322,10 @@ export class SocketIOClientProvider extends Observable<string> {
       return result;
     };
     // @ts-ignore
-    subdoc.on("update", subdocUpdateHandler(subdoc.guid));
-
+    //subdoc.on("update", subdocUpdateHandler(subdoc.guid));
+    subdoc.on("update", (update, origin) => {
+      console.log("subdoc update event triggered, guid:", subdoc.guid);
+    });
     this.subdocUpdateHandlersMap.set(subdoc.guid, subdocUpdateHandler);
     this.docs.set(subdoc.guid, subdoc);
 
