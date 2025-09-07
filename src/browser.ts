@@ -10,3 +10,6 @@ export { SocketIOClientProvider };
 
 import { UpdateOrigin } from "./model/yjs/net/update_origin";
 export { UpdateOrigin };
+
+import { DocMata } from "./model/yjs/commom/doc_meta";
+export { DocMata };
