@@ -7,5 +7,5 @@ export { SingleClientProvider };
 import { SocketIOClientProvider } from './websocket/conn/socket_io_client_provider';
 export { SocketIOClientProvider };
 
-import { DocMata } from "./model/yjs/commom/doc_meta";
-export { DocMata };
+import { DocMeta } from "./model/yjs/commom/doc_meta";
+export { DocMeta };
