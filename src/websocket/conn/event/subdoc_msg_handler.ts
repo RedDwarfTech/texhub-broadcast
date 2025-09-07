@@ -177,7 +177,7 @@ subDocText.observe((event: Y.YTextEvent, tr: Y.Transaction) => {
     // sync step 1 done before.
   } else {
     if (curSubdocMap) {
-      rootDoc.getMap("texhubsubdocs").set(subdocGuid, curSubDoc);
+      rootDoc.getMap("texhubsubdoc").set(subdocGuid, curSubDoc);
       curSubdocMap.set(subdocGuid, curSubDoc);
     } else {
       const newMap = new Map<String, WSSharedDoc>();
