@@ -4,4 +4,5 @@
 export interface DocMeta { 
     name: string; 
     id: string;
+    src: string;
 }

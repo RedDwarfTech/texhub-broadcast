@@ -19,6 +19,7 @@ import { getTexFileInfo } from "@/storage/appfile.js";
 import { FileContent } from "@/model/texhub/file_content.js";
 import { SyncMessageContext } from "@/model/texhub/sync_msg_context.js";
 import { handleYDocUpdate } from "@/storage/handler/ydoc_action_handler.js";
+import { DocMeta } from "@/model/yjs/commom/doc_meta.js";
 
 /**
  * relationship of main doc & sub docs
@@ -162,21 +163,27 @@ const handleSubDoc = (
     const persistedYdoc: Y.Doc = await postgresqlDb.getYDoc(syncFileAttr);
     handleYDocUpdate(update, curSubDoc, syncFileAttr, persistedYdoc, true);
   };
-// @ts-ignore
-curSubDoc.on("update", handleSubDocUpdate);
-const subDocText = curSubDoc.getText(subdocGuid);
-subDocText.observe((event: Y.YTextEvent, tr: Y.Transaction) => {
-  logger.warn(
-    "sub document text changed,docGuid:" +
-      subdocGuid +
-      ",delta:" +
-      JSON.stringify(event.delta)
-  );
-});
+  // @ts-ignore
+  curSubDoc.on("update", handleSubDocUpdate);
+  const subDocText = curSubDoc.getText(subdocGuid);
+  subDocText.observe((event: Y.YTextEvent, tr: Y.Transaction) => {
+    logger.warn(
+      "sub document text changed,docGuid:" +
+        subdocGuid +
+        ",delta:" +
+        JSON.stringify(event.delta)
+    );
+  });
   if (curSubdocMap && curSubdocMap.has(subdocGuid)) {
     // sync step 1 done before.
   } else {
     if (curSubdocMap) {
+      let docMeta: DocMeta = {
+        name: subdocGuid,
+        id: syncFileAttr.docIntId!,
+        src: "server",
+      };
+      curSubDoc.meta = docMeta;
       rootDoc.getMap("texhubsubdoc").set(subdocGuid, curSubDoc);
       curSubdocMap.set(subdocGuid, curSubDoc);
     } else {
