@@ -177,17 +177,18 @@ const handleSubDoc = (
   if (curSubdocMap && curSubdocMap.has(subdocGuid)) {
     // sync step 1 done before.
   } else {
-    if (curSubdocMap) {
-      let docMeta: DocMeta = {
+    let docMeta: DocMeta = {
         name: subdocGuid,
         id: syncFileAttr.docIntId!,
         src: "server",
       };
+    if (curSubdocMap) {
       curSubDoc.meta = docMeta;
       rootDoc.getMap("texhubsubdoc").set(subdocGuid, curSubDoc);
       curSubdocMap.set(subdocGuid, curSubDoc);
     } else {
       const newMap = new Map<String, WSSharedDoc>();
+      curSubDoc.meta = docMeta;
       newMap.set(subdocGuid, curSubDoc);
       subdocsMap.set(rootDoc.name, newMap);
     }
