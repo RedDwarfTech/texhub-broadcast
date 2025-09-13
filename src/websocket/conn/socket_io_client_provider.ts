@@ -301,33 +301,38 @@ export class SocketIOClientProvider extends Observable<string> {
       console.error("Subdoc guid is missing!");
       return;
     }
-    //let subDocUpdateHandler = this.subdocUpdateHandler(subdoc.guid);
-    const subdocUpdateHandler = (id: string) => {
-      let result = (update: any, origin: any) => {
-        console.log("trigger 2222subdocUpdateHandler:" + id);
-        if (origin === this) return;
-        const encoder = encoding.createEncoder();
-        encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
-        const uniqueValue = uuidv4();
-        let msg: SyncMessageContext = {
-          doc_name: id,
-          src: "subdocUpdateHandler",
-          trace_id: uniqueValue,
-        };
-        let msgStr = JSON.stringify(msg);
-        encoding.writeVarString(encoder, msgStr);
-        syncProtocol.writeUpdate(encoder, update);
-        broadcastMessage(this, encoding.toUint8Array(encoder));
+    // 先解绑旧的 handler，避免重复绑定
+    const oldHandler = this.subdocUpdateHandlersMap.get(subdoc.guid);
+    if (oldHandler) {
+      // @ts-ignore
+      subdoc.off("update", oldHandler);
+      console.log(`[addSubdoc] 移除旧 handler: guid=${subdoc.guid}`);
+    }
+
+    // 新的 update handler
+    const newHandler = (update: any, origin: any) => {
+      console.log(`[subdoc update] guid=${subdoc.guid}, origin=`, origin, ', update=', update);
+      if (origin === this) return;
+      const encoder = encoding.createEncoder();
+      encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
+      const uniqueValue = uuidv4();
+      let msg: SyncMessageContext = {
+        doc_name: subdoc.guid,
+        src: "subdocUpdateHandler",
+        trace_id: uniqueValue,
       };
-      return result;
+      let msgStr = JSON.stringify(msg);
+      encoding.writeVarString(encoder, msgStr);
+      syncProtocol.writeUpdate(encoder, update);
+      broadcastMessage(this, encoding.toUint8Array(encoder));
+      console.log(`[subdoc update] handler已广播: guid=${subdoc.guid}, trace_id=${uniqueValue}`);
     };
+    // 注册新的 handler
     // @ts-ignore
-    //subdoc.on("update", subdocUpdateHandler(subdoc.guid));
-    subdoc.on("update", (update, origin) => {
-      console.log("subdoc update event triggered, guid:", subdoc.guid);
-    });
-    this.subdocUpdateHandlersMap.set(subdoc.guid, subdocUpdateHandler);
+    subdoc.on("update", newHandler);
+    this.subdocUpdateHandlersMap.set(subdoc.guid, newHandler);
     this.docs.set(subdoc.guid, subdoc);
+    console.log(`[addSubdoc] 注册新 handler: guid=${subdoc.guid}`);
 
     // invoke sync step1
     const encoder = encoding.createEncoder();
@@ -342,6 +347,7 @@ export class SocketIOClientProvider extends Observable<string> {
     encoding.writeVarString(encoder, msgStr);
     syncProtocol.writeSyncStep1(encoder, subdoc);
     broadcastMessage(this, encoding.toUint8Array(encoder));
+    console.log(`[addSubdoc] sync step1已广播: guid=${subdoc.guid}, trace_id=${uniqueValue}`);
   }
 
   /**
