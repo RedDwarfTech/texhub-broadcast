@@ -9,6 +9,7 @@ import { handleHistoryDoc } from "./feat/version/doc_history.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { UpdateOrigin } from "@/model/yjs/net/update_origin.js";
 import { handleYDocUpdate } from "./handler/ydoc_action_handler.js";
+import crypto from "crypto";
 
 export let persistencePostgresql: Persistence;
 export const postgresqlDb: PostgresqlPersistance = new PostgresqlPersistance();
@@ -21,7 +22,6 @@ if (typeof persistenceDir === "string") {
       try {
         const persistedYdoc: Y.Doc = await postgresqlDb.getYDoc(syncFileAttr);
         const newUpdates: Uint8Array = Y.encodeStateAsUpdate(ydoc);
-        const crypto = require("crypto");
         const updateHash = crypto
           .createHash("sha256")
           .update(newUpdates)
@@ -38,7 +38,6 @@ if (typeof persistenceDir === "string") {
 
         // @ts-ignore
         ydoc.on("update", async (update: Uint8Array) => {
-          const crypto = require("crypto");
           const updateHash = crypto
             .createHash("sha256")
             .update(newUpdates)
