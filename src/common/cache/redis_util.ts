@@ -83,3 +83,31 @@ export async function unlock(lockKey: string, uniqueValue: string) {
     );
   }
 }
+
+// 检查update hash是否已存在
+export const checkAndMarkUpdateHash = async (
+  update: Uint8Array,
+  docName: string
+): Promise<boolean> => {
+  let crypto;
+  try {
+    crypto = await import("crypto");
+  } catch (e) {
+    logger.error("crypto import failed", e);
+    return false;
+  }
+  const updateHash = crypto.createHash("sha256").update(update).digest("hex");
+  const redisKey = `updatehash:${docName}:${updateHash}`;
+  if (redis) {
+    const exists = await redis.get(redisKey);
+    if (exists) {
+      logger.warn(
+        `[storeUpdate] 重复update内容，hash=${updateHash}，doc=${docName}，跳过存储`
+      );
+      return true;
+    }
+    // 标记已存在，设置过期时间（如1天）
+    await redis.set(redisKey, "1", "EX", 86400);
+  }
+  return false;
+};

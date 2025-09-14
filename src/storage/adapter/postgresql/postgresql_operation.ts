@@ -24,7 +24,11 @@ import { PostgresqlPersistance } from "./postgresql_persistance.js";
 import { persistencePostgresql } from "@/storage/storage.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { UpdateOrigin } from "@/model/yjs/net/update_origin.js";
-import { getRedisDestriLock, unlock } from "@/common/cache/redis_util.js";
+import {
+  checkAndMarkUpdateHash,
+  getRedisDestriLock,
+  unlock,
+} from "@/common/cache/redis_util.js";
 import { ENABLE_DEBUG } from "@/common/log_util.js";
 
 export const getDocAllUpdates = async (
@@ -208,30 +212,6 @@ export const storeUpdateTrans = async (
     createDocumentUpdateKeyArray(docName, clock + 1)
   );
   return clock + 1;
-};
-
-// 检查update hash是否已存在，已存在则返回true，否则写入并返回false
-const checkAndMarkUpdateHash = async (update: Uint8Array, docName: string): Promise<boolean> => {
-  let crypto;
-  try {
-    crypto = await import("crypto");
-  } catch (e) {
-    logger.error("crypto import failed", e);
-    return false;
-  }
-  const updateHash = crypto.createHash("sha256").update(update).digest("hex");
-  const redisClient = await getRedisClient();
-  const redisKey = `updatehash:${docName}:${updateHash}`;
-  if (redisClient) {
-    const exists = await redisClient.get(redisKey);
-    if (exists) {
-      logger.warn(`[storeUpdate] 重复update内容，hash=${updateHash}，doc=${docName}，跳过存储`);
-      return true;
-    }
-    // 标记已存在，设置过期时间（如1天）
-    await redisClient.set(redisKey, "1", "EX", 86400);
-  }
-  return false;
 };
 
 export const storeUpdate = async (
