@@ -93,12 +93,6 @@ const preHandleSubDoc = async (
       // current document id not equal to root document
       // this is a subdocument
       // the subdocument message format: [messageSyncSub][subdocId][messageType][data]
-      logger.warn(
-        "this is an subdocument,subDocMessageType,doc guid:" +
-          subdocGuid +
-          ",finfo:" +
-          JSON.stringify(fileInfo!)
-      );
       let subdocText = memoryOrDiskSubdoc.getText(subdocGuid);
       let subdocTextStr = subdocText.toString();
       if (subdocTextStr) {
