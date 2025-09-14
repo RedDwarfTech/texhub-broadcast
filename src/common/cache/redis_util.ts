@@ -1,17 +1,22 @@
 import { getRedisClient } from "@/storage/adapter/postgresql/conf/database_init.js";
 import type Redis from "ioredis";
 import logger from "@common/log4js_config.js";
+import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 
 const redis: Redis | undefined = await getRedisClient();
 
 export const getRedisDestriLock = async (
   lockKey: string,
   uniqueValue: string,
-  times: number
-) : Promise<boolean> => {
+  times: number,
+  syncFileAttr: SyncFileAttr
+): Promise<boolean> => {
   // If Redis is not available (non-Node environment), pretend we got the lock
   if (!redis) {
-    logger.info("Redis client not available, simulating lock acquisition", redis);
+    logger.info(
+      "Redis client not available, simulating lock acquisition",
+      redis
+    );
     return true;
   }
 
@@ -33,10 +38,12 @@ export const getRedisDestriLock = async (
     logger.warn(
       `[x] 无法获取锁 ${lockKey}，第${
         times + 1
-      }次重试，currentValue=${currentValue}, expected=${uniqueValue}，result=${result}`
+      }次重试，currentValue=${currentValue}, expected=${uniqueValue}，result=${result}, syncFileAttr=${JSON.stringify(
+        syncFileAttr
+      )}`
     );
     await sleep(waitTime);
-    return getRedisDestriLock(lockKey, uniqueValue, times + 1);
+    return getRedisDestriLock(lockKey, uniqueValue, times + 1, syncFileAttr);
   }
 };
 

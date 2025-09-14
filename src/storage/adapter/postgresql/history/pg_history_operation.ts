@@ -174,7 +174,7 @@ export const storeHistoryUpdate = async (
   const lockKey = `hist-lock:${docName}:update`;
   try {
     // Attempt to get lock (will always succeed if Redis is not available)
-    if (await getRedisDestriLock(lockKey, uniqueValue, 0)) {
+    if (await getRedisDestriLock(lockKey, uniqueValue, 0, syncFileAttr)) {
       const clock = await getCurrentUpdateClock(docName);
       if (clock === -1) {
         // make sure that a state vector is aways written, so we can search for available documents
