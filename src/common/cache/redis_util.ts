@@ -87,7 +87,7 @@ export async function unlock(lockKey: string, uniqueValue: string) {
 // 检查update hash是否已存在
 export const checkAndMarkUpdateHash = async (
   update: Uint8Array,
-  docName: string
+  syncFileAttr: SyncFileAttr
 ): Promise<boolean> => {
   let crypto;
   try {
@@ -97,12 +97,14 @@ export const checkAndMarkUpdateHash = async (
     return false;
   }
   const updateHash = crypto.createHash("sha256").update(update).digest("hex");
-  const redisKey = `updatehash:${docName}:${updateHash}`;
+  const redisKey = `updatehash:${syncFileAttr.docName}:${updateHash}`;
   if (redis) {
     const exists = await redis.get(redisKey);
     if (exists) {
       logger.warn(
-        `[storeUpdate] 重复update内容，hash=${updateHash}，doc=${docName}，跳过存储`
+        `[storeUpdate] 重复update内容，hash=${updateHash}，doc=${JSON.stringify(
+          syncFileAttr
+        )}，跳过存储`
       );
       return true;
     }
