@@ -210,6 +210,30 @@ export const storeUpdateTrans = async (
   return clock + 1;
 };
 
+// 检查update hash是否已存在，已存在则返回true，否则写入并返回false
+const checkAndMarkUpdateHash = async (update: Uint8Array, docName: string): Promise<boolean> => {
+  let crypto;
+  try {
+    crypto = await import("crypto");
+  } catch (e) {
+    logger.error("crypto import failed", e);
+    return false;
+  }
+  const updateHash = crypto.createHash("sha256").update(update).digest("hex");
+  const redisClient = await getRedisClient();
+  const redisKey = `updatehash:${docName}:${updateHash}`;
+  if (redisClient) {
+    const exists = await redisClient.get(redisKey);
+    if (exists) {
+      logger.warn(`[storeUpdate] 重复update内容，hash=${updateHash}，doc=${docName}，跳过存储`);
+      return true;
+    }
+    // 标记已存在，设置过期时间（如1天）
+    await redisClient.set(redisKey, "1", "EX", 86400);
+  }
+  return false;
+};
+
 export const storeUpdate = async (
   syncFileAttr: SyncFileAttr,
   update: Uint8Array
@@ -217,6 +241,10 @@ export const storeUpdate = async (
   const uniqueValue = uuidv4();
   const lockKey = `lock:${syncFileAttr.docName}:update`;
   try {
+    if (await checkAndMarkUpdateHash(update, syncFileAttr.docName)) {
+      return 0;
+    }
+
     if (await getRedisDestriLock(lockKey, uniqueValue, 0, syncFileAttr)) {
       const processYdoc = new Y.Doc({
         guid: syncFileAttr.docName,
@@ -268,7 +296,7 @@ export const storeUpdate = async (
       return clock + 1;
     }
   } catch (error: any) {
-    logger.error(`Error in storeUpdate: ${error.message || error}`);
+    logger.error(`[storeUpdate] Error: ${error.message || error}`);
   } finally {
     // release lock (will do nothing if Redis is not available)
     await unlock(lockKey, uniqueValue);
