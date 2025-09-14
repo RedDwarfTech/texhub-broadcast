@@ -136,7 +136,7 @@ export class PostgresqlPersistance {
     }
   }
 
-  async storeUpdate(syncFileAttr: SyncFileAttr, update: Uint8Array) {
+  async putUpdateToQueue(syncFileAttr: SyncFileAttr, update: Uint8Array) {
     if (typeof window !== "undefined" || !this.pool) {
       return;
     }

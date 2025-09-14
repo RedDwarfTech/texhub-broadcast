@@ -21,7 +21,15 @@ if (typeof persistenceDir === "string") {
       try {
         const persistedYdoc: Y.Doc = await postgresqlDb.getYDoc(syncFileAttr);
         const newUpdates: Uint8Array = Y.encodeStateAsUpdate(ydoc);
-        await postgresqlDb.storeUpdate(syncFileAttr, newUpdates);
+        const crypto = require("crypto");
+        const updateHash = crypto
+          .createHash("sha256")
+          .update(newUpdates)
+          .digest("hex");
+        const updateTime = Date.now().toLocaleString();
+        syncFileAttr.curTime = updateTime;
+        syncFileAttr.hash = updateHash;
+        await postgresqlDb.putUpdateToQueue(syncFileAttr, newUpdates);
         let uo: UpdateOrigin = {
           name: "persistencePostgresql",
           origin: "server",
@@ -30,6 +38,14 @@ if (typeof persistenceDir === "string") {
 
         // @ts-ignore
         ydoc.on("update", async (update: Uint8Array) => {
+          const crypto = require("crypto");
+          const updateHash = crypto
+            .createHash("sha256")
+            .update(newUpdates)
+            .digest("hex");
+          const updateTime = Date.now().toLocaleString();
+          syncFileAttr.curTime = updateTime;
+          syncFileAttr.hash = updateHash;
           handleYDocUpdate(update, ydoc, syncFileAttr, persistedYdoc);
         });
       } catch (err: any) {

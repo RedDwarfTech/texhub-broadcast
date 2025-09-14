@@ -124,5 +124,5 @@ export const initTpl = async (
     projectId: projectId!,
     docIntId: ""
   };
-  await postgresqlDb.storeUpdate(syncFileAttr, newUpdates);
+  await postgresqlDb.putUpdateToQueue(syncFileAttr, newUpdates);
 };

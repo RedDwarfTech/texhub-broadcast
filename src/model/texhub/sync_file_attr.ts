@@ -4,4 +4,6 @@ export interface SyncFileAttr {
     docType?: number;
     projectId: string;
     docIntId?: string;
+    curTime?: string;
+    hash?: string;
 }

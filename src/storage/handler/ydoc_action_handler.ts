@@ -40,7 +40,7 @@ export const preCheckBeforeFlush = async (
     );
     return;
   }
-  await postgresqlDb.storeUpdate(syncFileAttr, update);
+  await postgresqlDb.putUpdateToQueue(syncFileAttr, update);
   if (persistedYdoc) {
     throttledFn(syncFileAttr, postgresqlDb);
   }
