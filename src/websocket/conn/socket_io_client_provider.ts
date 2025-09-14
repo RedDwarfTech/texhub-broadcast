@@ -301,13 +301,13 @@ export class SocketIOClientProvider extends Observable<string> {
       console.error("Subdoc guid is missing!");
       return;
     }
-    // 先解绑旧的 handler，避免重复绑定
-    const oldHandler = this.subdocUpdateHandlersMap.get(subdoc.guid);
-    if (oldHandler) {
-      // @ts-ignore
-      subdoc.off("update", oldHandler);
-      console.log(`[addSubdoc] 移除旧 handler: guid=${subdoc.guid}`);
-    }
+// 先解绑旧的 handler，避免重复绑定
+const oldHandler = this.subdocUpdateHandlersMap.get(subdoc.guid);
+if (oldHandler) {
+  // @ts-ignore
+  subdoc.off("update", oldHandler);
+  console.log(`[addSubdoc] 移除旧 handler: guid=${subdoc.guid}`);
+}
 
     // 新的 update handler
     const newHandler = (update: any, origin: any) => {

@@ -21,6 +21,8 @@ import PQueue from "p-queue";
 import { LRUCache } from "lru-cache";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { UpdateOrigin } from "@/model/yjs/net/update_origin.js";
+import { FileContent } from "@/model/texhub/file_content.js";
+import { getTexFileInfo } from "@/storage/appfile.js";
 
 export class PostgresqlPersistance {
   pool: pg.Pool | null = null;
@@ -28,7 +30,7 @@ export class PostgresqlPersistance {
 
   constructor() {
     this.queueMap = new LRUCache({
-      max: 100, 
+      max: 100,
     });
 
     // 仅在Node环境下初始化数据库连接池
@@ -59,7 +61,9 @@ export class PostgresqlPersistance {
       return ydoc;
     }
 
-    const updates: Array<TeXSync> = await getDocAllUpdates(syncFileAttr.docName);
+    const updates: Array<TeXSync> = await getDocAllUpdates(
+      syncFileAttr.docName
+    );
     ydoc.transact(() => {
       try {
         for (let i = 0; i < updates.length; i++) {
@@ -69,7 +73,7 @@ export class PostgresqlPersistance {
             name: "getYDoc",
             origin: "server",
           };
-          Y.applyUpdate(ydoc, updateVal,uo);
+          Y.applyUpdate(ydoc, updateVal, uo);
         }
       } catch (err) {
         logger.error("apply update failed", err);
@@ -101,7 +105,10 @@ export class PostgresqlPersistance {
       return null;
     }
 
-    const { clock, sv } = await readStateVector(this.pool, syncFileAttr.docName);
+    const { clock, sv } = await readStateVector(
+      this.pool,
+      syncFileAttr.docName
+    );
     let curClock = -1;
     if (sv !== null) {
       curClock = await getCurrentUpdateClock(syncFileAttr.docName);
@@ -140,7 +147,17 @@ export class PostgresqlPersistance {
     if (typeof window !== "undefined" || !this.pool) {
       return;
     }
-
+    let fileInfo: FileContent = await getTexFileInfo(syncFileAttr.docName);
+    if (!fileInfo || !fileInfo.file_path) {
+      logger.warn(
+        "putUpdateToQueue fileInfo is null or fileInfo.file_path is null" +
+          JSON.stringify(fileInfo) +
+          "," +
+          JSON.stringify(syncFileAttr)
+      );
+      return;
+    }
+    syncFileAttr.docShowName = fileInfo.name;
     try {
       const cacheQueue = this.queueMap.get(syncFileAttr.docName);
       if (cacheQueue) {
