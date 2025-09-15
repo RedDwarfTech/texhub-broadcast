@@ -40,6 +40,47 @@ export const handleSubDocMsg = async (
   conn: Socket,
   decoder: any
 ) => {
+  // 读取原始update内容（假设decoder为Uint8Array或可转为Uint8Array）
+  let rawUpdate;
+  try {
+    if (decoder instanceof Uint8Array) {
+      rawUpdate = decoder;
+    } else if (decoder && decoder.arr) {
+      rawUpdate = decoder.arr instanceof Uint8Array ? decoder.arr : new Uint8Array(decoder.arr);
+    } else {
+      rawUpdate = undefined;
+    }
+    if (rawUpdate) {
+      let crypto;
+      try {
+        crypto = await import("crypto");
+      } catch (e) {
+        logger.warn("crypto import failed", e);
+      }
+      if (crypto) {
+        const updateHash = crypto.createHash("sha256").update(rawUpdate).digest("hex");
+        const getRedisClient = (await import("@/storage/adapter/postgresql/conf/database_init.js")).getRedisClient;
+        const redisClient = await getRedisClient();
+        const redisKey = `subdocmsg_updatehash:${rootDoc.name}:${updateHash}`;
+        if (redisClient) {
+          const exists = await redisClient.get(redisKey);
+          if (exists) {
+            logger.warn(`[handleSubDocMsg] 检测到重复消息，hash=${updateHash}, doc=${rootDoc.name}, connId=${conn.id}`);
+            logger.warn(`[handleSubDocMsg] 上下文:`, {
+              docName: rootDoc.name,
+              connId: conn.id,
+              rawUpdateLen: rawUpdate.length,
+              rawUpdate,
+            });
+            return;
+          }
+          await redisClient.set(redisKey, "1", "EX", 86400);
+        }
+      }
+    }
+  } catch (e) {
+    logger.warn("subdocMsg hash check error", e);
+  }
   await preHandleSubDoc(decoder, conn, rootDoc);
 };
 
