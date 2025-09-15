@@ -1,4 +1,4 @@
-import { Socket } from "socket.io";
+import { DefaultEventsMap, Socket } from "socket.io";
 import { WSSharedDoc } from "@collar/ws_share_doc.js";
 // @ts-ignore
 import * as encoding from "rdlib0/dist/encoding.mjs";
@@ -148,12 +148,22 @@ const handleSubDoc = (
     encoding.writeVarString(encoder, subdocGuid);
     syncProtocol.writeUpdate(encoder, update);
 
-    rootDoc.conns.forEach((_, clientConn) => {
-      if (clientConn !== conn) {
-        logger.warn("broadcast....");
-        send(curSubDoc, clientConn, encoding.toUint8Array(encoder));
+    rootDoc.conns.forEach(
+      (
+        _,
+        clientConn: Socket<
+          DefaultEventsMap,
+          DefaultEventsMap,
+          DefaultEventsMap,
+          any
+        >
+      ) => {
+        if (clientConn !== conn) {
+          logger.warn("broadcast....,id:" + clientConn.id);
+          send(curSubDoc, clientConn, encoding.toUint8Array(encoder));
+        }
       }
-    });
+    );
     const persistedYdoc: Y.Doc = await postgresqlDb.getYDoc(syncFileAttr);
     handleYDocUpdate(update, curSubDoc, syncFileAttr, persistedYdoc, true);
   };
@@ -172,10 +182,10 @@ const handleSubDoc = (
     // sync step 1 done before.
   } else {
     let docMeta: DocMeta = {
-        name: subdocGuid,
-        id: syncFileAttr.docIntId!,
-        src: "server",
-      };
+      name: subdocGuid,
+      id: syncFileAttr.docIntId!,
+      src: "server",
+    };
     if (curSubdocMap) {
       curSubDoc.meta = docMeta;
       rootDoc.getMap("texhubsubdoc").set(subdocGuid, curSubDoc);
