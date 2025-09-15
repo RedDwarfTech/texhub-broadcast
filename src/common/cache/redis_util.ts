@@ -3,7 +3,7 @@ import type Redis from "ioredis";
 import logger from "@common/log4js_config.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 
-const redis: Redis | undefined = await getRedisClient();
+export const redis: Redis | undefined = await getRedisClient();
 
 export const getRedisDestriLock = async (
   lockKey: string,
