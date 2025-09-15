@@ -10,7 +10,7 @@ export const getHistoryDocsThrottledFn = (docIntId: string) => {
   if (!historyDocsThrottlePool.has(docIntId)) {
     historyDocsThrottlePool.set(docIntId, _.throttle(
       async (syncFileAttr: SyncFileAttr, ydoc: Y.Doc) => {
-        await pgHistoryDb.storeSnapshot(syncFileAttr, ydoc);
+        await pgHistoryDb.storeHistorySnapshot(syncFileAttr, ydoc);
         historyDocsThrottlePool.delete(docIntId); 
       },
       60000,

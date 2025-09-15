@@ -23,6 +23,7 @@ import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { UpdateOrigin } from "@/model/yjs/net/update_origin.js";
 import { FileContent } from "@/model/texhub/file_content.js";
 import { getTexFileInfo } from "@/storage/appfile.js";
+import { TeXFileType } from "@/model/enum/tex_file_type.js";
 
 export class PostgresqlPersistance {
   pool: pg.Pool | null = null;
@@ -145,6 +146,9 @@ export class PostgresqlPersistance {
 
   async putUpdateToQueue(syncFileAttr: SyncFileAttr, update: Uint8Array) {
     if (typeof window !== "undefined" || !this.pool) {
+      return;
+    }
+    if (syncFileAttr.docType === TeXFileType.PROJECT) {
       return;
     }
     let fileInfo: FileContent = await getTexFileInfo(syncFileAttr.docName);

@@ -13,7 +13,7 @@ import { getPgPool } from "./conf/database_init.js";
 
 export class PgHisotoryPersistance {
 
-  async storeSnapshot(syncFileAttr: SyncFileAttr, doc: Y.Doc) {
+  async storeHistorySnapshot(syncFileAttr: SyncFileAttr, doc: Y.Doc) {
     if (typeof window !== "undefined") {
       return;
     }
@@ -66,7 +66,7 @@ export class PgHisotoryPersistance {
         await client.query("COMMIT");
       } catch (error) {
         await client.query("ROLLBACK");
-        logger.error("storeSnapshot error", error);
+        logger.error("storeHistorySnapshot error", error);
         throw error;
       } finally {
         client.release();
