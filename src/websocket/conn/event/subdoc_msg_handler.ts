@@ -20,6 +20,7 @@ import { FileContent } from "@/model/texhub/file_content.js";
 import { SyncMessageContext } from "@/model/texhub/sync_msg_context.js";
 import { handleYDocUpdate } from "@/storage/handler/ydoc_action_handler.js";
 import { DocMeta } from "@/model/yjs/commom/doc_meta.js";
+import { redis } from "@/common/cache/redis_util.js";
 
 /**
  * relationship of main doc & sub docs
@@ -59,11 +60,9 @@ export const handleSubDocMsg = async (
       }
       if (crypto) {
         const updateHash = crypto.createHash("sha256").update(rawUpdate).digest("hex");
-        const getRedisClient = (await import("@/storage/adapter/postgresql/conf/database_init.js")).getRedisClient;
-        const redisClient = await getRedisClient();
         const redisKey = `subdocmsg_updatehash:${rootDoc.name}:${updateHash}`;
-        if (redisClient) {
-          const exists = await redisClient.get(redisKey);
+        if (redis) {
+          const exists = await redis.get(redisKey);
           if (exists) {
             logger.warn(`[handleSubDocMsg] 检测到重复消息，hash=${updateHash}, doc=${rootDoc.name}, connId=${conn.id}`);
             logger.warn(`[handleSubDocMsg] 上下文:`, {
@@ -74,7 +73,7 @@ export const handleSubDocMsg = async (
             });
             return;
           }
-          await redisClient.set(redisKey, "1", "EX", 86400);
+          await redis.set(redisKey, "1", "EX", 86400);
         }
       }
     }
