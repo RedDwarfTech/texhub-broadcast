@@ -221,7 +221,7 @@ export const storeUpdate = async (
   const uniqueValue = uuidv4();
   const lockKey = `lock:${syncFileAttr.docName}:update`;
   try {
-    if (await checkAndMarkUpdateHash(update, syncFileAttr)) {
+    if (await checkAndMarkUpdateHash(update, syncFileAttr, 'storeUpdate')) {
       return 0;
     }
 

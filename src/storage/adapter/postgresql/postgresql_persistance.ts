@@ -24,6 +24,7 @@ import { UpdateOrigin } from "@/model/yjs/net/update_origin.js";
 import { FileContent } from "@/model/texhub/file_content.js";
 import { getTexFileInfo } from "@/storage/appfile.js";
 import { TeXFileType } from "@/model/enum/tex_file_type.js";
+import { checkAndMarkUpdateHash } from "@/common/cache/redis_util.js";
 
 export class PostgresqlPersistance {
   pool: pg.Pool | null = null;
@@ -150,6 +151,11 @@ export class PostgresqlPersistance {
     }
     if (syncFileAttr.docType === TeXFileType.PROJECT) {
       return;
+    }
+    if (
+      await checkAndMarkUpdateHash(update, syncFileAttr, "putUpdateToQueue")
+    ) {
+      return 0;
     }
     let fileInfo: FileContent = await getTexFileInfo(syncFileAttr.docName);
     if (!fileInfo || !fileInfo.file_path) {
