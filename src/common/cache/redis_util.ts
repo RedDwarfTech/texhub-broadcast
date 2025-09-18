@@ -98,7 +98,7 @@ export const checkAndMarkUpdateHash = async (
     return false;
   }
   const updateHash = crypto.createHash("sha256").update(update).digest("hex");
-  const redisKey = `updatehash:${syncFileAttr.docName}:${updateHash}`;
+  const redisKey = src + `:updatehash:${syncFileAttr.docName}:${updateHash}`;
   if (redis) {
     const exists = await redis.get(redisKey);
     if (exists) {
