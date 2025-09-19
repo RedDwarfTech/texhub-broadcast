@@ -87,7 +87,8 @@ const preHandleSubDoc = async (
       docName: subdocGuid,
       projectId: rootDoc.name,
       docIntId: docIntId,
-      docShowName: fileInfo.name
+      docShowName: fileInfo.name,
+      docType: 1
     };
     let memoryOrDiskSubdoc = await getYDoc(syncFileAttr);
     let curSubDoc = memoryOrDiskSubdoc;
