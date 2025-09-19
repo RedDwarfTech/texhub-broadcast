@@ -88,7 +88,7 @@ const preHandleSubDoc = async (
       projectId: rootDoc.name,
       docIntId: docIntId,
       docShowName: fileInfo.name,
-      docType: 1
+      docType: 1,
     };
     let memoryOrDiskSubdoc = getYDoc(syncFileAttr);
     let curSubDoc = memoryOrDiskSubdoc;
@@ -127,6 +127,42 @@ const preHandleSubDoc = async (
   }
 };
 
+const handleSubDocUpdate = async (
+  update: Uint8Array,
+  origin: any,
+  curSubDoc: WSSharedDoc,
+  subdocGuid: string,
+  conn: Socket,
+  rootDoc: WSSharedDoc,
+  syncFileAttr: SyncFileAttr
+) => {
+  if (origin === conn) return; // Don't broadcast back to the sender
+
+  const encoder = encoding.createEncoder();
+  encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
+  encoding.writeVarString(encoder, subdocGuid);
+  syncProtocol.writeUpdate(encoder, update);
+
+  rootDoc.conns.forEach(
+    (
+      _,
+      clientConn: Socket<
+        DefaultEventsMap,
+        DefaultEventsMap,
+        DefaultEventsMap,
+        any
+      >
+    ) => {
+      if (clientConn !== conn) {
+        logger.warn("broadcast....,id:" + clientConn.id);
+        send(curSubDoc, clientConn, encoding.toUint8Array(encoder));
+      }
+    }
+  );
+  const persistedYdoc: Y.Doc = await postgresqlDb.getYDoc(syncFileAttr);
+  handleYDocUpdate(update, curSubDoc, syncFileAttr, persistedYdoc, true);
+};
+
 const handleSubDoc = (
   curSubDoc: WSSharedDoc,
   subdocGuid: string,
@@ -138,35 +174,18 @@ const handleSubDoc = (
   const curSubdocMap: Map<String, WSSharedDoc> | undefined = subdocsMap.get(
     rootDoc.name
   );
-  const handleSubDocUpdate = async (update: Uint8Array, origin: any) => {
-    if (origin === conn) return; // Don't broadcast back to the sender
-
-    const encoder = encoding.createEncoder();
-    encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
-    encoding.writeVarString(encoder, subdocGuid);
-    syncProtocol.writeUpdate(encoder, update);
-
-    rootDoc.conns.forEach(
-      (
-        _,
-        clientConn: Socket<
-          DefaultEventsMap,
-          DefaultEventsMap,
-          DefaultEventsMap,
-          any
-        >
-      ) => {
-        if (clientConn !== conn) {
-          logger.warn("broadcast....,id:" + clientConn.id);
-          send(curSubDoc, clientConn, encoding.toUint8Array(encoder));
-        }
-      }
-    );
-    const persistedYdoc: Y.Doc = await postgresqlDb.getYDoc(syncFileAttr);
-    handleYDocUpdate(update, curSubDoc, syncFileAttr, persistedYdoc, true);
-  };
   // @ts-ignore
-  curSubDoc.on("update", handleSubDocUpdate);
+  curSubDoc.on("update", (update: Uint8Array, origin: any) =>
+    handleSubDocUpdate(
+      update,
+      origin,
+      curSubDoc,
+      subdocGuid,
+      conn,
+      rootDoc,
+      syncFileAttr
+    )
+  );
   const subDocText = curSubDoc.getText(subdocGuid);
   subDocText.observe((event: Y.YTextEvent, tr: Y.Transaction) => {
     logger.warn(
@@ -179,31 +198,49 @@ const handleSubDoc = (
   if (curSubdocMap && curSubdocMap.has(subdocGuid)) {
     // sync step 1 done before.
   } else {
-    let docMeta: DocMeta = {
-      name: subdocGuid,
-      id: syncFileAttr.docIntId!,
-      src: "server",
-    };
-    if (curSubdocMap) {
-      curSubDoc.meta = docMeta;
-      rootDoc.getMap("texhubsubdoc").set(subdocGuid, curSubDoc);
-      curSubdocMap.set(subdocGuid, curSubDoc);
-    } else {
-      const newMap = new Map<String, WSSharedDoc>();
-      curSubDoc.meta = docMeta;
-      newMap.set(subdocGuid, curSubDoc);
-      subdocsMap.set(rootDoc.name, newMap);
-    }
-
-    // send sync step 1
-    const encoder = encoding.createEncoder();
-    encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
-    encoding.writeVarString(encoder, subdocGuid);
-    syncProtocol.writeSyncStep1(encoder, curSubDoc);
-    send(curSubDoc, conn, encoding.toUint8Array(encoder));
-    // Register update handler for the subdocument
-    // @ts-ignore - Y.Doc has on method but TypeScript doesn't know about it
+    handleFirstTimePut(
+      curSubdocMap,
+      subdocGuid,
+      curSubDoc,
+      rootDoc,
+      conn,
+      syncFileAttr
+    );
   }
+};
+
+const handleFirstTimePut = (
+  curSubdocMap: Map<String, WSSharedDoc> | undefined,
+  subdocGuid: string,
+  curSubDoc: WSSharedDoc,
+  rootDoc: WSSharedDoc,
+  conn: Socket,
+  syncFileAttr: SyncFileAttr
+) => {
+  let docMeta: DocMeta = {
+    name: subdocGuid,
+    id: syncFileAttr.docIntId!,
+    src: "server",
+  };
+  if (curSubdocMap) {
+    curSubDoc.meta = docMeta;
+    rootDoc.getMap("texhubsubdoc").set(subdocGuid, curSubDoc);
+    curSubdocMap.set(subdocGuid, curSubDoc);
+  } else {
+    const newMap = new Map<String, WSSharedDoc>();
+    curSubDoc.meta = docMeta;
+    newMap.set(subdocGuid, curSubDoc);
+    subdocsMap.set(rootDoc.name, newMap);
+  }
+
+  // send sync step 1
+  const encoder = encoding.createEncoder();
+  encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
+  encoding.writeVarString(encoder, subdocGuid);
+  syncProtocol.writeSyncStep1(encoder, curSubDoc);
+  send(curSubDoc, conn, encoding.toUint8Array(encoder));
+  // Register update handler for the subdocument
+  // @ts-ignore - Y.Doc has on method but TypeScript doesn't know about it
 };
 
 /**
