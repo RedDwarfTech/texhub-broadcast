@@ -30,11 +30,13 @@ export async function setupWSConnection(
   const docIntId = urlParams.get("docIntId");
   const projId = urlParams.get("projId");
   const docType = urlParams.get("docType");
+  const docShowName = urlParams.get("docShowName");
   let syncFileAttr: SyncFileAttr = {
     docName: docId!,
     docType: Number(docType),
     projectId: projId!,
-    docIntId: docIntId!
+    docIntId: docIntId!,
+    docShowName: docShowName || "unknown",
   };
   // get doc, initialize if it does not exist yet
   const rootDoc: WSSharedDoc = getYDoc(syncFileAttr, gc);

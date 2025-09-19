@@ -122,7 +122,8 @@ export const initTpl = async (
     /** 1: tex file 2: project 0: folder */
     docType: 1,
     projectId: projectId!,
-    docIntId: ""
+    docIntId: "",
+    docShowName: "initTplate"
   };
   await postgresqlDb.putUpdateToQueue(syncFileAttr, newUpdates);
 };

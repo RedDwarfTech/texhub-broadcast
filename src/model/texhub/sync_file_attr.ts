@@ -6,5 +6,5 @@ export interface SyncFileAttr {
     docIntId?: string;
     curTime?: string;
     hash?: string;
-    docShowName?: string;
+    docShowName: string;
 }
