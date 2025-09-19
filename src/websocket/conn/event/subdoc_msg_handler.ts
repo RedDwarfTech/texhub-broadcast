@@ -90,7 +90,7 @@ const preHandleSubDoc = async (
       docShowName: fileInfo.name,
       docType: 1
     };
-    let memoryOrDiskSubdoc = await getYDoc(syncFileAttr);
+    let memoryOrDiskSubdoc = getYDoc(syncFileAttr);
     let curSubDoc = memoryOrDiskSubdoc;
     if (subdocGuid !== rootDoc.name) {
       // current document id not equal to root document
@@ -107,11 +107,6 @@ const preHandleSubDoc = async (
             ",finfo:" +
             JSON.stringify(fileInfo!)
         );
-        // try to get document from database directly
-        const postgresqlDb: PostgresqlPersistance =
-          persistencePostgresql.provider;
-        const persistedYdoc: any = await postgresqlDb.getYDoc(syncFileAttr);
-        curSubDoc = persistedYdoc;
       }
       handleSubDoc(curSubDoc, subdocGuid, conn, rootDoc, syncFileAttr);
     }
