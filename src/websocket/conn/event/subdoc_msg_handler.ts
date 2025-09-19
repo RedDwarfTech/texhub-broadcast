@@ -217,22 +217,33 @@ const handleFirstTimePut = (
   conn: Socket,
   syncFileAttr: SyncFileAttr
 ) => {
-  let docMeta: DocMeta = {
-    name: subdocGuid,
-    id: syncFileAttr.docIntId!,
-    src: "server",
-  };
-  if (curSubdocMap) {
-    curSubDoc.meta = docMeta;
-    rootDoc.getMap("texhubsubdoc").set(subdocGuid, curSubDoc);
-    curSubdocMap.set(subdocGuid, curSubDoc);
-  } else {
-    const newMap = new Map<String, WSSharedDoc>();
-    curSubDoc.meta = docMeta;
-    newMap.set(subdocGuid, curSubDoc);
-    subdocsMap.set(rootDoc.name, newMap);
+  try {
+    let docMeta: DocMeta = {
+      name: subdocGuid,
+      id: syncFileAttr.docIntId!,
+      src: "server",
+    };
+    if (curSubdocMap) {
+      curSubDoc.meta = docMeta;
+      rootDoc.getMap("texhubsubdoc").set(subdocGuid, curSubDoc);
+      curSubdocMap.set(subdocGuid, curSubDoc);
+    } else {
+      const newMap = new Map<String, WSSharedDoc>();
+      curSubDoc.meta = docMeta;
+      newMap.set(subdocGuid, curSubDoc);
+      subdocsMap.set(rootDoc.name, newMap);
+    }
+    sendSyncStep1(curSubDoc, subdocGuid, conn);
+  } catch (e) {
+    logger.error("handle first time put failed, docGuid:" + subdocGuid, e);
   }
+};
 
+const sendSyncStep1 = (
+  curSubDoc: WSSharedDoc,
+  subdocGuid: string,
+  conn: Socket
+) => {
   // send sync step 1
   const encoder = encoding.createEncoder();
   encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
