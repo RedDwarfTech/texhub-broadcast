@@ -174,19 +174,6 @@ export class SocketIOClientProvider extends Observable<string> {
       if (origin !== this) {
         const encoder = encoding.createEncoder();
         encoding.writeVarUint(encoder, SyncMessageType.MessageSync);
-        if (enableDebug()) {
-          console.log("trigger updateHandler");
-          const tempDoc = new Y.Doc();
-          let uo: UpdateOrigin = {
-            name: "updateHandler-debug",
-            origin: "client",
-          };
-          Y.applyUpdate(tempDoc, update, uo);
-          for (const key of tempDoc.share.keys()) {
-            const txt = tempDoc.getText(key).toString();
-            console.log(`update内容: text[${key}] =`, txt);
-          }
-        }
         syncProtocol.writeUpdate(encoder, update);
         broadcastMessage(this, encoding.toUint8Array(encoder));
       }
