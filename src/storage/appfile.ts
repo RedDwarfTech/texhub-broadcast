@@ -18,12 +18,12 @@ export const throttledFn = lodash.throttle(
     if (syncFileAttr.docType === TeXFileType.PROJECT) {
       return;
     }
-    handleFileSync(syncFileAttr, ldb);
+    flushFileToDiskAndSearchEngine(syncFileAttr, ldb);
   },
   2000
 );
 
-const handleFileSync = async (
+const flushFileToDiskAndSearchEngine = async (
   syncFileAttr: SyncFileAttr,
   ldb: PostgresqlPersistance
 ) => {

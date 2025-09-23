@@ -45,7 +45,7 @@ if (typeof persistenceDir === "string") {
           const updateTime = Date.now().toLocaleString();
           syncFileAttr.curTime = updateTime;
           syncFileAttr.hash = updateHash;
-          handleYDocUpdate(update, ydoc, syncFileAttr, persistedYdoc);
+          handleYDocUpdate(update, ydoc, syncFileAttr);
         });
       } catch (err: any) {
         logger.error("process update failed", err);

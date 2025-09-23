@@ -45,6 +45,7 @@
       "name": "texhub-broadcast-remote",
       "address": "10.97.246.200",
       "port": 9090,
+      "asyncCallStack": true,
       "localRoot": "${workspaceFolder}",
       "remoteRoot": "/home/node/app/"
     }
