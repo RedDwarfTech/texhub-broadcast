@@ -110,8 +110,8 @@ export const checkAndMarkUpdateHash = async (
       );
       return true;
     }
-    // 标记已存在，设置过期时间（如1天）
-    await redis.set(redisKey, "1", "EX", 86400);
+    // 标记已存在，设置过期时间30秒
+    await redis.set(redisKey, "1", "EX", 30);
   }
   return false;
 };
