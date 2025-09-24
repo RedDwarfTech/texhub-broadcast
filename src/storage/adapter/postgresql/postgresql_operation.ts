@@ -19,7 +19,7 @@ import {
 } from "./conf/postgresql_const.js";
 import { TeXSync } from "@model/yjs/storage/sync/tex_sync.js";
 import { v4 as uuidv4 } from "uuid";
-import { getPgPool, getRedisClient } from "./conf/database_init.js";
+import { getPgPool } from "./conf/database_init.js";
 import { PostgresqlPersistance } from "./postgresql_persistance.js";
 import { persistencePostgresql } from "@/storage/storage.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";

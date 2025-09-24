@@ -74,16 +74,9 @@ export const initializeDatabases = async (): Promise<void> => {
     logger.info("Skipping database initialization in browser environment");
     return;
   }
-
   try {
-    logger.info("Starting database initialization...");
-
     // Initialize PostgreSQL
     await initializePostgreSQL();
-
-    // Initialize Redis (optional)
-    await initializeRedis();
-
     logger.info("Database initialization completed successfully");
   } catch (error) {
     logger.error("Database initialization failed:", error);

@@ -19,13 +19,10 @@ import {
 } from "../conf/postgresql_const.js";
 import { TeXSync } from "@model/yjs/storage/sync/tex_sync.js";
 import { v4 as uuidv4 } from "uuid";
-import { getPgPool, getRedisClient } from "../conf/database_init.js";
+import { getPgPool } from "../conf/database_init.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { UpdateOrigin } from "@/model/yjs/net/update_origin.js";
-import type Redis from "ioredis";
 import { getRedisDestriLock, unlock } from "@/common/cache/redis_util.js";
-
-const redis: Redis | undefined = await getRedisClient();
 
 export const getPgUpdatesTrans = async (
   db: pg.PoolClient,
