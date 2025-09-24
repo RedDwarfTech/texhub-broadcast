@@ -2,11 +2,9 @@ import type * as pg from "pg";
 import logger from "@common/log4js_config.js";
 import type Redis from "ioredis";
 
-// Global database clients
 let pgPool: pg.Pool | null = null;
 let redisClient: any = null;
 
-// Database configuration
 const pgConfig = {
   host: process.env.PG_HOST || "localhost",
   port: parseInt(process.env.POSTGRES_PORT || "5432"),

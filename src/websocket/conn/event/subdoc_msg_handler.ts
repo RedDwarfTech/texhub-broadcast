@@ -106,7 +106,8 @@ const preHandleSubDoc = async (
             subdocGuid +
             ",finfo:" +
             JSON.stringify(fileInfo!) +
-            ",socket-id:" + conn.id
+            ",socket-id:" + conn.id + 
+            ",docContext:" + docContext
         );
       }
       handleSubDoc(curSubDoc, subdocGuid, conn, rootDoc, syncFileAttr);
