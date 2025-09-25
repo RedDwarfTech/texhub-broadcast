@@ -226,7 +226,6 @@ const handleFirstTimePut = (
     };
     if (curSubdocMap) {
       curSubDoc.meta = docMeta;
-      rootDoc.getMap("texhubsubdoc").set(subdocGuid, curSubDoc);
       curSubdocMap.set(subdocGuid, curSubDoc);
     } else {
       const newMap = new Map<String, WSSharedDoc>();
