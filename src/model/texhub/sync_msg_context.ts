@@ -18,5 +18,5 @@ export interface SyncMessageContext {
     /**
      * whether emit synced event when main doc synced
      */
-    emitSynced: boolean;
+    emitSynced?: boolean;
 }
