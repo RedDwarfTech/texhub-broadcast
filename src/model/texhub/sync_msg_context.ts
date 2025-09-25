@@ -15,4 +15,8 @@ export interface SyncMessageContext {
      * the message uniq trace id
      */
     trace_id: string;
+    /**
+     * whether emit synced event when main doc synced
+     */
+    emitSynced: boolean;
 }

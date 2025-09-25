@@ -38,7 +38,7 @@ messageHandlers[SyncMessageType.SubDocMessageSync] = (
   decoder: any,
   provider: SocketIOClientProvider,
   emitSynced: boolean = true,
-  messageType: any
+  messageType: number
 ) => {
   const docGuid = decoding.readVarString(decoder);
   const doc = provider.getDoc(docGuid);
@@ -53,6 +53,7 @@ messageHandlers[SyncMessageType.SubDocMessageSync] = (
     doc_name: docGuid,
     src: "messageHandlers",
     trace_id: uniqueValue,
+    emitSynced: emitSynced,
   };
   let msgStr = JSON.stringify(msg);
   // convert to the legacy message without doc guid
