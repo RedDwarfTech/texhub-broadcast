@@ -112,8 +112,8 @@ const preHandleSubDoc = async (
             JSON.stringify(docContext)
         );
       }
-      handleSubDoc(curSubDoc, subdocGuid, conn, rootDoc, syncFileAttr);
     }
+    handleSubDoc(curSubDoc, subdocGuid, conn, rootDoc, syncFileAttr);
     handleNormalMsg(rootDoc, conn, decoder, subdocGuid, encoder, curSubDoc);
   } catch (err) {
     logger.error("handle sub doc facing issue:" + rootDoc.name, err);
