@@ -106,13 +106,33 @@ const preHandleSubDoc = async (
             subdocGuid +
             ",finfo:" +
             JSON.stringify(fileInfo!) +
-            ",socket-id:" + conn.id + 
-            ",docContext:" + JSON.stringify(docContext)
+            ",socket-id:" +
+            conn.id +
+            ",docContext:" +
+            JSON.stringify(docContext)
         );
       }
       handleSubDoc(curSubDoc, subdocGuid, conn, rootDoc, syncFileAttr);
     }
-    try {
+    handleNormalMsg(rootDoc, conn, decoder, subdocGuid, encoder, curSubDoc);
+  } catch (err) {
+    logger.error("handle sub doc facing issue:" + rootDoc.name, err);
+  }
+};
+
+const handleNormalMsg = (
+  rootDoc: WSSharedDoc,
+  conn: Socket,
+  decoder: any,
+  subdocGuid: string,
+  encoder: any,
+  curSubDoc: WSSharedDoc
+) => {
+  const curSubdocMap: Map<String, WSSharedDoc> | undefined = subdocsMap.get(
+    rootDoc.name
+  );
+  try {
+    if (curSubdocMap && curSubdocMap.has(subdocGuid)) {
       encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
       encoding.writeVarString(encoder, subdocGuid);
       if (decoding.hasContent(decoder)) {
@@ -121,11 +141,9 @@ const preHandleSubDoc = async (
           send(curSubDoc, conn, encoding.toUint8Array(encoder));
         }
       }
-    } catch (e) {
-      logger.error("write sub document sync failed, docGuid:" + subdocGuid, e);
     }
-  } catch (err) {
-    logger.error("handle sub doc facing issue:" + rootDoc.name, err);
+  } catch (e) {
+    logger.error("write sub document sync failed, docGuid:" + subdocGuid, e);
   }
 };
 
