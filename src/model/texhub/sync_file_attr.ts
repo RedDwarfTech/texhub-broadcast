@@ -7,4 +7,5 @@ export interface SyncFileAttr {
     curTime?: string;
     hash?: string;
     docShowName: string;
+    src: string;
 }

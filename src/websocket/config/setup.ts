@@ -37,6 +37,7 @@ export async function setupWSConnection(
     projectId: projId!,
     docIntId: docIntId!,
     docShowName: docShowName || "unknown",
+    src: "setupWSConnection"
   };
   // get doc, initialize if it does not exist yet
   const rootDoc: WSSharedDoc = getYDoc(syncFileAttr, gc);

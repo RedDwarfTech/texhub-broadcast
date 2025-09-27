@@ -52,7 +52,8 @@ const handleSwitchFiles = async (msg: ControlMsg, conn: Socket) => {
     docName: msg.fileId,
     projectId: "",
     docType: 1,
-    docShowName: "unknown"
+    docShowName: "unknown",
+    src: "handleSwitchFiles"
   };
   const doc: WSSharedDoc = getYDoc(syncFileAttr, true);
   const encoder = createEncoder();
