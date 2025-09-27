@@ -90,7 +90,7 @@ const preHandleSubDoc = async (
       docShowName: fileInfo.name,
       docType: 1,
       src: "preHandleSubDoc",
-      msgBody: docContext
+      msgBody: docContext,
     };
     let memoryOrDiskSubdoc = getYDoc(syncFileAttr);
     let curSubDoc = memoryOrDiskSubdoc;
@@ -191,31 +191,12 @@ const handleSubDoc = (
   rootDoc: WSSharedDoc,
   syncFileAttr: SyncFileAttr
 ) => {
-  if (!rootDoc.conns.has(conn)) rootDoc.conns.set(conn, new Set());
+  if (!rootDoc.conns.has(conn)) {
+    rootDoc.conns.set(conn, new Set());
+  }
   const curSubdocMap: Map<String, WSSharedDoc> | undefined = subdocsMap.get(
     rootDoc.name
   );
-  // @ts-ignore
-  curSubDoc.on("update", (update: Uint8Array, origin: any) =>
-    handleSubDocUpdate(
-      update,
-      origin,
-      curSubDoc,
-      subdocGuid,
-      conn,
-      rootDoc,
-      syncFileAttr
-    )
-  );
-  const subDocText = curSubDoc.getText(subdocGuid);
-  subDocText.observe((event: Y.YTextEvent, tr: Y.Transaction) => {
-    logger.warn(
-      "sub document text changed,docGuid:" +
-        subdocGuid +
-        ",delta:" +
-        JSON.stringify(event.delta)
-    );
-  });
   if (curSubdocMap && curSubdocMap.has(subdocGuid)) {
     // sync step 1 done before.
   } else {
@@ -239,6 +220,27 @@ const handleFirstTimePut = (
   syncFileAttr: SyncFileAttr
 ) => {
   try {
+    // @ts-ignore
+    curSubDoc.on("update", (update: Uint8Array, origin: any) =>
+      handleSubDocUpdate(
+        update,
+        origin,
+        curSubDoc,
+        subdocGuid,
+        conn,
+        rootDoc,
+        syncFileAttr
+      )
+    );
+    const subDocText = curSubDoc.getText(subdocGuid);
+    subDocText.observe((event: Y.YTextEvent, tr: Y.Transaction) => {
+      logger.warn(
+        "sub document text changed,docGuid:" +
+          subdocGuid +
+          ",delta:" +
+          JSON.stringify(event.delta)
+      );
+    });
     let docMeta: DocMeta = {
       name: subdocGuid,
       id: syncFileAttr.docIntId!,
