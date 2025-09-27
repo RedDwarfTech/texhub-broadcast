@@ -114,8 +114,8 @@ const preHandleSubDoc = async (
         );
       }
     }
-    handleSubDoc(curSubDoc, subdocGuid, conn, rootDoc, syncFileAttr);
     handleNormalMsg(rootDoc, conn, decoder, subdocGuid, encoder, curSubDoc);
+    handleSubDoc(curSubDoc, subdocGuid, conn, rootDoc, syncFileAttr);
   } catch (err) {
     logger.error("handle sub doc facing issue:" + rootDoc.name, err);
   }
