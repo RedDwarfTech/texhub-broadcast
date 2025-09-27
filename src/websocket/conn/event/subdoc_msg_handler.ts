@@ -77,11 +77,14 @@ const preHandleSubDoc = async (
       updated_time: "",
       file_id: "",
     };
-    if (subdocGuid !== rootDoc.name) {
+    if (subdocGuid === rootDoc.name) {
       fileInfo = await getTexFileInfo(subdocGuid);
       if (fileInfo) {
         docIntId = fileInfo.id;
       }
+    }else{
+      logger.warn("the subdocGuid equal to rootDoc.name,skip query file info,docName:" + subdocGuid);
+      return;
     }
     let syncFileAttr: SyncFileAttr = {
       docName: subdocGuid,
