@@ -8,4 +8,5 @@ export interface SyncFileAttr {
     hash?: string;
     docShowName: string;
     src: string;
+    msgBody?: any;
 }
