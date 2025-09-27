@@ -176,7 +176,7 @@ const handleSubDocUpdate = async (
       >
     ) => {
       if (clientConn !== conn) {
-        logger.warn("broadcast....,id:" + clientConn.id);
+        logger.warn("broadcast....,id:" + clientConn.id + ",conn-id:" + conn.id);
         send(curSubDoc, clientConn, encoding.toUint8Array(encoder));
       }
     }
@@ -221,7 +221,8 @@ const handleFirstTimePut = (
 ) => {
   try {
     // @ts-ignore
-    curSubDoc.on("update", (update: Uint8Array, origin: any) =>
+    curSubDoc.on("update", (update: Uint8Array, origin: any) =>{
+      syncFileAttr.src = syncFileAttr.src + "_subdoc_update";
       handleSubDocUpdate(
         update,
         origin,
@@ -230,7 +231,7 @@ const handleFirstTimePut = (
         conn,
         rootDoc,
         syncFileAttr
-      )
+      )}
     );
     const subDocText = curSubDoc.getText(subdocGuid);
     subDocText.observe((event: Y.YTextEvent, tr: Y.Transaction) => {
