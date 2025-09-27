@@ -155,7 +155,6 @@ const handleSubDocUpdate = async (
   curSubDoc: WSSharedDoc,
   subdocGuid: string,
   conn: Socket,
-  rootDoc: WSSharedDoc,
   syncFileAttr: SyncFileAttr
 ) => {
   if (origin === conn) return; // Don't broadcast back to the sender
@@ -182,7 +181,7 @@ const handleSubDoc = (
   if (curSubdocMap && curSubdocMap.has(subdocGuid)) {
     // sync step 1 done before.
   } else {
-    handleFirstTimePut(
+    handleSubDocFirstTimePut(
       curSubdocMap,
       subdocGuid,
       curSubDoc,
@@ -193,7 +192,7 @@ const handleSubDoc = (
   }
 };
 
-const handleFirstTimePut = (
+const handleSubDocFirstTimePut = (
   curSubdocMap: Map<String, WSSharedDoc> | undefined,
   subdocGuid: string,
   curSubDoc: WSSharedDoc,
@@ -203,7 +202,7 @@ const handleFirstTimePut = (
 ) => {
   try {
     // @ts-ignore
-    curSubDoc.on("update", (update: Uint8Array, origin: any) =>{
+    curSubDoc.on("update", (update: Uint8Array, origin: any) => {
       syncFileAttr.src = syncFileAttr.src + "_subdoc_update";
       handleSubDocUpdate(
         update,
@@ -211,10 +210,9 @@ const handleFirstTimePut = (
         curSubDoc,
         subdocGuid,
         conn,
-        rootDoc,
         syncFileAttr
-      )}
-    );
+      );
+    });
     const subDocText = curSubDoc.getText(subdocGuid);
     subDocText.observe((event: Y.YTextEvent, tr: Y.Transaction) => {
       logger.warn(
