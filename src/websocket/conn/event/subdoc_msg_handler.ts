@@ -159,28 +159,10 @@ const handleSubDocUpdate = async (
   syncFileAttr: SyncFileAttr
 ) => {
   if (origin === conn) return; // Don't broadcast back to the sender
-
   const encoder = encoding.createEncoder();
   encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
   encoding.writeVarString(encoder, subdocGuid);
   syncProtocol.writeUpdate(encoder, update);
-
-  rootDoc.conns.forEach(
-    (
-      _,
-      clientConn: Socket<
-        DefaultEventsMap,
-        DefaultEventsMap,
-        DefaultEventsMap,
-        any
-      >
-    ) => {
-      if (clientConn !== conn) {
-        logger.warn("broadcast....,id:" + clientConn.id + ",conn-id:" + conn.id);
-        send(curSubDoc, clientConn, encoding.toUint8Array(encoder));
-      }
-    }
-  );
   handleYDocUpdate(update, curSubDoc, syncFileAttr);
 };
 
