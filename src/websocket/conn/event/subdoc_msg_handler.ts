@@ -203,14 +203,15 @@ const handleSubDocFirstTimePut = (
   try {
     // @ts-ignore
     curSubDoc.on("update", (update: Uint8Array, origin: any) => {
-      syncFileAttr.src = syncFileAttr.src + "_subdoc_update";
+     const deepCopied = structuredClone(syncFileAttr)
+      deepCopied.src = deepCopied.src + "_subdoc_update";
       handleSubDocUpdate(
         update,
         origin,
         curSubDoc,
         subdocGuid,
         conn,
-        syncFileAttr
+        deepCopied
       );
     });
     const subDocText = curSubDoc.getText(subdocGuid);
