@@ -77,7 +77,7 @@ const preHandleSubDoc = async (
       updated_time: "",
       file_id: "",
     };
-    if (subdocGuid === rootDoc.name) {
+    if (subdocGuid !== rootDoc.name) {
       fileInfo = await getTexFileInfo(subdocGuid);
       if (fileInfo) {
         docIntId = fileInfo.id;
