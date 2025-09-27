@@ -230,7 +230,7 @@ const handleSubDocFirstTimePut = (
     };
     if (curSubdocMap) {
       curSubDoc.meta = docMeta;
-      curSubdocMap.set(subdocGuid, curSubDoc);
+      subdocsMap.get(rootDoc.name)!.set(subdocGuid, curSubDoc);
     } else {
       const newMap = new Map<String, WSSharedDoc>();
       curSubDoc.meta = docMeta;
