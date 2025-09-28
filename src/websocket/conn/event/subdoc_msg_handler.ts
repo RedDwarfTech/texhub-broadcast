@@ -221,7 +221,8 @@ const handleSubDocFirstTimePut = (
 ) => {
   try {
     // @ts-ignore
-    curSubDoc.on("update", (update: Uint8Array, origin: any) => {
+    curSubDoc.on("update", (update: Uint8Array, origin: Socket) => {
+      if (origin === conn) return;
       const deepCopied = structuredClone(syncFileAttr);
       if (subdocGuid == rootDoc.name) {
         logger.warn(
