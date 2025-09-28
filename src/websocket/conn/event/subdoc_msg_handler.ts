@@ -21,6 +21,7 @@ import { SyncMessageContext } from "@/model/texhub/sync_msg_context.js";
 import { handleYDocUpdate } from "@/storage/handler/ydoc_action_handler.js";
 import { DocMeta } from "@/model/yjs/commom/doc_meta.js";
 import { redis } from "@/common/cache/redis_util.js";
+import { v4 as uuidv4 } from "uuid";
 
 /**
  * relationship of main doc & sub docs
@@ -136,7 +137,16 @@ const handleNormalMsg = (
   try {
     if (curSubdocMap && curSubdocMap.has(subdocGuid)) {
       encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
-      encoding.writeVarString(encoder, subdocGuid);
+
+      const uniqueValue = uuidv4();
+      let msg: SyncMessageContext = {
+        doc_name: subdocGuid,
+        src: "handleNormalMsg",
+        trace_id: uniqueValue,
+      };
+      let msgStr = JSON.stringify(msg);
+
+      encoding.writeVarString(encoder, msgStr);
       if (decoding.hasContent(decoder)) {
         syncProtocol.readSyncMessage(decoder, encoder, curSubDoc, null);
         if (encoding.length(encoder) > 1 && needSend(encoder)) {
@@ -160,7 +170,16 @@ const handleSubDocUpdate = async (
   if (origin === conn) return; // Don't broadcast back to the sender
   const encoder = encoding.createEncoder();
   encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
-  encoding.writeVarString(encoder, subdocGuid);
+
+  const uniqueValue = uuidv4();
+  let msg: SyncMessageContext = {
+    doc_name: subdocGuid,
+    src: "handleSubDocUpdate",
+    trace_id: uniqueValue,
+  };
+  let msgStr = JSON.stringify(msg);
+
+  encoding.writeVarString(encoder, msgStr);
   syncProtocol.writeUpdate(encoder, update);
   handleYDocUpdate(update, curSubDoc, syncFileAttr);
 };
@@ -258,7 +277,16 @@ const sendSyncStep1 = (
   // send sync step 1
   const encoder = encoding.createEncoder();
   encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
-  encoding.writeVarString(encoder, subdocGuid);
+
+  const uniqueValue = uuidv4();
+  let msg: SyncMessageContext = {
+    doc_name: subdocGuid,
+    src: "sendSyncStep1submsghandler",
+    trace_id: uniqueValue,
+  };
+  let msgStr = JSON.stringify(msg);
+
+  encoding.writeVarString(encoder, msgStr);
   syncProtocol.writeSyncStep1(encoder, curSubDoc);
   send(curSubDoc, conn, encoding.toUint8Array(encoder));
   // Register update handler for the subdocument

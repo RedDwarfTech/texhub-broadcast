@@ -12,7 +12,8 @@ import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
 // @ts-ignore
 import * as syncProtocol from "rdy-protocols/sync";
 import { readMessage } from "../ws_action.js";
-
+import { SyncMessageContext } from "@/model/texhub/sync_msg_context.js";
+import { v4 as uuidv4 } from "uuid";
 /**
  * @param {SocketIOClientProvider} provider
  */
@@ -86,7 +87,14 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
         for (const [k, doc] of provider.docs) {
           const encoder = encoding.createEncoder();
           encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
-          encoding.writeVarString(encoder, k);
+          const uniqueValue = uuidv4();
+          let msg: SyncMessageContext = {
+            doc_name: k,
+            src: "providerdocs",
+            trace_id: uniqueValue,
+          };
+          let msgStr = JSON.stringify(msg);
+          encoding.writeVarString(encoder, msgStr);
           syncProtocol.writeSyncStep1(encoder, doc);
           socketio.send(encoding.toUint8Array(encoder));
         }
