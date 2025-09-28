@@ -82,9 +82,6 @@ const preHandleSubDoc = async (
       if (fileInfo) {
         docIntId = fileInfo.id;
       }
-    }else{
-      logger.warn("the subdocGuid equal to rootDoc.name,skip query file info,docName:" + subdocGuid);
-      return;
     }
     let syncFileAttr: SyncFileAttr = {
       docName: subdocGuid,
@@ -206,7 +203,14 @@ const handleSubDocFirstTimePut = (
   try {
     // @ts-ignore
     curSubDoc.on("update", (update: Uint8Array, origin: any) => {
-     const deepCopied = structuredClone(syncFileAttr)
+      if (subdocGuid == rootDoc.name) {
+        logger.warn(
+          "the subdocGuid equal to rootDoc.name,skip update handler,docName:" +
+            subdocGuid
+        );
+        return;
+      }
+      const deepCopied = structuredClone(syncFileAttr);
       deepCopied.src = deepCopied.src + "_subdoc_update";
       handleSubDocUpdate(
         update,
