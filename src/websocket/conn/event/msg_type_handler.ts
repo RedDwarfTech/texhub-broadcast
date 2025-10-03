@@ -23,6 +23,7 @@ import { MessageHandler } from "@/model/yjs/net/msg_handler_fun.js";
 import { enableTracing, logYjsUnwrapMsg } from "@/common/tracing/app_trace.js";
 import { v4 as uuidv4 } from "uuid";
 import { SyncMessageContext } from "@/model/texhub/sync_msg_context.js";
+import { RdJsonUtil } from "rdjs-wheel";
 
 export const messageHandlers: MessageHandler[] = [];
 
@@ -40,7 +41,10 @@ messageHandlers[SyncMessageType.SubDocMessageSync] = (
   emitSynced: boolean = true,
   messageType: number
 ) => {
-  const docGuid = decoding.readVarString(decoder);
+  const context = decoding.readVarString(decoder);
+  const isJson = RdJsonUtil.hasJsonStructure(context);
+  const docContext = isJson ? JSON.parse(context) : context;
+  const docGuid = isJson ? docContext.doc_name : docContext;
   const doc = provider.getDoc(docGuid);
   if (!doc) {
     console.error("doc not found with id: ", docGuid);
