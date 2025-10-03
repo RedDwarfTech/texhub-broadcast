@@ -22,7 +22,7 @@ import { v4 as uuidv4 } from "uuid";
 import { getPgPool } from "../conf/database_init.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { UpdateOrigin } from "@/model/yjs/net/update_origin.js";
-import { getRedisDestriLock, unlock } from "@/common/cache/redis_util.js";
+import { getRedisDestriLock, unlockDistriKey } from "@/common/cache/redis_util.js";
 
 export const getPgUpdatesTrans = async (
   db: pg.PoolClient,
@@ -195,7 +195,7 @@ export const storeHistoryUpdate = async (
   } catch (error: any) {
     logger.error(`Error in storeUpdate: ${error.message || error}`);
   } finally {
-    await unlock(lockKey, uniqueValue);
+    await unlockDistriKey(lockKey, uniqueValue);
   }
   return 0;
 };

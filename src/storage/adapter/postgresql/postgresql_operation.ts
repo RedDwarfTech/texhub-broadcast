@@ -27,7 +27,7 @@ import { UpdateOrigin } from "@/model/yjs/net/update_origin.js";
 import {
   checkAndMarkUpdateHash,
   getRedisDestriLock,
-  unlock,
+  unlockDistriKey,
 } from "@/common/cache/redis_util.js";
 import { ENABLE_DEBUG } from "@/common/log_util.js";
 
@@ -279,7 +279,7 @@ export const storeUpdate = async (
     logger.error(`[storeUpdate] Error: ${error.message || error}`);
   } finally {
     // release lock (will do nothing if Redis is not available)
-    await unlock(lockKey, uniqueValue);
+    await unlockDistriKey(lockKey, uniqueValue);
   }
   return 0;
 };

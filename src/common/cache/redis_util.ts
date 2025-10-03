@@ -53,11 +53,11 @@ function sleep(delay: number) {
 
 /**
  * 释放锁
- * @param resourceKey 资源键名
+ * @param lockKey 资源键名
  * @param uniqueValue 唯一值，用于验证锁的所有者(建议:UUID)
  * @returns 是否成功释放锁
  */
-export async function unlock(lockKey: string, uniqueValue: string) {
+export async function unlockDistriKey(lockKey: string, uniqueValue: string) {
   if (!redis) {
     logger.info("Redis client not available, simulating lock release", redis);
     return;
@@ -68,6 +68,10 @@ export async function unlock(lockKey: string, uniqueValue: string) {
   } catch (e) {
     logger.error(`Error getting current lock value for ${lockKey}:`, e);
   }
+  if (currentValue === null) {
+    logger.warn(`lockKey not exists, skip unlock: ${lockKey}, expected=${uniqueValue}`);
+    return;
+  }
   const luaScript = `
       if redis.call("GET", KEYS[1]) == ARGV[1] then
         return redis.call("DEL", KEYS[1])
@@ -76,8 +80,7 @@ export async function unlock(lockKey: string, uniqueValue: string) {
       end
     `;
   const result = await redis.eval(luaScript, 1, lockKey, uniqueValue);
-  if (result === 1) {
-  } else {
+  if (result !== 1) {
     logger.error(
       `release lock failed: ${lockKey}, currentValue=${currentValue}, expected=${uniqueValue}`
     );
