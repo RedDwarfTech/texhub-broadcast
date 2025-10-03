@@ -22,6 +22,7 @@ import { handleYDocUpdate } from "@/storage/handler/ydoc_action_handler.js";
 import { DocMeta } from "@/model/yjs/commom/doc_meta.js";
 import { redis } from "@/common/cache/redis_util.js";
 import { v4 as uuidv4 } from "uuid";
+import { RdJsonUtil } from "rdjs-wheel";
 
 /**
  * relationship of main doc & sub docs
@@ -45,17 +46,6 @@ export const handleSubDocMsg = async (
   await preHandleSubDoc(decoder, conn, rootDoc);
 };
 
-function hasJsonStructure(str: string) {
-  if (typeof str !== "string") return false;
-  try {
-    const result = JSON.parse(str);
-    const type = Object.prototype.toString.call(result);
-    return type === "[object Object]" || type === "[object Array]";
-  } catch (err) {
-    return false;
-  }
-}
-
 const preHandleSubDoc = async (
   decoder: any,
   conn: Socket,
@@ -64,7 +54,7 @@ const preHandleSubDoc = async (
   try {
     const encoder = encoding.createEncoder();
     const context = decoding.readVarString(decoder);
-    const isJson = hasJsonStructure(context);
+    const isJson = RdJsonUtil.hasJsonStructure(context);
     const docContext = isJson ? JSON.parse(context) : context;
     const subdocGuid = isJson ? docContext.doc_name : docContext;
     let docIntId = "";
@@ -226,7 +216,7 @@ const handleSubDocFirstTimePut = (
       const deepCopied = structuredClone(syncFileAttr);
       if (subdocGuid == rootDoc.name) {
         logger.warn(
-          "the subdocGuid equal to rootDoc.name,skip update handler,docName:" +
+          "the subdocGuid equal to rootDoc.name,skip update handler,syncFileAttr:" +
             JSON.stringify(syncFileAttr)
         );
         return;

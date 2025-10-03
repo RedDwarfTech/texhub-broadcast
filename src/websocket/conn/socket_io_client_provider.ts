@@ -27,7 +27,7 @@ import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
 import { WsCommand } from "@common/ws/WsCommand.js";
 import { setupWebsocket } from "./event/setup_ws.js";
 import { messageHandlers } from "./event/msg_type_handler.js";
-import { broadcastMessage, readMessage, sendMessage } from "./ws_action.js";
+import { broadcastMessage, readMessage } from "./ws_action.js";
 import { SyncMessageContext } from "@/model/texhub/sync_msg_context.js";
 import { v4 as uuidv4 } from "uuid";
 import { enableDebug } from "@/common/log_util_web.js";
