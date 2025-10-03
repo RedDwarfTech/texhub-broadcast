@@ -88,6 +88,10 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
           console.log(
             "start sync for sub doc:" + k + ",count:" + provider.docs.size
           );
+          if(doc.meta.id === "-1"){
+            continue;
+          }
+          
           const encoder = encoding.createEncoder();
           encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
           const uniqueValue = uuidv4();
