@@ -102,7 +102,8 @@ const preHandleSubDoc = async (
             ",socket-id:" +
             conn.id +
             ",docContext:" +
-            JSON.stringify(docContext)
+            JSON.stringify(docContext) + 
+            ",projectId:" + rootDoc.name
         );
       }
     }
