@@ -19,4 +19,12 @@ export interface SyncMessageContext {
      * whether emit synced event when main doc synced
      */
     emitSynced?: boolean;
+    /**
+     * project id, used for multi-tenant
+     */
+    project_id?: string;
+    /**
+     * msg type, reserved field
+     */
+    msg_type?: string;
 }

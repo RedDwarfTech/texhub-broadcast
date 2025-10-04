@@ -220,11 +220,10 @@ export const storeUpdate = async (
 ) => {
   const uniqueValue = uuidv4();
   const lockKey = `lock:${syncFileAttr.docName}:update`;
+  if (await checkAndMarkUpdateHash(update, syncFileAttr, "storeUpdate")) {
+    return 0;
+  }
   try {
-    if (await checkAndMarkUpdateHash(update, syncFileAttr, 'storeUpdate')) {
-      return 0;
-    }
-
     if (await getRedisDestriLock(lockKey, uniqueValue, 0, syncFileAttr)) {
       const processYdoc = new Y.Doc({
         guid: syncFileAttr.docName,

@@ -58,6 +58,7 @@ messageHandlers[SyncMessageType.SubDocMessageSync] = (
     src: "messageHandlers",
     trace_id: uniqueValue,
     emitSynced: emitSynced,
+    msg_type: "read_sync",
   };
   let msgStr = JSON.stringify(msg);
   // convert to the legacy message without doc guid
