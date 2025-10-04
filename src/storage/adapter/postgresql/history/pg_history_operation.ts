@@ -270,40 +270,6 @@ const pgPutKey = async (db: pg.Pool, key: any[], originalKey: any[]) => {
   }
 };
 
-const pgPutTrans = async (
-  db: pg.PoolClient,
-  val: Uint8Array,
-  source: string,
-  keys: any[]
-) => {
-  try {
-    const query = `INSERT INTO tex_sync_history (key, value, version, content_type, doc_name, clock, source) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7) `;
-    let version = keys[0];
-    let contentType = keys[2] || "default";
-    let docName = keys[1];
-    let clock = keys[3] || 0;
-    const values = [
-      JSON.stringify(keys),
-      Buffer.from(val),
-      version,
-      contentType,
-      docName,
-      clock,
-      source,
-    ];
-    const res: pg.QueryResult<any> = await db.query(query, values);
-  } catch (err: any) {
-    logger.error(
-      "pgPutTrans insert tex sync record error:" +
-        JSON.stringify(keys) +
-        ",val:" +
-        val,
-      err.stack
-    );
-  }
-};
-
 const pgHistoryPut = async (
   val: Uint8Array,
   source: string,
@@ -348,39 +314,6 @@ const pgHistoryPut = async (
       err.stack
     );
     throw err;
-  }
-};
-
-const pgPutUpsertTrans = async (
-  db: pg.PoolClient,
-  key: Map<string, string>,
-  val: Uint8Array,
-  source: string,
-  keys: any[]
-) => {
-  try {
-    const query = `INSERT INTO tex_sync_history (key, value, version, content_type, doc_name, clock, source) 
-      VALUES ($1, $2, $3 $4, $5, $6, $7) `;
-    let version = key.get("version") || "default";
-    let contentType = key.get("contentType") || "default";
-    let docName = key.get("docName") ? key.get("docName") : "default";
-    let clock = key.get("clock") ? key.get("clock") : -1;
-    // https://stackoverflow.com/questions/1347646/postgres-error-on-insert-error-invalid-byte-sequence-for-encoding-utf8-0x0
-    const values = [
-      JSON.stringify(keys),
-      Buffer.from(val),
-      version,
-      contentType,
-      docName,
-      clock,
-      source,
-    ];
-    const res: pg.QueryResult<any> = await db.query(query, values);
-  } catch (err: any) {
-    logger.error(
-      "Insert pgPutUpsertTrans error:" + JSON.stringify(keys),
-      err.stack
-    );
   }
 };
 

@@ -117,11 +117,11 @@ export const sendWithType = async (
   }
 };
 
-export const send = async (doc: WSSharedDoc, conn: Socket, m: Uint8Array) => {
+export const send = async (doc: WSSharedDoc, conn: Socket, msg: Uint8Array) => {
   try {
     if (conn.connected) {
       // https://stackoverflow.com/questions/16518153/get-connection-status-on-socket-io-client
-      conn.send(m);
+      conn.send(msg);
     } else {
       let fileInfo = await getTexFileInfo(doc.name);
       logger.warn(
@@ -134,7 +134,7 @@ export const send = async (doc: WSSharedDoc, conn: Socket, m: Uint8Array) => {
     }
   } catch (e) {
     const decoder = new TextDecoder("utf-8");
-    const text = decoder.decode(m);
+    const text = decoder.decode(msg);
     logger.error("send message facing error,text:" + text, e);
     closeConn(doc, conn);
   }

@@ -94,7 +94,7 @@ const preHandleSubDoc = async (
       if (subdocTextStr) {
         curSubDoc = memoryOrDiskSubdoc;
       } else {
-        console.warn(
+        logger.warn(
           "subdocTextStr is empty,guid:" +
             subdocGuid +
             ",finfo:" +
@@ -235,7 +235,7 @@ const handleSubDocFirstTimePut = (
     });
     const subDocText = curSubDoc.getText(subdocGuid);
     subDocText.observe((event: Y.YTextEvent, tr: Y.Transaction) => {
-      logger.warn(
+      logger.debug(
         "sub document text changed,docGuid:" +
           subdocGuid +
           ",delta:" +

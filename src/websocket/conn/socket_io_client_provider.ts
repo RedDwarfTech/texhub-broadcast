@@ -288,17 +288,22 @@ export class SocketIOClientProvider extends Observable<string> {
       console.error("Subdoc guid is missing!");
       return;
     }
-// 先解绑旧的 handler，避免重复绑定
-const oldHandler = this.subdocUpdateHandlersMap.get(subdoc.guid);
-if (oldHandler) {
-  // @ts-ignore
-  subdoc.off("update", oldHandler);
-  console.log(`[addSubdoc] 移除旧 handler: guid=${subdoc.guid}`);
-}
+    // 先解绑旧的 handler，避免重复绑定
+    const oldHandler = this.subdocUpdateHandlersMap.get(subdoc.guid);
+    if (oldHandler) {
+      // @ts-ignore
+      subdoc.off("update", oldHandler);
+      console.log(`[addSubdoc] 移除旧 handler: guid=${subdoc.guid}`);
+    }
 
     // 新的 update handler
     const newHandler = (update: any, origin: any) => {
-      console.log(`[subdoc update] guid=${subdoc.guid}, origin=`, origin, ', update=', update);
+      console.log(
+        `[subdoc update] guid=${subdoc.guid}, origin=`,
+        origin,
+        ", update=",
+        update
+      );
       if (origin === this) return;
       const encoder = encoding.createEncoder();
       encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
@@ -312,7 +317,9 @@ if (oldHandler) {
       encoding.writeVarString(encoder, msgStr);
       syncProtocol.writeUpdate(encoder, update);
       broadcastMessage(this, encoding.toUint8Array(encoder));
-      console.log(`[subdoc update] handler已广播: guid=${subdoc.guid}, trace_id=${uniqueValue}`);
+      console.log(
+        `[subdoc update] handler已广播: guid=${subdoc.guid}, trace_id=${uniqueValue}`
+      );
     };
     // 注册新的 handler
     // @ts-ignore
@@ -335,7 +342,9 @@ if (oldHandler) {
     encoding.writeVarString(encoder, msgStr);
     syncProtocol.writeSyncStep1(encoder, subdoc);
     broadcastMessage(this, encoding.toUint8Array(encoder));
-    console.log(`[addSubdoc] sync step1已广播: guid=${subdoc.guid}, trace_id=${uniqueValue}`);
+    console.log(
+      `[addSubdoc] sync step1已广播: guid=${subdoc.guid}, trace_id=${uniqueValue}`
+    );
   }
 
   /**
