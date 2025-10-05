@@ -76,12 +76,6 @@ const preHandleSubDoc = async (
       if (fileInfo) {
         docIntId = fileInfo.id;
       }
-    } else {
-      encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
-      syncProtocol.readSyncMessage(decoder, encoder, rootDoc, conn);
-      if (encoding.length(encoder) > 1) {
-        send(rootDoc, conn, encoding.toUint8Array(encoder));
-      }
     }
     let syncFileAttr: SyncFileAttr = {
       docName: subdocGuid,
@@ -151,11 +145,14 @@ const handleNormalMsg = (
       if (decoding.hasContent(decoder)) {
         if (subdocGuid === rootDoc.name) {
           syncProtocol.readSyncMessage(decoder, encoder, rootDoc, conn);
+          if (encoding.length(encoder) > 1 && needSend(encoder)) {
+            send(rootDoc, conn, encoding.toUint8Array(encoder));
+          }
         } else {
           syncProtocol.readSyncMessage(decoder, encoder, curSubDoc, conn);
-        }
-        if (encoding.length(encoder) > 1 && needSend(encoder)) {
-          send(curSubDoc, conn, encoding.toUint8Array(encoder));
+          if (encoding.length(encoder) > 1 && needSend(encoder)) {
+            send(curSubDoc, conn, encoding.toUint8Array(encoder));
+          }
         }
       }
     }
