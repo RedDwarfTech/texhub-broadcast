@@ -33,3 +33,21 @@ export const serverSendSyncStep1 = (
   // @ts-ignore - Y.Doc has on method but TypeScript doesn't know about it
 };
 
+export const serverWriteUpdate = (
+  update: Uint8Array,
+  subdocGuid: string,
+) => {
+  const encoder = encoding.createEncoder();
+  encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
+
+  const uniqueValue = uuidv4();
+  let msg: SyncMessageContext = {
+    doc_name: subdocGuid,
+    src: "handleSubDocUpdate",
+    trace_id: uniqueValue,
+  };
+  let msgStr = JSON.stringify(msg);
+
+  encoding.writeVarString(encoder, msgStr);
+  syncProtocol.writeUpdate(encoder, update);
+};

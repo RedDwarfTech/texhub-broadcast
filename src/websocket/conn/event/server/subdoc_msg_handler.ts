@@ -20,7 +20,10 @@ import { handleYDocUpdate } from "@/storage/handler/ydoc_action_handler.js";
 import { DocMeta } from "@/model/yjs/commom/doc_meta.js";
 import { v4 as uuidv4 } from "uuid";
 import { RdJsonUtil } from "rdjs-wheel";
-import { serverSendSyncStep1 } from "./server_protocol_action.js";
+import {
+  serverSendSyncStep1,
+  serverWriteUpdate,
+} from "./server_protocol_action.js";
 
 let cryptoModule: any | null = null;
 
@@ -72,6 +75,12 @@ const preHandleSubDoc = async (
       fileInfo = await getTexFileInfo(subdocGuid);
       if (fileInfo) {
         docIntId = fileInfo.id;
+      }
+    } else {
+      encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
+      syncProtocol.readSyncMessage(decoder, encoder, rootDoc, conn);
+      if (encoding.length(encoder) > 1) {
+        send(rootDoc, conn, encoding.toUint8Array(encoder));
       }
     }
     let syncFileAttr: SyncFileAttr = {
@@ -164,19 +173,7 @@ const handleSubDocUpdate = async (
   syncFileAttr: SyncFileAttr
 ) => {
   if (origin === conn) return; // Don't broadcast back to the sender
-  const encoder = encoding.createEncoder();
-  encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
-
-  const uniqueValue = uuidv4();
-  let msg: SyncMessageContext = {
-    doc_name: subdocGuid,
-    src: "handleSubDocUpdate",
-    trace_id: uniqueValue,
-  };
-  let msgStr = JSON.stringify(msg);
-
-  encoding.writeVarString(encoder, msgStr);
-  syncProtocol.writeUpdate(encoder, update);
+  serverWriteUpdate(update, subdocGuid);
   handleYDocUpdate(update, curSubDoc, syncFileAttr);
 };
 
@@ -259,7 +256,10 @@ const handleSubDocFirstTimePut = (
           let snippet = "";
           if (cryptoModule && update) {
             try {
-              updateHash = cryptoModule.createHash("sha256").update(update).digest("hex");
+              updateHash = cryptoModule
+                .createHash("sha256")
+                .update(update)
+                .digest("hex");
               const slice = update.slice(0, Math.min(48, update.byteLength));
               snippet = Buffer.from(slice).toString("base64");
             } catch (e) {
@@ -276,7 +276,9 @@ const handleSubDocFirstTimePut = (
 
           if (snapshotSubdocGuid === snapshotRootName) {
             logger.warn(
-              `the subdocGuid equal to rootDoc.name,skip update handler,syncFileAttr:${JSON.stringify(snapshotSyncFileAttr)}`
+              `the subdocGuid equal to rootDoc.name,skip update handler,syncFileAttr:${JSON.stringify(
+                snapshotSyncFileAttr
+              )}`
             );
             return;
           }
@@ -284,7 +286,14 @@ const handleSubDocFirstTimePut = (
           const deepCopied = structuredClone(snapshotSyncFileAttr);
           deepCopied.src = deepCopied.src + "_subdoc_update";
 
-          handleSubDocUpdate(update, origin, curSubDoc, snapshotSubdocGuid, conn, deepCopied);
+          handleSubDocUpdate(
+            update,
+            origin,
+            curSubDoc,
+            snapshotSubdocGuid,
+            conn,
+            deepCopied
+          );
         } catch (err) {
           logger.error("error in subdoc update handler", err);
         }
@@ -295,7 +304,9 @@ const handleSubDocFirstTimePut = (
       // @ts-ignore
       curSubDoc.on("update", handler);
     } else {
-      logger.debug(`update handler already registered for subdoc ${subdocGuid}`);
+      logger.debug(
+        `update handler already registered for subdoc ${subdocGuid}`
+      );
     }
     const subDocText = curSubDoc.getText(subdocGuid);
     subDocText.observe((event: Y.YTextEvent, tr: Y.Transaction) => {

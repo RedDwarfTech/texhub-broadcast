@@ -1,11 +1,9 @@
 const persistenceDir = process.env.YPERSISTENCE;
 // @ts-ignore
 import * as Y from "rdyjs";
-import { throttledFn } from "./appfile.js";
 import { Persistence } from "../model/yjs/Persistence.js";
 import { PostgresqlPersistance } from "./adapter/postgresql/postgresql_persistance.js";
 import logger from "../common/log4js_config.js";
-import { handleHistoryDoc } from "./feat/version/doc_history.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { UpdateOrigin } from "@/model/yjs/net/update_origin.js";
 import { handleYDocUpdate } from "./handler/ydoc_action_handler.js";
