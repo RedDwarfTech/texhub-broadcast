@@ -11,7 +11,7 @@ export const clientSendSyncStep1 = (
   socketio: Socket
 ) => {
   const encoder = encoding.createEncoder();
-  encoding.writeVarUint(encoder, SyncMessageType.MessageSync);
+  encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
   syncProtocol.writeSyncStep1(encoder, provider.doc);
   socketio.send(encoding.toUint8Array(encoder));
 };

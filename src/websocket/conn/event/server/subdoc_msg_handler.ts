@@ -100,8 +100,9 @@ const preHandleSubDoc = async (
             ",socket-id:" +
             conn.id +
             ",docContext:" +
-            JSON.stringify(docContext) + 
-            ",projectId:" + rootDoc.name
+            JSON.stringify(docContext) +
+            ",projectId:" +
+            rootDoc.name
         );
       }
     }
@@ -137,7 +138,11 @@ const handleNormalMsg = (
 
       encoding.writeVarString(encoder, msgStr);
       if (decoding.hasContent(decoder)) {
-        syncProtocol.readSyncMessage(decoder, encoder, curSubDoc, null);
+        if (subdocGuid === rootDoc.name) {
+          syncProtocol.readSyncMessage(decoder, encoder, rootDoc, conn);
+        } else {
+          syncProtocol.readSyncMessage(decoder, encoder, curSubDoc, conn);
+        }
         if (encoding.length(encoder) > 1 && needSend(encoder)) {
           send(curSubDoc, conn, encoding.toUint8Array(encoder));
         }
@@ -220,7 +225,7 @@ const handleSubDocFirstTimePut = (
         );
         return;
       }
-      
+
       deepCopied.src = deepCopied.src + "_subdoc_update";
       handleSubDocUpdate(
         update,
