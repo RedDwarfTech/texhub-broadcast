@@ -213,6 +213,12 @@ const handleSubDocFirstTimePut = (
   conn: Socket,
   syncFileAttr: SyncFileAttr
 ) => {
+  if (subdocGuid == rootDoc.name) {
+        logger.warn(
+          " handleSubDocFirstTimePut the subdocGuid equal to rootDoc.name,skip update handler,syncFileAttr:" +
+            JSON.stringify(syncFileAttr)
+        );
+      }
   try {
     // @ts-ignore
     curSubDoc.on("update", (update: Uint8Array, origin: Socket) => {
