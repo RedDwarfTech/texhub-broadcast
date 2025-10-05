@@ -86,6 +86,26 @@ export const closeConn = (doc: WSSharedDoc, conn: Socket) => {
       Array.from(controlledIds!),
       null
     );
+    try {
+      // try to remove subdoc update handlers associated with this connection
+      const subdocMap = (doc.getMap && doc.getMap("texhubsubdoc")) || null;
+      if (subdocMap && typeof subdocMap.forEach === "function") {
+        subdocMap.forEach((subdoc: any, key: any) => {
+          try {
+            const handler = (subdoc as any).__subdocUpdateHandler;
+            if (handler && typeof subdoc.off === "function") {
+              subdoc.off("update", handler);
+              delete (subdoc as any).__subdocUpdateHandler;
+            }
+          } catch (e) {
+            // best-effort: log and continue
+            logger.debug(`failed to remove subdoc handler for ${key}: ${e}`);
+          }
+        });
+      }
+    } catch (e) {
+      logger.debug("error while removing subdoc handlers on closeConn", e);
+    }
     if (doc.conns.size === 0 && persistencePostgresql !== null) {
       // if persisted, we store state and destroy ydocument
       persistencePostgresql.writeState(doc.name, doc).then(() => {

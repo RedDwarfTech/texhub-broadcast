@@ -222,68 +222,79 @@ const handleSubDocFirstTimePut = (
     );
   }
   try {
+    // register a stable handler created from a snapshot of current context
+    // avoid double registration by storing handler reference on the doc
     // @ts-ignore
-    curSubDoc.on("update", async (update: Uint8Array, origin: Socket) => {
-      try {
-        // gather tracing info without mutating state
-        const originId = (origin && (origin as any).id) || "unknown-origin";
-        const updateLen = update ? update.byteLength : 0;
-        if (!cryptoModule) {
-          try {
-            cryptoModule = await import("crypto");
-          } catch (e) {
+    if (!(curSubDoc as any).__subdocUpdateHandler) {
+      const snapshotSyncFileAttr = structuredClone(syncFileAttr);
+      const snapshotSubdocGuid = String(subdocGuid);
+      const snapshotConnId = conn.id;
+      const snapshotRootName = rootDoc.name;
+
+      const handler = async (update: Uint8Array, origin: Socket) => {
+        try {
+          // quick guard
+          if (origin === conn) return;
+
+          const originId = (origin && (origin as any).id) || "unknown-origin";
+          const updateLen = update ? update.byteLength : 0;
+
+          // lazy-load crypto module once (cached in module scope)
+          if (!cryptoModule) {
             try {
-              // @ts-ignore
-              cryptoModule = require("crypto");
-            } catch (ee) {
-              cryptoModule = null;
+              cryptoModule = await import("crypto");
+            } catch (e) {
+              try {
+                // @ts-ignore
+                cryptoModule = require("crypto");
+              } catch (ee) {
+                cryptoModule = null;
+              }
             }
           }
-        }
-        let updateHash = "no-hash";
-        let snippet = "";
-        if (cryptoModule && update) {
-          try {
-            updateHash = cryptoModule
-              .createHash("sha256")
-              .update(update)
-              .digest("hex");
-            const slice = update.slice(0, Math.min(48, update.byteLength));
-            snippet = Buffer.from(slice).toString("base64");
-          } catch (e) {
-            // ignore hashing errors
-          }
-        }
 
-        if (origin === conn) return;
-        const deepCopied = structuredClone(syncFileAttr);
-        if (subdocGuid == rootDoc.name) {
-          logger.warn(
-            "the subdocGuid equal to rootDoc.name,skip update handler,syncFileAttr:" +
-              JSON.stringify(syncFileAttr)
-          );
-          const stack = new Error().stack;
-          if (stack) logger.debug(`subdoc update stack: ${stack}`);
+          let updateHash = "no-hash";
+          let snippet = "";
+          if (cryptoModule && update) {
+            try {
+              updateHash = cryptoModule.createHash("sha256").update(update).digest("hex");
+              const slice = update.slice(0, Math.min(48, update.byteLength));
+              snippet = Buffer.from(slice).toString("base64");
+            } catch (e) {
+              // ignore hashing errors
+            }
+          }
+
           logger.info(
-            `subdoc update fired doc=${subdocGuid}, origin=${originId}, len=${updateLen}, hash=${updateHash}`
+            `subdoc update fired doc=${snapshotSubdocGuid}, origin=${originId}, connId=${snapshotConnId}, root=${snapshotRootName}, len=${updateLen}, hash=${updateHash}`
           );
           logger.debug(`subdoc update snippet(base64)=${snippet}`);
-          return;
-        }
+          const stack = new Error().stack;
+          if (stack) logger.debug(`subdoc update stack: ${stack}`);
 
-        deepCopied.src = deepCopied.src + "_subdoc_update";
-        handleSubDocUpdate(
-          update,
-          origin,
-          curSubDoc,
-          subdocGuid,
-          conn,
-          deepCopied
-        );
-      } catch (err) {
-        logger.error("error in subdoc update handler", err);
-      }
-    });
+          if (snapshotSubdocGuid === snapshotRootName) {
+            logger.warn(
+              `the subdocGuid equal to rootDoc.name,skip update handler,syncFileAttr:${JSON.stringify(snapshotSyncFileAttr)}`
+            );
+            return;
+          }
+
+          const deepCopied = structuredClone(snapshotSyncFileAttr);
+          deepCopied.src = deepCopied.src + "_subdoc_update";
+
+          handleSubDocUpdate(update, origin, curSubDoc, snapshotSubdocGuid, conn, deepCopied);
+        } catch (err) {
+          logger.error("error in subdoc update handler", err);
+        }
+      };
+
+      // @ts-ignore
+      (curSubDoc as any).__subdocUpdateHandler = handler;
+      // @ts-ignore
+      curSubDoc.on("update", handler);
+    } else {
+      logger.debug(`update handler already registered for subdoc ${subdocGuid}`);
+    }
     const subDocText = curSubDoc.getText(subdocGuid);
     subDocText.observe((event: Y.YTextEvent, tr: Y.Transaction) => {
       logger.debug(
