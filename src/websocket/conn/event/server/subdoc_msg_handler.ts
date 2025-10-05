@@ -167,11 +167,14 @@ const handleSubDocUpdate = async (
   curSubDoc: WSSharedDoc,
   subdocGuid: string,
   conn: Socket,
-  syncFileAttr: SyncFileAttr
+  syncFileAttr: SyncFileAttr,
+  rootDoc: WSSharedDoc
 ) => {
   if (origin === conn) return; // Don't broadcast back to the sender
   serverWriteUpdate(update, subdocGuid);
-  handleYDocUpdate(update, curSubDoc, syncFileAttr);
+  if (subdocGuid !== rootDoc.name) {
+    handleYDocUpdate(update, curSubDoc, syncFileAttr);
+  }
 };
 
 const handleSubDoc = (
@@ -215,7 +218,7 @@ const handleSubDocFirstTimePut = (
         JSON.stringify(syncFileAttr)
     );
     // Do not register update handler for the root document
-    return;
+    // return;
   }
   try {
     // register a stable handler created from a snapshot of current context
@@ -277,7 +280,7 @@ const handleSubDocFirstTimePut = (
                 snapshotSyncFileAttr
               )}`
             );
-            return;
+            // return;
           }
 
           const deepCopied = structuredClone(snapshotSyncFileAttr);
@@ -289,7 +292,8 @@ const handleSubDocFirstTimePut = (
             curSubDoc,
             snapshotSubdocGuid,
             conn,
-            deepCopied
+            deepCopied,
+            rootDoc
           );
         } catch (err) {
           logger.error("error in subdoc update handler", err);
