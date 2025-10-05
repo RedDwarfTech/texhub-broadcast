@@ -22,6 +22,8 @@ import { v4 as uuidv4 } from "uuid";
 import { RdJsonUtil } from "rdjs-wheel";
 import { serverSendSyncStep1 } from "./server_protocol_action.js";
 
+let cryptoModule: any | null = null;
+
 /**
  * relationship of main doc & sub docs
  * @type {Map<String, Map<String, WSSharedDoc>>} mainDocID, subDocID
@@ -214,33 +216,75 @@ const handleSubDocFirstTimePut = (
   syncFileAttr: SyncFileAttr
 ) => {
   if (subdocGuid == rootDoc.name) {
-        logger.warn(
-          " handleSubDocFirstTimePut the subdocGuid equal to rootDoc.name,skip update handler,syncFileAttr:" +
-            JSON.stringify(syncFileAttr)
-        );
-      }
+    logger.warn(
+      " handleSubDocFirstTimePut the subdocGuid equal to rootDoc.name,skip update handler,syncFileAttr:" +
+        JSON.stringify(syncFileAttr)
+    );
+  }
   try {
     // @ts-ignore
-    curSubDoc.on("update", (update: Uint8Array, origin: Socket) => {
-      if (origin === conn) return;
-      const deepCopied = structuredClone(syncFileAttr);
-      if (subdocGuid == rootDoc.name) {
-        logger.warn(
-          "the subdocGuid equal to rootDoc.name,skip update handler,syncFileAttr:" +
-            JSON.stringify(syncFileAttr)
-        );
-        return;
-      }
+    curSubDoc.on("update", async (update: Uint8Array, origin: Socket) => {
+      try {
+        // gather tracing info without mutating state
+        const originId = (origin && (origin as any).id) || "unknown-origin";
+        const updateLen = update ? update.byteLength : 0;
+        if (!cryptoModule) {
+          try {
+            cryptoModule = await import("crypto");
+          } catch (e) {
+            try {
+              // @ts-ignore
+              cryptoModule = require("crypto");
+            } catch (ee) {
+              cryptoModule = null;
+            }
+          }
+        }
+        let updateHash = "no-hash";
+        let snippet = "";
+        if (cryptoModule && update) {
+          try {
+            updateHash = cryptoModule
+              .createHash("sha256")
+              .update(update)
+              .digest("hex");
+            const slice = update.slice(0, Math.min(48, update.byteLength));
+            snippet = Buffer.from(slice).toString("base64");
+          } catch (e) {
+            // ignore hashing errors
+          }
+        }
 
-      deepCopied.src = deepCopied.src + "_subdoc_update";
-      handleSubDocUpdate(
-        update,
-        origin,
-        curSubDoc,
-        subdocGuid,
-        conn,
-        deepCopied
-      );
+        logger.info(
+          `subdoc update fired doc=${subdocGuid}, origin=${originId}, len=${updateLen}, hash=${updateHash}`
+        );
+        logger.debug(`subdoc update snippet(base64)=${snippet}`);
+        // capture call stack to help identify whether update comes from local apply
+        const stack = new Error().stack;
+        if (stack) logger.debug(`subdoc update stack: ${stack}`);
+
+        if (origin === conn) return;
+        const deepCopied = structuredClone(syncFileAttr);
+        if (subdocGuid == rootDoc.name) {
+          logger.warn(
+            "the subdocGuid equal to rootDoc.name,skip update handler,syncFileAttr:" +
+              JSON.stringify(syncFileAttr)
+          );
+          return;
+        }
+
+        deepCopied.src = deepCopied.src + "_subdoc_update";
+        handleSubDocUpdate(
+          update,
+          origin,
+          curSubDoc,
+          subdocGuid,
+          conn,
+          deepCopied
+        );
+      } catch (err) {
+        logger.error("error in subdoc update handler", err);
+      }
     });
     const subDocText = curSubDoc.getText(subdocGuid);
     subDocText.observe((event: Y.YTextEvent, tr: Y.Transaction) => {
