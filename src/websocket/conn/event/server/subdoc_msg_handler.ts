@@ -255,14 +255,6 @@ const handleSubDocFirstTimePut = (
           }
         }
 
-        logger.info(
-          `subdoc update fired doc=${subdocGuid}, origin=${originId}, len=${updateLen}, hash=${updateHash}`
-        );
-        logger.debug(`subdoc update snippet(base64)=${snippet}`);
-        // capture call stack to help identify whether update comes from local apply
-        const stack = new Error().stack;
-        if (stack) logger.debug(`subdoc update stack: ${stack}`);
-
         if (origin === conn) return;
         const deepCopied = structuredClone(syncFileAttr);
         if (subdocGuid == rootDoc.name) {
@@ -270,6 +262,12 @@ const handleSubDocFirstTimePut = (
             "the subdocGuid equal to rootDoc.name,skip update handler,syncFileAttr:" +
               JSON.stringify(syncFileAttr)
           );
+          const stack = new Error().stack;
+          if (stack) logger.debug(`subdoc update stack: ${stack}`);
+          logger.info(
+            `subdoc update fired doc=${subdocGuid}, origin=${originId}, len=${updateLen}, hash=${updateHash}`
+          );
+          logger.debug(`subdoc update snippet(base64)=${snippet}`);
           return;
         }
 
