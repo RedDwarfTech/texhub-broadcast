@@ -1,5 +1,5 @@
 import { getYDoc, messageSync } from "@collar/yjs_utils.js";
-import { closeConn, send } from "../conn/ws_action.js";
+import { closeConn, send } from "../conn/action/ws_action.js";
 import {
   createEncoder,
   toUint8Array,
@@ -15,7 +15,7 @@ import * as awarenessProtocol from "rdy-protocols/dist/awareness.mjs";
 import { Socket } from "socket.io";
 import http from "http";
 import logger from "@common/log4js_config.js";
-import { ws_msg_handle } from "../conn/event/message_handler.js";
+import { ws_msg_handle } from "../conn/event/server/message_handler.js";
 import { URLSearchParams } from "url";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 

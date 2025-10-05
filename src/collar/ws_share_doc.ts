@@ -11,7 +11,7 @@ import {
 // @ts-ignore
 import * as awarenessProtocol from "rdy-protocols/dist/awareness.mjs";
 import debounce from "lodash";
-import { send } from "../websocket/conn/ws_action.js";
+import { send } from "../websocket/conn/action/ws_action.js";
 import { callbackHandler, updateHandler } from "./yjs_utils.js";
 import { ChangeReq } from "../model/yjs/ChangeReq.js";
 import { Socket } from "socket.io";

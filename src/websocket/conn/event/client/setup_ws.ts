@@ -1,4 +1,4 @@
-import { SocketIOClientProvider } from "../socket_io_client_provider.js";
+import { SocketIOClientProvider } from "../../socket_io_client_provider.js";
 import { Socket } from "socket.io-client";
 // @ts-ignore
 import { math } from "rdlib0";
@@ -11,9 +11,10 @@ import * as awarenessProtocol from "rdy-protocols/awareness";
 import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
 // @ts-ignore
 import * as syncProtocol from "rdy-protocols/sync";
-import { readMessage } from "../ws_action.js";
+import { readMessage } from "../../action/ws_action.js";
 import { SyncMessageContext } from "@/model/texhub/sync_msg_context.js";
 import { v4 as uuidv4 } from "uuid";
+import { handleSubdocConnect } from "./subdoc_connect_handler.js";
 /**
  * @param {SocketIOClientProvider} provider
  */
@@ -84,27 +85,7 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
       // },
       //]);
       if (provider.enableSubDoc) {
-        for (const [k, doc] of provider.docs) {
-          console.log(
-            "start sync for sub doc:" + k + ",count:" + provider.docs.size
-          );
-          if(doc.meta.id === "-1"){
-            continue;
-          }
-          
-          const encoder = encoding.createEncoder();
-          encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
-          const uniqueValue = uuidv4();
-          let msg: SyncMessageContext = {
-            doc_name: k,
-            src: "providerdocs",
-            trace_id: uniqueValue,
-          };
-          let msgStr = JSON.stringify(msg);
-          encoding.writeVarString(encoder, msgStr);
-          syncProtocol.writeSyncStep1(encoder, doc);
-          socketio.send(encoding.toUint8Array(encoder));
-        }
+        handleSubdocConnect(provider, socketio);
       } else {
         // always send sync step 1 when connected
         const encoder = encoding.createEncoder();

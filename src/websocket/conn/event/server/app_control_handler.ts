@@ -7,7 +7,7 @@ import { WSSharedDoc } from "@collar/ws_share_doc.js";
 import { createEncoder, toUint8Array, writeVarUint } from "rdlib0/encoding.js";
 import { Socket } from "socket.io";
 import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
-import { send } from "../ws_action.js";
+import { send } from "../../action/ws_action.js";
 // @ts-ignore
 import * as syncProtocol from "rdy-protocols/dist/sync.mjs";
 // @ts-ignore

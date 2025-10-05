@@ -4,7 +4,7 @@ import { WSSharedDoc } from "./ws_share_doc.js";
 import { persistencePostgresql } from "../storage/storage.js";
 // @ts-ignore
 import * as encoding from "rdlib0/dist/encoding.mjs";
-import { send } from "../websocket/conn/ws_action.js";
+import { send } from "../websocket/conn/action/ws_action.js";
 import { callbackRequest, getContent } from "./ydoc_callback.js";
 // @ts-ignore
 import * as syncProtocol from "rdy-protocols/dist/sync.mjs";

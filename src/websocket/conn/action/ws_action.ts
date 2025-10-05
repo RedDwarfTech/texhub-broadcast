@@ -22,9 +22,9 @@ import {
 import * as syncProtocol from "rdy-protocols/dist/sync.mjs";
 import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
 import { getTexFileInfo } from "@storage/appfile.js";
-import { handleControlSignals } from "./event/app_control_handler.js";
-import { handleSubDocMsg } from "./event/subdoc_msg_handler.js";
-import { SocketIOClientProvider } from "./socket_io_client_provider.js";
+import { handleControlSignals } from "../event/server/app_control_handler.js";
+import { handleSubDocMsg } from "../event/server/subdoc_msg_handler.js";
+import { SocketIOClientProvider } from "../socket_io_client_provider.js";
 import {
   createDecoder,
   readVarUint,

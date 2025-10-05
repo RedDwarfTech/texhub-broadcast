@@ -1,4 +1,4 @@
-import { DefaultEventsMap, Socket } from "socket.io";
+import { Socket } from "socket.io";
 import { WSSharedDoc } from "@collar/ws_share_doc.js";
 // @ts-ignore
 import * as encoding from "rdlib0/dist/encoding.mjs";
@@ -9,20 +9,18 @@ import * as decoding from "rdlib0/dist/decoding.mjs";
 import logger from "@common/log4js_config.js";
 import { getYDoc } from "@collar/yjs_utils.js";
 import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
-import { send } from "../ws_action.js";
+import { send } from "../../action/ws_action.js";
 // @ts-ignore
 import * as syncProtocol from "rdy-protocols/dist/sync.mjs";
-import { PostgresqlPersistance } from "@/storage/adapter/postgresql/postgresql_persistance.js";
-import { persistencePostgresql, postgresqlDb } from "@/storage/storage.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { getTexFileInfo } from "@/storage/appfile.js";
 import { FileContent } from "@/model/texhub/file_content.js";
 import { SyncMessageContext } from "@/model/texhub/sync_msg_context.js";
 import { handleYDocUpdate } from "@/storage/handler/ydoc_action_handler.js";
 import { DocMeta } from "@/model/yjs/commom/doc_meta.js";
-import { redis } from "@/common/cache/redis_util.js";
 import { v4 as uuidv4 } from "uuid";
 import { RdJsonUtil } from "rdjs-wheel";
+import { serverSendSyncStep1 } from "./server_protocol_action.js";
 
 /**
  * relationship of main doc & sub docs
@@ -256,34 +254,10 @@ const handleSubDocFirstTimePut = (
       newMap.set(subdocGuid, curSubDoc);
       subdocsMap.set(rootDoc.name, newMap);
     }
-    sendSyncStep1(curSubDoc, subdocGuid, conn);
+    serverSendSyncStep1(curSubDoc, subdocGuid, conn);
   } catch (e) {
     logger.error("handle first time put failed, docGuid:" + subdocGuid, e);
   }
-};
-
-const sendSyncStep1 = (
-  curSubDoc: WSSharedDoc,
-  subdocGuid: string,
-  conn: Socket
-) => {
-  // send sync step 1
-  const encoder = encoding.createEncoder();
-  encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
-
-  const uniqueValue = uuidv4();
-  let msg: SyncMessageContext = {
-    doc_name: subdocGuid,
-    src: "sendSyncStep1submsghandler",
-    trace_id: uniqueValue,
-  };
-  let msgStr = JSON.stringify(msg);
-
-  encoding.writeVarString(encoder, msgStr);
-  syncProtocol.writeSyncStep1(encoder, curSubDoc);
-  send(curSubDoc, conn, encoding.toUint8Array(encoder));
-  // Register update handler for the subdocument
-  // @ts-ignore - Y.Doc has on method but TypeScript doesn't know about it
 };
 
 /**
