@@ -220,6 +220,8 @@ const handleSubDocFirstTimePut = (
       " handleSubDocFirstTimePut the subdocGuid equal to rootDoc.name,skip update handler,syncFileAttr:" +
         JSON.stringify(syncFileAttr)
     );
+    // Do not register update handler for the root document
+    return;
   }
   try {
     // register a stable handler created from a snapshot of current context
