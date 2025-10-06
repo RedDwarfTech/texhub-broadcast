@@ -152,7 +152,7 @@ export const sendPure = async (
       conn.send(msg);
     } else {
       logger.warn(
-        "connection state is not open, doc:" +
+        "sendPure connection state is not open, doc:" +
           doc.name
       );
       closeConn(doc, conn);
@@ -177,7 +177,7 @@ export const send = async (
       conn.send(msg);
     } else {
       logger.warn(
-        "connection state is not open, doc:" +
+        "send connection state is not open, doc:" +
           doc.name +
           ",file info:" +
           JSON.stringify(syncFileAttr)
