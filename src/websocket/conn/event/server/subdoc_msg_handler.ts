@@ -9,7 +9,7 @@ import * as decoding from "rdlib0/dist/decoding.mjs";
 import logger from "@common/log4js_config.js";
 import { getYDoc } from "@collar/yjs_utils.js";
 import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
-import { send, sendPure } from "../../action/ws_action.js";
+import { send } from "../../action/ws_action.js";
 // @ts-ignore
 import * as syncProtocol from "rdy-protocols/dist/sync.mjs";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";

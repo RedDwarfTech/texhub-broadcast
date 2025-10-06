@@ -1,5 +1,6 @@
 import { SocketIOClientProvider } from "../../socket_io_client_provider.js";
 import { Socket } from "socket.io-client";
+import logger from "@common/log4js_config.js";
 // @ts-ignore
 import { math } from "rdlib0";
 // @ts-ignore
@@ -33,6 +34,43 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
         socketio.send(encoding.toUint8Array(encoder));
       }
       //provider.emit("message", [data, provider]);
+    });
+    // additional lifecycle listeners to help debug disconnect reasons
+    socketio.on("disconnect", (reason: any) => {
+      try {
+        logger.info(
+          `[client disconnect] id=${socketio.id}, reason=${String(reason)}, wsconnected=${provider.wsconnected}, room=${provider.roomname}`
+        );
+        // debug handshake if available
+        try {
+          // @ts-ignore
+          logger.debug(`handshake=${JSON.stringify((socketio as any).io && (socketio as any).io.engine ? (socketio as any).io.engine.transport : {}, null, 2)}`);
+        } catch (e) {}
+      } catch (e) {
+        console.warn("error logging disconnect", e);
+      }
+      // mirror close behaviour: mark disconnected and reset synced flag
+      provider.ws = null;
+      provider.wsconnecting = false;
+      if (provider.wsconnected) {
+        provider.wsconnected = false;
+        provider._synced = false;
+        awarenessProtocol.removeAwarenessStates(
+          provider.awareness,
+          Array.from(provider.awareness.getStates().keys()).filter(
+            (client) => client !== provider.doc.clientID
+          ),
+          provider
+        );
+      } else {
+        provider.wsUnsuccessfulReconnects++;
+      }
+    });
+    socketio.on("error", (err) => {
+      logger.error("socket error", err);
+    });
+    socketio.on("connect_error", (err) => {
+      logger.warn("socket connect_error", err);
     });
     socketio.on("error", (event) => {
       console.log("error received");
