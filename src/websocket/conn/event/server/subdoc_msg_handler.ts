@@ -111,8 +111,8 @@ const preHandleSubDoc = async (
         );
       }
     }
-    handleNormalMsg(rootDoc, conn, decoder, subdocGuid, encoder, curSubDoc);
-    handleSubDoc(curSubDoc, subdocGuid, conn, rootDoc, syncFileAttr);
+    handleNormalMsg(rootDoc, conn, decoder, encoder, curSubDoc, syncFileAttr);
+    handleSubDoc(curSubDoc, conn, rootDoc, syncFileAttr);
   } catch (err) {
     logger.error("handle sub doc facing issue:" + rootDoc.name, err);
   }
@@ -122,10 +122,11 @@ const handleNormalMsg = (
   rootDoc: WSSharedDoc,
   conn: Socket,
   decoder: any,
-  subdocGuid: string,
   encoder: any,
-  curSubDoc: WSSharedDoc
+  curSubDoc: WSSharedDoc,
+  syncFileAttr: SyncFileAttr
 ) => {
+  let subdocGuid = syncFileAttr.docName;
   const curSubdocMap: Map<String, WSSharedDoc> | undefined = subdocsMap.get(
     rootDoc.name
   );
@@ -146,12 +147,12 @@ const handleNormalMsg = (
         if (subdocGuid === rootDoc.name) {
           syncProtocol.readSyncMessage(decoder, encoder, rootDoc, conn);
           if (encoding.length(encoder) > 1 && needSend(encoder)) {
-            sendPure(rootDoc, conn, encoding.toUint8Array(encoder));
+            send(rootDoc, conn, encoding.toUint8Array(encoder), syncFileAttr);
           }
         } else {
           syncProtocol.readSyncMessage(decoder, encoder, curSubDoc, conn);
           if (encoding.length(encoder) > 1 && needSend(encoder)) {
-            sendPure(curSubDoc, conn, encoding.toUint8Array(encoder));
+            send(curSubDoc, conn, encoding.toUint8Array(encoder), syncFileAttr);
           }
         }
       }
@@ -179,11 +180,11 @@ const handleSubDocUpdate = async (
 
 const handleSubDoc = (
   curSubDoc: WSSharedDoc,
-  subdocGuid: string,
   conn: Socket,
   rootDoc: WSSharedDoc,
   syncFileAttr: SyncFileAttr
 ) => {
+  let subdocGuid = syncFileAttr.docName;
   if (!rootDoc.conns.has(conn)) {
     rootDoc.conns.set(conn, new Set());
   }
@@ -311,12 +312,12 @@ const handleSubDocFirstTimePut = (
     }
     const subDocText = curSubDoc.getText(subdocGuid);
     subDocText.observe((event: Y.YTextEvent, tr: Y.Transaction) => {
-      logger.debug(
+      /**logger.debug(
         "sub document text changed,docGuid:" +
           subdocGuid +
           ",delta:" +
           JSON.stringify(event.delta)
-      );
+      );*/
     });
     let docMeta: DocMeta = {
       name: subdocGuid,
