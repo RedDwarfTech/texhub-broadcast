@@ -213,14 +213,6 @@ const handleSubDocFirstTimePut = (
   conn: Socket,
   syncFileAttr: SyncFileAttr
 ) => {
-  if (subdocGuid == rootDoc.name) {
-    logger.warn(
-      " handleSubDocFirstTimePut the subdocGuid equal to rootDoc.name,skip update handler,syncFileAttr:" +
-        JSON.stringify(syncFileAttr)
-    );
-    // Do not register update handler for the root document
-    // return;
-  }
   try {
     // register a stable handler created from a snapshot of current context
     // avoid double registration by storing handler reference on the doc
@@ -228,60 +220,17 @@ const handleSubDocFirstTimePut = (
     if (!(curSubDoc as any).__subdocUpdateHandler) {
       const snapshotSyncFileAttr = structuredClone(syncFileAttr);
       const snapshotSubdocGuid = String(subdocGuid);
-      const snapshotConnId = conn.id;
       const snapshotRootName = rootDoc.name;
 
       const handler = async (update: Uint8Array, origin: Socket) => {
         try {
-          // quick guard
           if (origin === conn) return;
-
-          const originId = (origin && (origin as any).id) || "unknown-origin";
-          const updateLen = update ? update.byteLength : 0;
-
-          // lazy-load crypto module once (cached in module scope)
-          if (!cryptoModule) {
-            try {
-              cryptoModule = await import("crypto");
-            } catch (e) {
-              try {
-                // @ts-ignore
-                cryptoModule = require("crypto");
-              } catch (ee) {
-                cryptoModule = null;
-              }
-            }
-          }
-
-          let updateHash = "no-hash";
-          let snippet = "";
-          if (cryptoModule && update) {
-            try {
-              updateHash = cryptoModule
-                .createHash("sha256")
-                .update(update)
-                .digest("hex");
-              const slice = update.slice(0, Math.min(48, update.byteLength));
-              snippet = Buffer.from(slice).toString("base64");
-            } catch (e) {
-              // ignore hashing errors
-            }
-          }
-
-          logger.info(
-            `subdoc update fired doc=${snapshotSubdocGuid}, origin=${originId}, connId=${snapshotConnId}, root=${snapshotRootName}, len=${updateLen}, hash=${updateHash}`
-          );
-          logger.debug(`subdoc update snippet(base64)=${snippet}`);
-          const stack = new Error().stack;
-          if (stack) logger.debug(`subdoc update stack: ${stack}`);
-
           if (snapshotSubdocGuid === snapshotRootName) {
             logger.warn(
-              `the subdocGuid equal to rootDoc.name,skip update handler,syncFileAttr:${JSON.stringify(
+              `the subdocGuid equal to rootDoc.name,syncFileAttr:${JSON.stringify(
                 snapshotSyncFileAttr
               )}`
             );
-            // return;
           }
 
           const deepCopied = structuredClone(snapshotSyncFileAttr);
