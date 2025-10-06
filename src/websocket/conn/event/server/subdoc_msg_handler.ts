@@ -86,7 +86,7 @@ const preHandleSubDoc = async (
       src: "preHandleSubDoc",
       msgBody: docContext,
     };
-    let memoryOrDiskSubdoc = getYDoc(syncFileAttr);
+    let memoryOrDiskSubdoc = await getYDoc(syncFileAttr);
     let curSubDoc = memoryOrDiskSubdoc;
     if (subdocGuid !== rootDoc.name) {
       // current document id not equal to root document

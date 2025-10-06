@@ -31,12 +31,12 @@ export const messageSync: number = 0;
  *
  * @param {string} docname - the name of the Y.Doc to find or create
  * @param {boolean} gc - whether to allow gc on the doc (applies only when created)
- * @return {Promise<WSSharedDoc>}
+ * @return {WSSharedDoc}
  */
-export const getYDoc = (
+export const getYDoc = async (
   syncFileAttr: SyncFileAttr,
   gc: boolean = true
-): WSSharedDoc => {
+): Promise<WSSharedDoc> => {
   const docName = String(syncFileAttr.docName);
   let cachedDocs = docs.get(docName);
   if (cachedDocs) {
@@ -45,7 +45,7 @@ export const getYDoc = (
   const doc: WSSharedDoc = new WSSharedDoc(docName);
   doc.gc = gc;
   if (persistencePostgresql) {
-    persistencePostgresql.bindState(syncFileAttr, doc);
+    await persistencePostgresql.bindState(syncFileAttr, doc);
   }
   docs.set(docName, doc);
   return doc;
