@@ -151,10 +151,8 @@ export const sendPure = async (
       // https://stackoverflow.com/questions/16518153/get-connection-status-on-socket-io-client
       conn.send(msg);
     } else {
-      logger.warn(
-        "sendPure connection state is not open, doc:" +
-          doc.name
-      );
+      logger.warn("sendPure connection state is not open, doc:" + doc.name);
+      conn.send(msg);
       closeConn(doc, conn);
     }
   } catch (e) {
