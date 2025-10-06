@@ -87,6 +87,8 @@ messageHandlers[SyncMessageType.SubDocMessageSync] = (
     !provider._synced
   ) {
     provider.synced = true;
+    provider.updateSyncedStatus(docGuid, true);
+    console.info("main doc synced, docGuid:" + docGuid);
   }
   // sub doc synced
   if (
