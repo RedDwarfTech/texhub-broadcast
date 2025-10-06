@@ -9,7 +9,7 @@ import * as decoding from "rdlib0/dist/decoding.mjs";
 import logger from "@common/log4js_config.js";
 import { getYDoc } from "@collar/yjs_utils.js";
 import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
-import { send } from "../../action/ws_action.js";
+import { send, sendPure } from "../../action/ws_action.js";
 // @ts-ignore
 import * as syncProtocol from "rdy-protocols/dist/sync.mjs";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
@@ -146,12 +146,12 @@ const handleNormalMsg = (
         if (subdocGuid === rootDoc.name) {
           syncProtocol.readSyncMessage(decoder, encoder, rootDoc, conn);
           if (encoding.length(encoder) > 1 && needSend(encoder)) {
-            send(rootDoc, conn, encoding.toUint8Array(encoder));
+            sendPure(rootDoc, conn, encoding.toUint8Array(encoder));
           }
         } else {
           syncProtocol.readSyncMessage(decoder, encoder, curSubDoc, conn);
           if (encoding.length(encoder) > 1 && needSend(encoder)) {
-            send(curSubDoc, conn, encoding.toUint8Array(encoder));
+            sendPure(curSubDoc, conn, encoding.toUint8Array(encoder));
           }
         }
       }
@@ -332,7 +332,7 @@ const handleSubDocFirstTimePut = (
       newMap.set(subdocGuid, curSubDoc);
       subdocsMap.set(rootDoc.name, newMap);
     }
-    serverSendSyncStep1(curSubDoc, subdocGuid, conn);
+    serverSendSyncStep1(curSubDoc, subdocGuid, conn, syncFileAttr);
   } catch (e) {
     logger.error("handle first time put failed, docGuid:" + subdocGuid, e);
   }

@@ -30,13 +30,17 @@ import {
   readVarUint,
   // @ts-ignore
 } from "rdlib0/dist/decoding.mjs";
+import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 
 /**
  * send message without broadcast
  * @param {WebsocketProvider} provider
  * @param {ArrayBuffer} buf
  */
-export const sendMessage = (provider: SocketIOClientProvider, buf: ArrayBuffer) => {
+export const sendMessage = (
+  provider: SocketIOClientProvider,
+  buf: ArrayBuffer
+) => {
   const ws = provider.ws;
   if (provider.wsconnected && ws && ws.connected) {
     ws.send(buf);
@@ -137,18 +141,46 @@ export const sendWithType = async (
   }
 };
 
-export const send = async (doc: WSSharedDoc, conn: Socket, msg: Uint8Array) => {
+export const sendPure = async (
+  doc: WSSharedDoc,
+  conn: Socket,
+  msg: Uint8Array
+) => {
   try {
     if (conn.connected) {
       // https://stackoverflow.com/questions/16518153/get-connection-status-on-socket-io-client
       conn.send(msg);
     } else {
-      let fileInfo = await getTexFileInfo(doc.name);
+      logger.warn(
+        "connection state is not open, doc:" +
+          doc.name
+      );
+      closeConn(doc, conn);
+    }
+  } catch (e) {
+    const decoder = new TextDecoder("utf-8");
+    const text = decoder.decode(msg);
+    logger.error("send message facing error,text:" + text, e);
+    closeConn(doc, conn);
+  }
+};
+
+export const send = async (
+  doc: WSSharedDoc,
+  conn: Socket,
+  msg: Uint8Array,
+  syncFileAttr: SyncFileAttr
+) => {
+  try {
+    if (conn.connected) {
+      // https://stackoverflow.com/questions/16518153/get-connection-status-on-socket-io-client
+      conn.send(msg);
+    } else {
       logger.warn(
         "connection state is not open, doc:" +
           doc.name +
           ",file info:" +
-          fileInfo.name
+          JSON.stringify(syncFileAttr)
       );
       closeConn(doc, conn);
     }
@@ -184,7 +216,7 @@ export const messageListener = async (
         // message, there is no need to send the message. When `encoder` only
         // contains the type of reply, its length is 1.
         if (encoding.length(encoder) > 1) {
-          send(rootDoc, conn, encoding.toUint8Array(encoder));
+          sendPure(rootDoc, conn, encoding.toUint8Array(encoder));
         }
         break;
       case SyncMessageType.MessageAwareness: {

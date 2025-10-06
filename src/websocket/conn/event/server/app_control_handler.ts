@@ -53,11 +53,11 @@ const handleSwitchFiles = async (msg: ControlMsg, conn: Socket) => {
     projectId: "",
     docType: 1,
     docShowName: "unknown",
-    src: "handleSwitchFiles"
+    src: "handleSwitchFiles",
   };
   const doc: WSSharedDoc = await getYDoc(syncFileAttr, true);
   const encoder = createEncoder();
   writeVarUint(encoder, SyncMessageType.MessageControl);
   syncProtocol.writeSyncStep1(encoder, doc);
-  send(doc, conn, toUint8Array(encoder));
+  send(doc, conn, toUint8Array(encoder), syncFileAttr);
 };

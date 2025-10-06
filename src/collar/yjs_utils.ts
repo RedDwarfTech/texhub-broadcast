@@ -4,7 +4,7 @@ import { WSSharedDoc } from "./ws_share_doc.js";
 import { persistencePostgresql } from "../storage/storage.js";
 // @ts-ignore
 import * as encoding from "rdlib0/dist/encoding.mjs";
-import { send } from "../websocket/conn/action/ws_action.js";
+import { sendPure } from "../websocket/conn/action/ws_action.js";
 import { callbackRequest, getContent } from "./ydoc_callback.js";
 // @ts-ignore
 import * as syncProtocol from "rdy-protocols/dist/sync.mjs";
@@ -45,6 +45,11 @@ export const getYDoc = async (
   const doc: WSSharedDoc = new WSSharedDoc(docName);
   doc.gc = gc;
   if (persistencePostgresql) {
+    /**
+     *  to avoid the getYDoc get Ydoc that content is not loaded yet,
+     *  when the first time getYDoc is called, we need to wait for the bindState to finish
+     *  before returning the doc
+     */
     await persistencePostgresql.bindState(syncFileAttr, doc);
   }
   docs.set(docName, doc);
@@ -100,7 +105,7 @@ export const updateHandler = (
   encoding.writeVarUint(encoder, messageSync);
   syncProtocol.writeUpdate(encoder, update);
   const message = encoding.toUint8Array(encoder);
-  doc.conns.forEach((_: any, conn: any) => send(doc, conn, message));
+  doc.conns.forEach((_: any, conn: any) => sendPure(doc, conn, message));
 };
 
 export const initTpl = async (

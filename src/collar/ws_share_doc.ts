@@ -11,7 +11,7 @@ import {
 // @ts-ignore
 import * as awarenessProtocol from "rdy-protocols/dist/awareness.mjs";
 import debounce from "lodash";
-import { send } from "../websocket/conn/action/ws_action.js";
+import { send, sendPure } from "../websocket/conn/action/ws_action.js";
 import { callbackHandler, updateHandler } from "./yjs_utils.js";
 import { ChangeReq } from "../model/yjs/ChangeReq.js";
 import { Socket } from "socket.io";
@@ -76,7 +76,7 @@ export class WSSharedDoc extends Y.Doc {
       );
       const buff = toUint8Array(encoder);
       this.conns.forEach((_, c) => {
-        send(this, c, buff);
+        sendPure(this, c, buff);
       });
     };
     this.awareness.on("update", awarenessChangeHandler);

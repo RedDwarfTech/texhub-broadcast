@@ -68,7 +68,7 @@ export async function setupWSConnection(
     const encoder = createEncoder();
     writeVarUint(encoder, messageSync);
     syncProtocol.writeSyncStep1(encoder, rootDoc);
-    send(rootDoc, conn, toUint8Array(encoder));
+    send(rootDoc, conn, toUint8Array(encoder), syncFileAttr);
     const awarenessStates = rootDoc.awareness.getStates();
     if (awarenessStates.size > 0) {
       const encoder = createEncoder();
@@ -80,7 +80,7 @@ export async function setupWSConnection(
           Array.from(awarenessStates.keys())
         )
       );
-      send(rootDoc, conn, toUint8Array(encoder));
+      send(rootDoc, conn, toUint8Array(encoder), syncFileAttr);
     }
   }
 }

@@ -8,11 +8,13 @@ import { v4 as uuidv4 } from "uuid";
 // @ts-ignore
 import * as syncProtocol from "rdy-protocols/dist/sync.mjs";
 import { send } from "../../action/ws_action.js";
+import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 
 export const serverSendSyncStep1 = (
   curSubDoc: WSSharedDoc,
   subdocGuid: string,
-  conn: Socket
+  conn: Socket,
+  syncFileAttr: SyncFileAttr
 ) => {
   // send sync step 1
   const encoder = encoding.createEncoder();
@@ -28,7 +30,7 @@ export const serverSendSyncStep1 = (
 
   encoding.writeVarString(encoder, msgStr);
   syncProtocol.writeSyncStep1(encoder, curSubDoc);
-  send(curSubDoc, conn, encoding.toUint8Array(encoder));
+  send(curSubDoc, conn, encoding.toUint8Array(encoder), syncFileAttr);
   // Register update handler for the subdocument
   // @ts-ignore - Y.Doc has on method but TypeScript doesn't know about it
 };
