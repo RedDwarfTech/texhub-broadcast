@@ -20,6 +20,8 @@ import { handleYDocUpdate } from "@/storage/handler/ydoc_action_handler.js";
 import { DocMeta } from "@/model/yjs/commom/doc_meta.js";
 import { v4 as uuidv4 } from "uuid";
 import { RdJsonUtil } from "rdjs-wheel";
+import * as crypto from "crypto";
+import { Buffer } from "buffer";
 import {
   serverSendSyncStep1,
   serverWriteUpdate,
@@ -226,7 +228,7 @@ const handleSubDocFirstTimePut = (
       const handler = async (update: Uint8Array, origin: Socket) => {
         try {
           // 记录详细日志，便于排查重复触发/注册
-          const updateHash = require('crypto').createHash('md5').update(update).digest('hex');
+          const updateHash = crypto.createHash('md5').update(update).digest('hex');
           const updateBase64 = Buffer.from(update).toString('base64').slice(0, 32) + '...';
           const handlerId = (handler as any).__handlerId || (Math.random().toString(36).slice(2));
           (handler as any).__handlerId = handlerId;
