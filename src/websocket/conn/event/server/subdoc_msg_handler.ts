@@ -228,25 +228,8 @@ const handleSubDocFirstTimePut = (
       const handler = async (update: Uint8Array, origin: Socket) => {
         try {
           // 记录详细日志，便于排查重复触发/注册
-          const updateHash = crypto.createHash('md5').update(update).digest('hex');
-          const updateBase64 = Buffer.from(update).toString('base64').slice(0, 32) + '...';
           const handlerId = (handler as any).__handlerId || (Math.random().toString(36).slice(2));
           (handler as any).__handlerId = handlerId;
-          const stack = new Error().stack;
-          logger.info('[subdoc_update_handler] fired', {
-            subdocGuid: snapshotSubdocGuid,
-            rootDocName: snapshotRootName,
-            connId: conn.id,
-            originId: origin && origin.id ? origin.id : String(origin),
-            updateHash,
-            updateLen: update.length,
-            updateBase64,
-            handlerId,
-            handlerRef: handler.toString().slice(0, 80) + '...',
-            syncFileAttr: snapshotSyncFileAttr,
-            stack,
-            time: new Date().toISOString(),
-          });
           if (origin === conn) return;
           if (snapshotSubdocGuid === snapshotRootName) {
             logger.warn(
