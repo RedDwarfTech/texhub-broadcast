@@ -35,10 +35,13 @@ export const serverSendSyncStep1 = (
   // @ts-ignore - Y.Doc has on method but TypeScript doesn't know about it
 };
 
-export const serverWriteUpdate = (
-  update: Uint8Array,
-  subdocGuid: string,
-) => {
+export const writeSyncStep2 = (curSubDoc: WSSharedDoc) => {
+  const encoderState = encoding.createEncoder();
+  encoding.writeVarUint(encoderState, SyncMessageType.SubDocMessageSync);
+  syncProtocol.writeSyncStep2(encoderState, curSubDoc);
+};
+
+export const serverWriteUpdate = (update: Uint8Array, subdocGuid: string) => {
   const encoder = encoding.createEncoder();
   encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
 

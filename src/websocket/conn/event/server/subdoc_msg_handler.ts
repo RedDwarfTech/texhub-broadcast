@@ -25,6 +25,7 @@ import { Buffer } from "buffer";
 import {
   serverSendSyncStep1,
   serverWriteUpdate,
+  writeSyncStep2,
 } from "./server_protocol_action.js";
 
 let cryptoModule: any | null = null;
@@ -291,6 +292,7 @@ const handleSubDocFirstTimePut = (
       subdocsMap.set(rootDoc.name, newMap);
     }
     serverSendSyncStep1(curSubDoc, subdocGuid, conn, syncFileAttr);
+    writeSyncStep2(curSubDoc);
   } catch (e) {
     logger.error("handle first time put failed, docGuid:" + subdocGuid, e);
   }
