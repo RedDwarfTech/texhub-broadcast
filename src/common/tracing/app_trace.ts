@@ -4,14 +4,17 @@ import * as Y from "rdyjs";
 import * as decoding from "rdlib0/decoding.js";
 import { UpdateOrigin } from "@/model/yjs/net/update_origin";
 
-export function logYjsUnwrapMsg(decoder: any) {
+export function logYjsUnwrapMsg(decoder: any, docContext: any) {
   try {
     const messageType = decoding.readVarUint(decoder);
     console.log("parse messageType: ", messageType);
     let update = decoding.readVarUint8Array(decoder);
     const hasContent = decoding.hasContent(decoder);
     if (!hasContent) {
-      console.error("logYjsUnwrapMsg doc message sync has no content");
+      console.error(
+        "logYjsUnwrapMsg doc message sync has no content," +
+          JSON.stringify(docContext)
+      );
       return;
     }
     const structDecoder = new Y.UpdateDecoderV2(update);

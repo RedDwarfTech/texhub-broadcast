@@ -70,7 +70,7 @@ messageHandlers[SyncMessageType.SubDocMessageSync] = (
   console.warn("sub doc message sync with content，docGuid:", docGuid);
   let copiedDecoder = decoding.clone(decoder);
   if (!enableTracing()) {
-    logYjsUnwrapMsg(copiedDecoder);
+    logYjsUnwrapMsg(copiedDecoder, docContext);
   }
   const syncMessageType = syncProtocol.readSyncMessage(
     decoder,
