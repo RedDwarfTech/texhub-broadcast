@@ -113,8 +113,7 @@ const preHandleSubDoc = async (
         );
       }
     }
-    handleNormalMsg(rootDoc, conn, decoder, encoder, curSubDoc, syncFileAttr);
-    handleSubDoc(curSubDoc, conn, rootDoc, syncFileAttr);
+    handleSubDoc(curSubDoc, conn, rootDoc, syncFileAttr, decoder, encoder);
   } catch (err) {
     logger.error("handle sub doc facing issue:" + rootDoc.name, err);
   }
@@ -184,7 +183,9 @@ const handleSubDoc = (
   curSubDoc: WSSharedDoc,
   conn: Socket,
   rootDoc: WSSharedDoc,
-  syncFileAttr: SyncFileAttr
+  syncFileAttr: SyncFileAttr,
+  decoder: any,
+  encoder: any,
 ) => {
   let subdocGuid = syncFileAttr.docName;
   if (!rootDoc.conns.has(conn)) {
@@ -195,9 +196,7 @@ const handleSubDoc = (
   );
   if (curSubdocMap && curSubdocMap.has(subdocGuid)) {
     // sync step 1 done before.
-    if (subdocGuid === rootDoc.name) {
-      serverSendSyncStep1(curSubDoc, subdocGuid, conn, syncFileAttr);
-    }
+    handleNormalMsg(rootDoc, conn, decoder, encoder, curSubDoc, syncFileAttr);
   } else {
     handleSubDocFirstTimePut(
       curSubdocMap,
