@@ -185,7 +185,7 @@ const handleSubDoc = (
   rootDoc: WSSharedDoc,
   syncFileAttr: SyncFileAttr,
   decoder: any,
-  encoder: any,
+  encoder: any
 ) => {
   let subdocGuid = syncFileAttr.docName;
   if (!rootDoc.conns.has(conn)) {
