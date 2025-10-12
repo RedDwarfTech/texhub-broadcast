@@ -130,7 +130,7 @@ const handleNormalMsg = (
 ) => {
   let subdocGuid = syncFileAttr.docName;
   const curSubdocMap: Map<String, WSSharedDoc> | undefined = subdocsMap.get(
-    rootDoc.name
+    subdocGuid
   );
   try {
     if (curSubdocMap && curSubdocMap.has(subdocGuid)) {
@@ -191,7 +191,7 @@ const handleSubDoc = (
     rootDoc.conns.set(conn, new Set());
   }
   const curSubdocMap: Map<String, WSSharedDoc> | undefined = subdocsMap.get(
-    rootDoc.name
+    subdocGuid
   );
   if (curSubdocMap && curSubdocMap.has(subdocGuid)) {
     // sync step 1 done before.
