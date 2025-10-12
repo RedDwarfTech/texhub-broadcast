@@ -195,6 +195,9 @@ const handleSubDoc = (
   );
   if (curSubdocMap && curSubdocMap.has(subdocGuid)) {
     // sync step 1 done before.
+    if (subdocGuid === rootDoc.name) {
+      serverSendSyncStep1(curSubDoc, subdocGuid, conn, syncFileAttr);
+    }
   } else {
     handleSubDocFirstTimePut(
       curSubdocMap,
@@ -224,11 +227,11 @@ const handleSubDocFirstTimePut = (
       const snapshotSubdocGuid = String(subdocGuid);
       const snapshotRootName = rootDoc.name;
 
-
       const handler = async (update: Uint8Array, origin: Socket) => {
         try {
           // 记录详细日志，便于排查重复触发/注册
-          const handlerId = (handler as any).__handlerId || (Math.random().toString(36).slice(2));
+          const handlerId =
+            (handler as any).__handlerId || Math.random().toString(36).slice(2);
           (handler as any).__handlerId = handlerId;
           if (origin === conn) return;
           if (snapshotSubdocGuid === snapshotRootName) {
