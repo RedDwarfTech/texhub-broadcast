@@ -1,3 +1,5 @@
 {
-    "javascript.preferences.importModuleSpecifierEnding": "js"
+    "javascript.preferences.importModuleSpecifierEnding": "js",
+    "editor.wordWrap": "bounded",
+     "editor.wordWrapColumn": 120,
 }
