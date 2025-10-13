@@ -195,6 +195,11 @@ const handleSubDoc = (
   const curSubdocMap: Map<String, WSSharedDoc> | undefined = subdocsMap.get(
     rootDoc.name
   );
+  if (syncFileAttr.msgBody) {
+    if(syncFileAttr.msgBody.src === "providerdocs-sendsyncstep1"){
+      logger.debug("recieved send sync step 1 again, docGuid:" + subdocGuid);
+    }
+  }
   if (curSubdocMap && curSubdocMap.has(subdocGuid)) {
     // sync step 1 done before.
     handleNormalMsg(rootDoc, conn, decoder, encoder, curSubDoc, syncFileAttr);

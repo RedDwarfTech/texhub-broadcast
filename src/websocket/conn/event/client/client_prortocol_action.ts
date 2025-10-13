@@ -19,7 +19,7 @@ export const clientSendSyncStep1 = (
   const uniqueValue = uuidv4();
   let msg: SyncMessageContext = {
     doc_name: docName,
-    src: "providerdocs",
+    src: "providerdocs-sendsyncstep1",
     trace_id: uniqueValue,
   };
   let msgStr = JSON.stringify(msg);

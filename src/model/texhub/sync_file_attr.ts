@@ -1,3 +1,5 @@
+import { SyncMessageContext } from "./sync_msg_context.js";
+
 export interface SyncFileAttr { 
     docName: string; 
     /** 0: folder 1: tex file 2: project */
@@ -8,5 +10,5 @@ export interface SyncFileAttr {
     hash?: string;
     docShowName: string;
     src: string;
-    msgBody?: any;
+    msgBody?: SyncMessageContext;
 }
