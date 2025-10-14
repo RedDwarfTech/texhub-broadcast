@@ -7,7 +7,7 @@ export const handleSubdocConnect = (
   socketio: Socket
 ) => {
   for (const [k, doc] of provider.docs) {
-    console.log("start sync for sub doc:" + k + ",count:" + provider.docs.size);
+    console.log("start sync for sub doc:" + k + ",count:" + provider.docs.size + ", socket:" + socketio.connected);
     if (doc.meta && doc.meta.id === "-1") {
       // this is a root document, we try to send the sync step 1 with the old style
       // we have to send the sync step 1 for the root document
