@@ -35,11 +35,24 @@ export const serverSendSyncStep1 = (
   // @ts-ignore - Y.Doc has on method but TypeScript doesn't know about it
 };
 
-export const writeSyncStep2 = (curSubDoc: WSSharedDoc, conn: Socket, syncFileAttr: SyncFileAttr) => {
-  const encoderState = encoding.createEncoder();
-  encoding.writeVarUint(encoderState, SyncMessageType.SubDocMessageSync);
-  syncProtocol.writeSyncStep2(encoderState, curSubDoc);
-  send(curSubDoc, conn, encoding.toUint8Array(encoderState), syncFileAttr);
+export const writeSyncStep2 = (
+  curSubDoc: WSSharedDoc,
+  conn: Socket,
+  syncFileAttr: SyncFileAttr
+) => {
+  const encoder = encoding.createEncoder();
+  encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
+
+  const uniqueValue = uuidv4();
+  let msg: SyncMessageContext = {
+    doc_name: curSubDoc.guid,
+    src: "sendSyncStep2submsghandler",
+    trace_id: uniqueValue,
+  };
+  let msgStr = JSON.stringify(msg);
+  encoding.writeVarString(encoder, msgStr);
+  syncProtocol.writeSyncStep2(encoder, curSubDoc);
+  send(curSubDoc, conn, encoding.toUint8Array(encoder), syncFileAttr);
 };
 
 export const serverWriteUpdate = (update: Uint8Array, subdocGuid: string) => {

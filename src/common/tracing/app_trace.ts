@@ -4,6 +4,10 @@ import * as Y from "rdyjs";
 import * as decoding from "rdlib0/decoding.js";
 import { UpdateOrigin } from "@/model/yjs/net/update_origin";
 
+export function msgProbe() {
+  console.log("msgProbe called");
+}
+
 export function logYjsUnwrapMsg(decoder: any, docContext: any) {
   try {
     const messageType = decoding.readVarUint(decoder);
