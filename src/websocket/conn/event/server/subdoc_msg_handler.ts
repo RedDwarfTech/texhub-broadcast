@@ -299,7 +299,14 @@ const handleSubDocFirstTimePut = (
     if (syncFileAttr.msgBody) {
       if (syncFileAttr.msgBody.src === "providerdocs-sendsyncstep1") {
         writeSyncStep2(curSubDoc, conn, syncFileAttr);
-        logger.debug("send sync step 2, docGuid:" + subdocGuid);
+        logger.debug(
+          "send sync step 2, docGuid:" +
+            subdocGuid +
+            ",curSubDoc:" +
+            curSubDoc.guid +
+            ", syncFileAttr:" +
+            JSON.stringify(syncFileAttr)
+        );
       }
     }
     // serverSendSyncStep1(curSubDoc, subdocGuid, conn, syncFileAttr);
