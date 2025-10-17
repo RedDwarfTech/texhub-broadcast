@@ -47,24 +47,11 @@ export async function setupWSConnection(
     ws_msg_handle(message, conn, rootDoc);
   });
   conn.on("probe", (data: any) => {
-    logger.info(`[probe] received probe from client`, {
-      docId,
-      connId: conn.id,
-      probeData: data,
-      time: new Date().toISOString(),
-    });
-    // 回复探测消息
     conn.emit("probe_ack", {
       doc: data && data.doc,
       probeId: data && data.probeId,
       ack: true,
       serverTime: new Date().toISOString(),
-    });
-    logger.info(`[probe] sent probe_ack to client`, {
-      docId,
-      connId: conn.id,
-      probeId: data && data.probeId,
-      time: new Date().toISOString(),
     });
   });
   conn.on("close", (code, reason, wasClean) => {

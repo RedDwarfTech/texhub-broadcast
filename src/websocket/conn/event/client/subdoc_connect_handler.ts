@@ -3,7 +3,12 @@ import { SocketIOClientProvider } from "../../socket_io_client_provider.js";
 import { Socket } from "socket.io-client";
 import { clientSendSyncStep1 } from "./client_prortocol_action.js";
 
-
+/**
+ * the first message after connection established will be missing
+ * so we add the probe logic
+ * @param socketio https://github.com/socketio/socket.io/issues/2273
+ * @param onSuccess 
+ */
 function sendProbeWithAck(socketio: Socket, onSuccess: () => void) {
   const probeId = Math.random().toString(36).slice(2);
   let retryCount = 0;
