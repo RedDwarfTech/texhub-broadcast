@@ -45,7 +45,7 @@ export const writeSyncStep2 = (
 
   const uniqueValue = uuidv4();
   let msg: SyncMessageContext = {
-    doc_name: curSubDoc.guid,
+    doc_name: curSubDoc.name,
     src: "sendSyncStep2submsghandler",
     trace_id: uniqueValue,
   };
