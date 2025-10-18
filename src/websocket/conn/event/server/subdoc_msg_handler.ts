@@ -37,6 +37,58 @@ let cryptoModule: any | null = null;
 const subdocsMap: Map<String, Map<String, WSSharedDoc>> = new Map();
 
 /**
+ * Create an update handler for a subdocument using a snapshot of context.
+ * Kept as a factory to keep handleSubDocFirstTimePut small and testable.
+ */
+function createSubdocUpdateHandler(
+  curSubDoc: WSSharedDoc,
+  conn: Socket,
+  rootDoc: WSSharedDoc,
+  snapshotSyncFileAttr: SyncFileAttr,
+  snapshotSubdocGuid: string
+) {
+  const handler = async (update: Uint8Array, origin: Socket) => {
+    try {
+      // basic defensive check
+      if (origin === conn) return;
+
+      // log minimal diagnostic info
+      try {
+        const updateHash = crypto.createHash("md5").update(update).digest("hex");
+        logger.info("[subdoc_update_handler] fired", {
+          subdocGuid: snapshotSubdocGuid,
+          curDocGuid: (curSubDoc as any).guid || (curSubDoc as any).name || "unknown",
+          rootDoc: rootDoc.name,
+          connId: conn.id,
+          originId: origin && (origin as any).id ? (origin as any).id : String(origin),
+          updateHash,
+          updateLen: update ? update.length : 0,
+          syncFileAttr: snapshotSyncFileAttr,
+          time: new Date().toISOString(),
+        });
+      } catch (e) {
+        // swallow logging errors
+      }
+
+      if (snapshotSubdocGuid === rootDoc.name) {
+        logger.warn(
+          `the subdocGuid equal to rootDoc.name,syncFileAttr:${JSON.stringify(snapshotSyncFileAttr)}`
+        );
+      }
+
+      const deepCopied = structuredClone(snapshotSyncFileAttr);
+      deepCopied.src = deepCopied.src + "_subdoc_update";
+
+      await handleSubDocUpdate(update, origin, curSubDoc, snapshotSubdocGuid, conn, deepCopied, rootDoc);
+    } catch (err) {
+      logger.error("error in subdoc update handler", err);
+    }
+  };
+
+  return handler;
+}
+
+/**
  * hand the subdocument message
  * https://discuss.yjs.dev/t/extend-y-websocket-provider-to-support-sub-docs-synchronization-in-one-websocket-connection/1294
  *
@@ -236,46 +288,21 @@ const handleSubDocFirstTimePut = (
       const snapshotSubdocGuid = String(subdocGuid);
       const snapshotRootName = rootDoc.name;
 
-      const handler = async (update: Uint8Array, origin: Socket) => {
-        try {
-          // 记录详细日志，便于排查重复触发/注册
-          const handlerId =
-            (handler as any).__handlerId || Math.random().toString(36).slice(2);
-          (handler as any).__handlerId = handlerId;
-          if (origin === conn) return;
-          if (snapshotSubdocGuid === snapshotRootName) {
-            logger.warn(
-              `the subdocGuid equal to rootDoc.name,syncFileAttr:${JSON.stringify(
-                snapshotSyncFileAttr
-              )}`
-            );
-          }
-
-          const deepCopied = structuredClone(snapshotSyncFileAttr);
-          deepCopied.src = deepCopied.src + "_subdoc_update";
-
-          handleSubDocUpdate(
-            update,
-            origin,
-            curSubDoc,
-            snapshotSubdocGuid,
-            conn,
-            deepCopied,
-            rootDoc
-          );
-        } catch (err) {
-          logger.error("error in subdoc update handler", err);
-        }
-      };
+      // create handler via factory to keep code clear
+      const handler = createSubdocUpdateHandler(
+        curSubDoc,
+        conn,
+        rootDoc,
+        snapshotSyncFileAttr,
+        snapshotSubdocGuid
+      );
 
       // @ts-ignore
       (curSubDoc as any).__subdocUpdateHandler = handler;
       // @ts-ignore
-      curSubDoc.on("update", handler);
+      // curSubDoc.on("update", handler);
     } else {
-      logger.debug(
-        `update handler already registered for subdoc ${subdocGuid}`
-      );
+      logger.debug(`update handler already registered for subdoc ${subdocGuid}`);
     }
     const subDocText = curSubDoc.getText(subdocGuid);
     subDocText.observe((event: Y.YTextEvent, tr: Y.Transaction) => {
