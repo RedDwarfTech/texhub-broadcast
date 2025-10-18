@@ -200,6 +200,7 @@ const handleSubDoc = (
       syncFileAttr.msgBody.msg_type &&
       syncFileAttr.msgBody.msg_type === "sync_step_1"
     ) {
+      writeSyncStep2(curSubDoc, conn, syncFileAttr);
       logger.debug("recieved send sync step 1 again, docGuid:" + subdocGuid);
     }
   }
@@ -299,23 +300,6 @@ const handleSubDocFirstTimePut = (
       newMap.set(subdocGuid, curSubDoc);
       subdocsMap.set(rootDoc.name, newMap);
     }
-    if (syncFileAttr.msgBody) {
-      if (
-        syncFileAttr.msgBody.msg_type &&
-        syncFileAttr.msgBody.msg_type === "sync_step_1"
-      ) {
-        writeSyncStep2(curSubDoc, conn, syncFileAttr);
-        logger.debug(
-          "send sync step 2, docGuid:" +
-            subdocGuid +
-            ",curSubDoc:" +
-            curSubDoc.guid +
-            ", syncFileAttr:" +
-            JSON.stringify(syncFileAttr)
-        );
-      }
-    }
-    // serverSendSyncStep1(curSubDoc, subdocGuid, conn, syncFileAttr);
   } catch (e) {
     logger.error("handle first time put failed, docGuid:" + subdocGuid, e);
   }
