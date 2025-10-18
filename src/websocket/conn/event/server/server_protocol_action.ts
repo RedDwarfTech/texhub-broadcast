@@ -25,6 +25,7 @@ export const serverSendSyncStep1 = (
     doc_name: subdocGuid,
     src: "sendSyncStep1submsghandler",
     trace_id: uniqueValue,
+    msg_type: "sync_step_1",
   };
   let msgStr = JSON.stringify(msg);
 
@@ -48,6 +49,7 @@ export const writeSyncStep2 = (
     doc_name: curSubDoc.name,
     src: "sendSyncStep2submsghandler",
     trace_id: uniqueValue,
+    msg_type: "sync_step_2",
   };
   let msgStr = JSON.stringify(msg);
   encoding.writeVarString(encoder, msgStr);
@@ -64,6 +66,7 @@ export const serverWriteUpdate = (update: Uint8Array, subdocGuid: string) => {
     doc_name: subdocGuid,
     src: "handleSubDocUpdate",
     trace_id: uniqueValue,
+    msg_type: "update",
   };
   let msgStr = JSON.stringify(msg);
 

@@ -21,6 +21,7 @@ export const clientSendSyncStep1 = (
     doc_name: docName,
     src: "providerdocs-sendsyncstep1",
     trace_id: uniqueValue,
+    msg_type: "sync_step_1",
   };
   let msgStr = JSON.stringify(msg);
   encoding.writeVarString(encoder, msgStr);
