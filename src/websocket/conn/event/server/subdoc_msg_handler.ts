@@ -232,7 +232,7 @@ const handleSubDocUpdate = async (
   }
 };
 
-const handleSubDoc = (
+const handleSubDoc = async (
   curSubDoc: WSSharedDoc,
   conn: Socket,
   rootDoc: WSSharedDoc,
@@ -260,7 +260,7 @@ const handleSubDoc = (
     // sync step 1 done before.
     handleNormalMsg(rootDoc, conn, decoder, encoder, curSubDoc, syncFileAttr);
   } else {
-    handleSubDocFirstTimePut(
+    await handleSubDocFirstTimePut(
       curSubdocMap,
       subdocGuid,
       curSubDoc,
@@ -271,7 +271,7 @@ const handleSubDoc = (
   }
 };
 
-const handleSubDocFirstTimePut = (
+const handleSubDocFirstTimePut = async (
   curSubdocMap: Map<String, WSSharedDoc> | undefined,
   subdocGuid: string,
   curSubDoc: WSSharedDoc,
