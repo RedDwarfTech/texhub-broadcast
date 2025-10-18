@@ -198,7 +198,7 @@ const handleSubDoc = (
   if (syncFileAttr.msgBody) {
     if (
       syncFileAttr.msgBody.msg_type &&
-      syncFileAttr.msgBody.src === "sync_step_1"
+      syncFileAttr.msgBody.msg_type === "sync_step_1"
     ) {
       logger.debug("recieved send sync step 1 again, docGuid:" + subdocGuid);
     }
@@ -302,7 +302,7 @@ const handleSubDocFirstTimePut = (
     if (syncFileAttr.msgBody) {
       if (
         syncFileAttr.msgBody.msg_type &&
-        syncFileAttr.msgBody.src === "sync_step_1"
+        syncFileAttr.msgBody.msg_type === "sync_step_1"
       ) {
         writeSyncStep2(curSubDoc, conn, syncFileAttr);
         logger.debug(
