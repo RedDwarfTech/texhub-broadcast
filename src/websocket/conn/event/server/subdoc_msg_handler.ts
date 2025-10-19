@@ -253,7 +253,6 @@ const handleSubDoc = async (
       syncFileAttr.msgBody.msg_type === "sync_step_1"
     ) {
       writeSyncStep2(curSubDoc, conn, syncFileAttr);
-      logger.debug("recieved send sync step 1 again, docGuid:" + subdocGuid);
     }
   }
   if (curSubdocMap && curSubdocMap.has(subdocGuid)) {
@@ -301,7 +300,7 @@ const handleSubDocFirstTimePut = async (
       (curSubDoc as any).__subdocUpdateHandler = handler;
       // @ts-ignore
       // curSubDoc.on("update", handler);
-      //await handleSubDocUpdate(update, origin, curSubDoc, snapshotSubdocGuid, conn, deepCopied, rootDoc);
+      await handleSubDocUpdate(update, origin, curSubDoc, snapshotSubdocGuid, conn, deepCopied, rootDoc);
     } else {
       logger.debug(`update handler already registered for subdoc ${subdocGuid}`);
     }
