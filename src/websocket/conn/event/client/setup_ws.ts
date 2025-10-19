@@ -39,12 +39,22 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
     socketio.on("disconnect", (reason: any) => {
       try {
         logger.info(
-          `[client disconnect] id=${socketio.id}, reason=${String(reason)}, wsconnected=${provider.wsconnected}, room=${provider.roomname}`
+          `[client disconnect] id=${socketio.id}, reason=${String(
+            reason
+          )}, wsconnected=${provider.wsconnected}, room=${provider.roomname}`
         );
         // debug handshake if available
         try {
           // @ts-ignore
-          logger.debug(`handshake=${JSON.stringify((socketio as any).io && (socketio as any).io.engine ? (socketio as any).io.engine.transport : {}, null, 2)}`);
+          logger.debug(
+            `handshake=${JSON.stringify(
+              (socketio as any).io && (socketio as any).io.engine
+                ? (socketio as any).io.engine.transport
+                : {},
+              null,
+              2
+            )}`
+          );
         } catch (e) {}
       } catch (e) {
         console.warn("error logging disconnect", e);
@@ -77,7 +87,8 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
       //provider.emit("connection-error", [event, provider]);
     });
     socketio.on("close", (event) => {
-      //provider.emit("connection-close", [event, provider]);
+      // @ts-ignore
+      provider.emit("connection-close", [event, provider]);
       provider.ws = null;
       provider.wsconnecting = false;
       if (provider.wsconnected) {
@@ -91,11 +102,12 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
           ),
           provider
         );
-        //provider.emit("status", [
-        //  {
-        //    status: "disconnected",
-        //  },
-        //]);
+        // @ts-ignore
+        provider.emit("status", [
+          {
+            status: "disconnected",
+          },
+        ]);
       } else {
         provider.wsUnsuccessfulReconnects++;
       }
@@ -117,11 +129,12 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
       provider.wsconnected = true;
       provider.wsUnsuccessfulReconnects = 0;
       localStorage.setItem("socket-id", socketio.id || "");
-      //provider.emit("status", [
-      // {
-      //   status: "connected",
-      // },
-      //]);
+      // @ts-ignore
+      provider.emit("status", [
+        {
+          status: "connected",
+        },
+      ]);
       if (provider.enableSubDoc) {
         handleSubdocConnect(provider, socketio);
       } else {
