@@ -141,31 +141,7 @@ const preHandleSubDoc = async (
       src: "preHandleSubDoc",
       msgBody: docContext,
     };
-    let memoryOrDiskSubdoc = await getYDoc(syncFileAttr);
-    let curSubDoc = memoryOrDiskSubdoc;
-    if (subdocGuid !== rootDoc.name) {
-      // current document id not equal to root document
-      // this is a subdocument
-      // the subdocument message format: [messageSyncSub][subdocId][messageType][data]
-      let subdocText = memoryOrDiskSubdoc.getText(subdocGuid);
-      let subdocTextStr = subdocText.toString();
-      if (subdocTextStr) {
-        curSubDoc = memoryOrDiskSubdoc;
-      } else {
-        logger.warn(
-          "subdocTextStr is empty,guid:" +
-            subdocGuid +
-            ",finfo:" +
-            JSON.stringify(fileInfo!) +
-            ",socket-id:" +
-            conn.id +
-            ",docContext:" +
-            JSON.stringify(docContext) +
-            ",projectId:" +
-            rootDoc.name
-        );
-      }
-    }
+    let curSubDoc = await getYDoc(syncFileAttr);
     handleSubDoc(curSubDoc, conn, rootDoc, syncFileAttr, decoder, encoder);
   } catch (err) {
     logger.error("handle sub doc facing issue:" + rootDoc.name, err);
