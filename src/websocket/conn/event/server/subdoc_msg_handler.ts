@@ -285,7 +285,6 @@ const handleSubDocFirstTimePut = async (
     if (!(curSubDoc as any).__subdocUpdateHandler) {
       const snapshotSyncFileAttr = structuredClone(syncFileAttr);
       const snapshotSubdocGuid = String(subdocGuid);
-      const snapshotRootName = rootDoc.name;
 
       // create handler via factory to keep code clear
       const handler = createSubdocUpdateHandler(
@@ -297,21 +296,12 @@ const handleSubDocFirstTimePut = async (
       );
 
       // @ts-ignore
-      (curSubDoc as any).__subdocUpdateHandler = handler;
-      // @ts-ignore
-      // curSubDoc.on("update", handler);
-      await handleSubDocUpdate(update, origin, curSubDoc, snapshotSubdocGuid, conn, deepCopied, rootDoc);
+      (curSubDoc as any).__subdocUpdateHandler = handler;     
     } else {
       logger.debug(`update handler already registered for subdoc ${subdocGuid}`);
     }
     const subDocText = curSubDoc.getText(subdocGuid);
     subDocText.observe((event: Y.YTextEvent, tr: Y.Transaction) => {
-      /**logger.debug(
-        "sub document text changed,docGuid:" +
-          subdocGuid +
-          ",delta:" +
-          JSON.stringify(event.delta)
-      );*/
     });
     let docMeta: DocMeta = {
       name: subdocGuid,

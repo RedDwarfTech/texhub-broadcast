@@ -23,7 +23,7 @@ function sendProbeWithAck(socketio: Socket, onSuccess: () => void) {
     retryCount++;
     if (retryCount < maxRetry && !acked) {
       setTimeout(sendProbe, retryInterval);
-    } else if (!acked) {
+    } else if (!acked && retryCount >= maxRetry) {
       console.warn(`[probe] probe_ack not received, probeId: ${probeId} after ${maxRetry} attempts.`);
     }
   };
@@ -47,13 +47,7 @@ export const handleSubdocConnect = (
   sendProbeWithAck(socketio, () => {
     console.log('[probe] probe success, start batch sync for all docs');
     for (const [k, doc] of provider.docs) {
-      if (doc.meta && doc.meta.id === "-1") {
-        console.log(`[probe] sending clientSendSyncStep1 for root doc: ${k}`);
-        clientSendSyncStep1(k, socketio, doc);
-      } else {
-        console.log(`[probe] sending clientSendSyncStep1 for sub doc: ${k}`);
-        clientSendSyncStep1(k, socketio, doc);
-      }
+      clientSendSyncStep1(k, socketio, doc);
     }
   });
 };
