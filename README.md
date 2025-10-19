@@ -9,7 +9,7 @@ This project was mostly come from y-websocket, it used as texhub collaborate bac
 * support Yjs subdocument
 * all import/export using esm, do not use cjs
 * using socket.io as the websocket communication component
-* support yjs version history(working...)
+* support yjs version history
 
 ## start develop app
 
