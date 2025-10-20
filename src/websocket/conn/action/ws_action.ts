@@ -152,6 +152,7 @@ export const sendPure = async (
       conn.send(msg);
     } else {
       logger.warn("sendPure connection state is not open, doc:" + doc.name);
+      console.trace();
       conn.send(msg);
       closeConn(doc, conn);
     }
