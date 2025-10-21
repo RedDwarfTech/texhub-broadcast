@@ -25,7 +25,7 @@ import { WsParam } from "@model/texhub/ws_param.js";
 import { TeXSocket } from "@texhub/client/tex_socket.js";
 import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
 import { WsCommand } from "@common/ws/WsCommand.js";
-import { setupWebsocket } from "./event/client/setup_ws.js";
+import { setupWebsocket } from "./event/client/cleint_setup_ws.js";
 import { messageHandlers } from "./event/client/client_msg_type_handler.js";
 import { broadcastMessage, readMessage } from "./action/ws_action.js";
 import { SyncMessageContext } from "@/model/texhub/sync_msg_context.js";

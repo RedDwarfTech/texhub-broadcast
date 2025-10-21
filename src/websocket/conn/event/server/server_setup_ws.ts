@@ -1,5 +1,5 @@
 import { getYDoc, messageSync } from "@collar/yjs_utils.js";
-import { closeConn, send } from "../conn/action/ws_action.js";
+import { closeConn, send } from "../../action/ws_action.js";
 import {
   createEncoder,
   toUint8Array,
@@ -15,7 +15,7 @@ import * as awarenessProtocol from "rdy-protocols/dist/awareness.mjs";
 import { Socket } from "socket.io";
 import http from "http";
 import logger from "@common/log4js_config.js";
-import { ws_msg_handle } from "../conn/event/server/message_handler.js";
+import { ws_msg_handle } from "./message_handler.js";
 import { URLSearchParams } from "url";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 
@@ -53,6 +53,9 @@ export async function setupWSConnection(
       ack: true,
       serverTime: new Date().toISOString(),
     });
+  });
+  conn.on("disconnect", () => {
+    closeConn(rootDoc, conn);
   });
   conn.on("close", (code, reason, wasClean) => {
     if (code !== 1000 && code !== 4001) {

@@ -13,8 +13,6 @@ import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
 // @ts-ignore
 import * as syncProtocol from "rdy-protocols/sync";
 import { readMessage } from "../../action/ws_action.js";
-import { SyncMessageContext } from "@/model/texhub/sync_msg_context.js";
-import { v4 as uuidv4 } from "uuid";
 import { handleSubdocConnect } from "./subdoc_connect_handler.js";
 /**
  * @param {SocketIOClientProvider} provider
