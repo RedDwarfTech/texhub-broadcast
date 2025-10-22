@@ -20,10 +20,10 @@ import { URLSearchParams } from "url";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 
 export async function setupWSConnection(
-  conn: Socket,
-  req: http.IncomingMessage,
+  socket: Socket,
   { gc = true } = {}
 ) {
+  let req : http.IncomingMessage = socket.request;
   let url: URL = new URL(req.url!, `http://${req.headers.host}`);
   let urlParams: URLSearchParams = url.searchParams;
   const docId = urlParams.get("docId");
@@ -41,23 +41,23 @@ export async function setupWSConnection(
   };
   // get doc, initialize if it does not exist yet
   const rootDoc: WSSharedDoc = await getYDoc(syncFileAttr, gc);
-  rootDoc.conns.set(conn, new Set());
+  rootDoc.conns.set(socket, new Set());
   // listen and reply to events
-  conn.on("message", (message: Uint8Array) => {
-    ws_msg_handle(message, conn, rootDoc);
+  socket.on("message", (message: Uint8Array) => {
+    ws_msg_handle(message, socket, rootDoc);
   });
-  conn.on("probe", (data: any) => {
-    conn.emit("probe_ack", {
+  socket.on("probe", (data: any) => {
+    socket.emit("probe_ack", {
       doc: data && data.doc,
       probeId: data && data.probeId,
       ack: true,
       serverTime: new Date().toISOString(),
     });
   });
-  conn.on("disconnect", () => {
-    closeConn(rootDoc, conn);
+  socket.on("disconnect", () => {
+    closeConn(rootDoc, socket);
   });
-  conn.on("close", (code, reason, wasClean) => {
+  socket.on("close", (code, reason, wasClean) => {
     if (code !== 1000 && code !== 4001) {
       logger.error(
         "close reason:" +
@@ -70,7 +70,7 @@ export async function setupWSConnection(
           docId
       );
     }
-    closeConn(rootDoc, conn);
+    closeConn(rootDoc, socket);
   });
   // put the following in a variables in a block so the interval handlers don't keep in in
   // scope
@@ -79,7 +79,7 @@ export async function setupWSConnection(
     const encoder = createEncoder();
     writeVarUint(encoder, messageSync);
     syncProtocol.writeSyncStep1(encoder, rootDoc);
-    send(rootDoc, conn, toUint8Array(encoder), syncFileAttr);
+    send(rootDoc, socket, toUint8Array(encoder), syncFileAttr);
     const awarenessStates = rootDoc.awareness.getStates();
     if (awarenessStates.size > 0) {
       const encoder = createEncoder();
@@ -91,7 +91,7 @@ export async function setupWSConnection(
           Array.from(awarenessStates.keys())
         )
       );
-      send(rootDoc, conn, toUint8Array(encoder), syncFileAttr);
+      send(rootDoc, socket, toUint8Array(encoder), syncFileAttr);
     }
   }
 }
