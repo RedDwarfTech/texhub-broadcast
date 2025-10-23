@@ -125,6 +125,7 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
       provider.wsLastMessageReceived = time.getUnixTime();
       provider.wsconnecting = false;
       provider.wsconnected = true;
+      provider.ws = socketio;
       provider.wsUnsuccessfulReconnects = 0;
       localStorage.setItem("socket-id", socketio.id || "");
       // @ts-ignore
