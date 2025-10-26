@@ -60,7 +60,6 @@ const initializeRedis = async (): Promise<Redis | undefined> => {
     return redisClient;
   } catch (error) {
     logger.error("Failed to initialize Redis client:", error);
-    // Redis is optional, so we don't throw error
   }
 };
 
@@ -73,7 +72,6 @@ export const initializeDatabases = async (): Promise<void> => {
     return;
   }
   try {
-    // Initialize PostgreSQL
     await initializePostgreSQL();
     logger.info("Database initialization completed successfully");
   } catch (error) {

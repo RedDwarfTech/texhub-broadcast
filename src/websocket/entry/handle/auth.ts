@@ -2,7 +2,6 @@ import { Socket } from "socket.io";
 import http from "http";
 import jwt from "jsonwebtoken";
 import logger from "@common/log4js_config.js";
-import { toJSON } from "flatted";
 import { Server } from "socket.io";
 const JWT_SIGN_KEY = process.env.JWT_SIGN_KEY || "key-missing";
 const WEBSOCKET_AUTH_FAILED = 4000;
@@ -21,7 +20,7 @@ export const handleMiddlewareAuthCheck = (websocketServer: Server) => {
         (err: any, decoded: any) => {
           if (err) {
             logger.error("valid token facing issue", err);
-            return next(new Error("invalid token"));
+            next();
           }
           next();
         }

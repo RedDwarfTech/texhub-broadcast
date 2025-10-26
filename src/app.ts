@@ -36,7 +36,7 @@ websocketServer.use((socket: Socket, next) => {
   next();
 });
 
-//handleMiddlewareAuthCheck(websocketServer);
+handleMiddlewareAuthCheck(websocketServer);
 
 initialize();
 process.on("uncaughtException", (error, origin) => {
