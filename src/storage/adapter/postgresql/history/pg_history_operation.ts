@@ -186,7 +186,6 @@ export const storeHistoryUpdate = async (
       }
       await pgHistoryPut(
         update,
-        "ws",
         createDocumentUpdateKeyArray(docName, clock + 1),
         syncFileAttr
       );
@@ -272,15 +271,14 @@ const pgPutKey = async (db: pg.Pool, key: any[], originalKey: any[]) => {
 
 const pgHistoryPut = async (
   val: Uint8Array,
-  source: string,
   keys: any[],
   syncFileAttr: SyncFileAttr
 ) => {
   try {
     // we think there is no need to use on conflict do update
     // it is impossible to conflict with the key
-    const query = `INSERT INTO tex_sync_history(key, value, version, content_type, doc_name, clock, source, project_id) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) `;
+    const query = `INSERT INTO tex_sync_history(key, value, version, content_type, doc_name, clock, project_id) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7) `;
     // on conflict do update
     // const query = `INSERT INTO tex_sync (key, value, version, content_type, doc_name, clock, source)
     //   VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -299,7 +297,6 @@ const pgHistoryPut = async (
       contentType,
       docName,
       clock,
-      source,
       syncFileAttr.projectId,
     ];
     let sysDb = getPgPool();
