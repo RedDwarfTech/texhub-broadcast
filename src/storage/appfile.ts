@@ -1,6 +1,6 @@
 import log4js from "log4js";
 var logger = log4js.getLogger();
-import lodash from "lodash";
+import lodash, { ThrottleSettings } from "lodash";
 import path from "path";
 import fs from "fs";
 // @ts-ignore
@@ -13,6 +13,11 @@ import { PostgresqlPersistance } from "./adapter/postgresql/postgresql_persistan
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { TeXFileType } from "@/model/enum/tex_file_type.js";
 
+let options: ThrottleSettings = {
+  trailing: true,
+  leading: false,
+};
+
 export const throttledFn = lodash.throttle(
   (syncFileAttr: SyncFileAttr, ldb: PostgresqlPersistance) => {
     if (syncFileAttr.docType === TeXFileType.PROJECT) {
@@ -20,12 +25,13 @@ export const throttledFn = lodash.throttle(
     }
     flushFileToDiskAndSearchEngine(syncFileAttr, ldb);
   },
-  2000
+  2000,
+  options,
 );
 
 const flushFileToDiskAndSearchEngine = async (
   syncFileAttr: SyncFileAttr,
-  ldb: PostgresqlPersistance
+  ldb: PostgresqlPersistance,
 ) => {
   try {
     /**
@@ -48,7 +54,7 @@ const flushFileToDiskAndSearchEngine = async (
         "fileInfo is null or fileInfo.file_path is null" +
           JSON.stringify(fileInfo) +
           "," +
-          JSON.stringify(syncFileAttr)
+          JSON.stringify(syncFileAttr),
       );
       return;
     }
@@ -61,7 +67,7 @@ const flushFileToDiskAndSearchEngine = async (
     const month = date.getMonth() + 1;
     let folderPath = path.join(
       `/opt/data/project/${year}/${month}/${projectId}`,
-      filePath
+      filePath,
     );
     fs.mkdir(folderPath, { recursive: true }, (error) => {
       if (error) {
@@ -95,7 +101,7 @@ export const getTexFileInfo = async (docName: string): Promise<FileContent> => {
   let fileContent: AppResponse<FileContent> = await getFileJsonData(docName);
   if (!fileContent) {
     logger.error(
-      `get file info failed，file info: ${fileContent},docName:${docName}`
+      `get file info failed，file info: ${fileContent},docName:${docName}`,
     );
   }
   return fileContent.result;
