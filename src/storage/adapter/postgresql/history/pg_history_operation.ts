@@ -204,7 +204,7 @@ export const storeUpdateBySrc = async (
   keys: any[],
   syncFileAttr: SyncFileAttr
 ) => {
-  await pgHistoryPut(update, "leveldb", keys, syncFileAttr);
+  await pgHistoryPut(update, keys, syncFileAttr);
 };
 
 export const insertKey = async (
