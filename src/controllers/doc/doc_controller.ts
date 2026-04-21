@@ -10,7 +10,8 @@ import {
 import logger from "@/common/log4js_config.js";
 import { AppResponse } from "@/texhub/biz/AppResponse.js";
 import { ProjectScrollVersionAttributes } from "@/model/texhub/project_scroll_version";
-import { MAX_I64 } from "@/common/app/global_constant.js";
+import { queryFullDeletions } from "@/storage/handler/deletion_audit.js";
+import { MAX_I64 } from "@/common/app/global_constant";
 
 export const routerDoc: Router = express.Router();
 
@@ -70,4 +71,36 @@ routerDoc.post("/initial", async (req: Request, res: Response) => {
   const fileContent = req.body.file_content;
   await initTpl(docId, projectId, fileContent);
   res.end("success");
+});
+
+/**
+ * 查询文档的完全删除记录
+ */
+routerDoc.get("/audit/full-deletions", async (req: Request, res: Response) => {
+  try {
+    const docName = req.query.docName as string;
+    const days = req.query.days ? parseInt(req.query.days as string) : 7;
+
+    const deletions = await queryFullDeletions(docName, days);
+
+    const response: AppResponse<any> = {
+      result: {
+        deletions,
+        total: deletions.length,
+        docName: docName || "all",
+        days
+      },
+      message: "success",
+      code: 200,
+    };
+    res.json(response);
+  } catch (error) {
+    logger.error("Failed to query full deletions", error);
+    const response: AppResponse<any> = {
+      result: null,
+      message: "Failed to query full deletions",
+      code: 500,
+    };
+    res.status(500).json(response);
+  }
 });

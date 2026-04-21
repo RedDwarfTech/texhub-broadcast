@@ -35,15 +35,23 @@ if (typeof persistenceDir === "string") {
         Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(persistedYdoc), uo);
 
         // @ts-ignore
-        ydoc.on("update", async (update: Uint8Array) => {
+        ydoc.on("update", async (update: Uint8Array, origin: UpdateOrigin) => {
           const updateHash = crypto
             .createHash("sha256")
-            .update(newUpdates)
+            .update(update)
             .digest("hex");
           const updateTime = Date.now().toLocaleString();
           syncFileAttr.curTime = updateTime;
           syncFileAttr.hash = updateHash;
-          handleYDocUpdate(update, ydoc, syncFileAttr);
+
+          // 传递用户上下文信息
+          const userContext: Partial<UpdateOrigin> = {
+            userId: origin?.userId,
+            userName: origin?.userName,
+            operationType: origin?.operationType || 'update'
+          };
+
+          handleYDocUpdate(update, ydoc, syncFileAttr, userContext);
         });
       } catch (err: any) {
         logger.error("process update failed", err);
