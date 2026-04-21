@@ -11,7 +11,7 @@ import logger from "@/common/log4js_config.js";
 import { AppResponse } from "@/texhub/biz/AppResponse.js";
 import { ProjectScrollVersionAttributes } from "@/model/texhub/project_scroll_version";
 import { queryFullDeletions } from "@/storage/handler/deletion_audit.js";
-import { MAX_I64 } from "@/common/app/global_constant";
+import { MAX_I64 } from "@/common/app/global_constant.js";
 
 export const routerDoc: Router = express.Router();
 
