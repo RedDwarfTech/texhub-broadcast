@@ -13,7 +13,7 @@ export async function handleHistoryDoc(
 ) {
   try {
     const docIntId = syncFileAttr.docIntId!;
-    const throttledSave =  getHistoryDocsThrottledFn(docIntId)(syncFileAttr, ydoc);
+    const throttledSave = getHistoryDocsThrottledFn(docIntId);
     if (typeof throttledSave === 'function') {
       await throttledSave(syncFileAttr, ydoc);
     }
