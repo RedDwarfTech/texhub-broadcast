@@ -46,7 +46,7 @@ export const getProjectScrollVersion = async (
       project_id: projectId,
     };
     if (cursor) {
-      let lastId = BigInt(cursor) > MAX_I64 ? MAX_I64 : BigInt(cursor);
+      let lastId = BigInt(cursor) > MAX_I64 || BigInt(cursor) === 0n ? MAX_I64 : BigInt(cursor);
       whereClause.id = { [Op.lt]: lastId };
     }
     if (fileId) {
