@@ -1,12 +1,14 @@
 import type * as pg from "pg";
 import logger from "@common/log4js_config.js";
 import type Redis from "ioredis";
+import { sequelize } from "@/storage/adapter/postgresql/conf/sequelize.js";
+
 
 let pgPool: pg.Pool | null = null;
 let redisClient: any = null;
 
 const pgConfig = {
-  host: process.env.PG_HOST || "localhost",
+  host: process.env.PG_HOST,
   port: parseInt(process.env.POSTGRES_PORT || "5432"),
   database: process.env.PG_YJS_DATABASE || "yjs",
   user: process.env.PG_USER || "postgres",
@@ -173,4 +175,23 @@ if (typeof window === "undefined") {
   initializeDatabases().catch((error) => {
     logger.error("Auto-initialization failed:", error);
   });
+}
+
+export function getSequelizeDebugInfo() {
+  if (!sequelize) return null;
+  const { host, port, database, username, dialect } = sequelize.config;
+  const pool = sequelize.connectionManager?.pool;
+  return {
+    db: { host, port, database, username, dialect },
+    pool: pool
+      ? {
+          size: pool.size,           // 当前池里连接数
+          available: pool.available, // 空闲
+          using: pool.using,         // 使用中
+          waiting: pool.waiting,     // 等待连接的请求数（很关键）
+          max: pool.max,
+          min: pool.min,
+        }
+      : null,
+  };
 }

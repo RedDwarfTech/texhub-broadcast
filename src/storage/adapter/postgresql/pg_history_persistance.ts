@@ -9,7 +9,7 @@ import {
   getFileLatestSnapshot,
 } from "@/service/version_service.js";
 import { diffChars } from "diff";
-import { getPgPool } from "./conf/database_init.js";
+import { getPgPool, getSequelizeDebugInfo } from "./conf/database_init.js";
 
 export class PgHisotoryPersistance {
 
@@ -72,7 +72,7 @@ export class PgHisotoryPersistance {
         client.release();
       }
     } catch (error) {
-      logger.error("Failed to store snapshot:", error);
+      logger.error("Failed to store snapshot:", error, getSequelizeDebugInfo());
       throw error;
     }
   }
