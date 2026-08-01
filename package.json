@@ -21,10 +21,20 @@
   "files": [
     "dist/*"
   ],
+  "aliases": {
+    "@": "src",
+    "@controllers": "src/controllers",
+    "@websocket": "src/websocket",
+    "@common": "src/common",
+    "@model": "src/model",
+    "@collar": "src/collar",
+    "@storage": "src/storage",
+    "@texhub": "src/texhub"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint --fix",
-    "dev": "export NODE_ENV=production && ts-node -r tsconfig-paths/register src/app.ts",
+    "dev": "export NODE_ENV=production && node --import ./scripts/register-loaders.mjs src/app.ts",
     "build": "tsc && tsc-alias"
   },
   "keywords": [],

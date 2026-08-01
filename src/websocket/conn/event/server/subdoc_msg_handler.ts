@@ -49,9 +49,6 @@ function createSubdocUpdateHandler(
 ) {
   const handler = async (update: Uint8Array, origin: Socket) => {
     try {
-      // basic defensive check
-      if (origin === conn) return;
-
       // log minimal diagnostic info
       try {
         const updateHash = crypto.createHash("md5").update(update).digest("hex");
@@ -79,7 +76,7 @@ function createSubdocUpdateHandler(
       const deepCopied = structuredClone(snapshotSyncFileAttr);
       deepCopied.src = deepCopied.src + "_subdoc_update";
 
-      await handleSubDocUpdate(update, origin, curSubDoc, snapshotSubdocGuid, conn, deepCopied, rootDoc);
+      await handleSubDocUpdate(update, origin, curSubDoc, snapshotSubdocGuid, deepCopied, rootDoc);
     } catch (err) {
       logger.error("error in subdoc update handler", err);
     }
@@ -197,12 +194,10 @@ const handleSubDocUpdate = async (
   origin: any,
   curSubDoc: WSSharedDoc,
   subdocGuid: string,
-  conn: Socket,
   syncFileAttr: SyncFileAttr,
   rootDoc: WSSharedDoc
 ) => {
-  if (origin === conn) return; // Don't broadcast back to the sender
-  serverWriteUpdate(update, subdocGuid);
+  serverWriteUpdate(update, subdocGuid, rootDoc, origin as Socket);
   if (subdocGuid !== rootDoc.name) {
     handleYDocUpdate(update, curSubDoc, syncFileAttr);
   }
@@ -272,7 +267,11 @@ const handleSubDocFirstTimePut = async (
       );
 
       // @ts-ignore
-      (curSubDoc as any).__subdocUpdateHandler = handler;     
+      (curSubDoc as any).__subdocUpdateHandler = handler;
+      if (subdocGuid !== rootDoc.name) {
+        // @ts-ignore
+        curSubDoc.on("update", handler);
+      }
     } else {
       logger.debug(`update handler already registered for subdoc ${subdocGuid}`);
     }

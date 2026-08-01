@@ -9,6 +9,11 @@ export interface FullDeleteDetection {
   isFullDelete: boolean;
   previousSize: number;
   currentSize: number;
+  updateByteLength: number;
+  syncSrc?: string;
+  projectId?: string;
+  docShowName?: string;
+  traceId?: string;
 }
 
 export interface DeletionAuditRecord {
@@ -42,18 +47,36 @@ export async function detectFullDelete(
 
     // 判断是否为完全删除：文档之前不为空，现在为空
     const isFullDelete = oldText.length > 0 && newText.length === 0;
-
-    return {
+    const detection: FullDeleteDetection = {
       isFullDelete,
       previousSize: oldText.length,
-      currentSize: newText.length
+      currentSize: newText.length,
+      updateByteLength: update?.length ?? 0,
+      syncSrc: syncFileAttr.src,
+      projectId: syncFileAttr.projectId,
+      docShowName: syncFileAttr.docShowName,
+      traceId: syncFileAttr.msgBody?.trace_id,
     };
+
+    if (isFullDelete) {
+      logger.warn("[FULL_DELETE_DETECTED]", {
+        docName: syncFileAttr.docName,
+        docIntId: syncFileAttr.docIntId,
+        ...detection,
+        msgSrc: syncFileAttr.msgBody?.src,
+        msgType: syncFileAttr.msgBody?.msg_type,
+        hash: syncFileAttr.hash,
+      });
+    }
+
+    return detection;
   } catch (error) {
     logger.error("Failed to detect full delete", error);
     return {
       isFullDelete: false,
       previousSize: 0,
-      currentSize: 0
+      currentSize: 0,
+      updateByteLength: update?.length ?? 0,
     };
   }
 }

@@ -29,6 +29,9 @@ export const preCheckBeforeFlush = async (
     const detection = await detectFullDelete(update, ydoc, syncFileAttr);
 
     if (detection.isFullDelete) {
+      const ydocTextLen =
+        ydoc.getText(syncFileAttr.docName)?.toString()?.length ?? 0;
+
       // 记录完全删除的审计日志
       await recordFullDeletion({
         docName: syncFileAttr.docName,
@@ -40,7 +43,28 @@ export const preCheckBeforeFlush = async (
         updateHash: syncFileAttr.hash
       });
 
-      logger.warn(`[FULL_DELETE] Document completely deleted: doc=${syncFileAttr.docName}, previousSize=${detection.previousSize}, user=${userContext?.userId}`);
+      logger.warn("[FULL_DELETE] Document completely deleted", {
+        docName: syncFileAttr.docName,
+        docIntId: syncFileAttr.docIntId,
+        docShowName: syncFileAttr.docShowName,
+        projectId: syncFileAttr.projectId,
+        previousSize: detection.previousSize,
+        currentSize: detection.currentSize,
+        ydocTextLen,
+        updateByteLength: detection.updateByteLength,
+        updateHash: syncFileAttr.hash,
+        syncSrc: syncFileAttr.src,
+        traceId: detection.traceId,
+        msgSrc: syncFileAttr.msgBody?.src,
+        msgType: syncFileAttr.msgBody?.msg_type,
+        userId: userContext?.userId,
+        userName: userContext?.userName,
+        operationType: userContext?.operationType,
+        origin: userContext?.origin,
+        reason: userContext?.reason,
+        sessionId: userContext?.sessionId,
+        clientInfo: userContext?.clientInfo,
+      });
     }
 
     // 继续正常的处理流程

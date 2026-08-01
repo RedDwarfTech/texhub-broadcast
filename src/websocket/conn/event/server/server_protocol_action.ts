@@ -7,7 +7,7 @@ import { SyncMessageContext } from "@/model/texhub/sync_msg_context.js";
 import { v4 as uuidv4 } from "uuid";
 // @ts-ignore
 import * as syncProtocol from "rdy-protocols/dist/sync.mjs";
-import { send } from "../../action/ws_action.js";
+import { send, sendPure } from "../../action/ws_action.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 
 export const serverSendSyncStep1 = (
@@ -57,7 +57,12 @@ export const writeSyncStep2 = (
   send(curSubDoc, conn, encoding.toUint8Array(encoder), syncFileAttr);
 };
 
-export const serverWriteUpdate = (update: Uint8Array, subdocGuid: string) => {
+export const serverWriteUpdate = (
+  update: Uint8Array,
+  subdocGuid: string,
+  rootDoc: WSSharedDoc,
+  origin: Socket
+) => {
   const encoder = encoding.createEncoder();
   encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
 
@@ -72,4 +77,11 @@ export const serverWriteUpdate = (update: Uint8Array, subdocGuid: string) => {
 
   encoding.writeVarString(encoder, msgStr);
   syncProtocol.writeUpdate(encoder, update);
+
+  const message = encoding.toUint8Array(encoder);
+  rootDoc.conns.forEach((_: Set<number>, conn: Socket) => {
+    if (conn !== origin) {
+      sendPure(rootDoc, conn, message);
+    }
+  });
 };
