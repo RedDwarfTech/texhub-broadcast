@@ -35,6 +35,9 @@ importers:
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.3
+      lib0:
+        specifier: ^0.2.117
+        version: 0.2.117
       lodash:
         specifier: ^4.17.21
         version: 4.18.1
@@ -65,15 +68,6 @@ importers:
       rdjs-wheel:
         specifier: 0.0.32
         version: 0.0.32(@types/node@22.19.21)(rollup@4.61.1)(ts-node@10.9.2(@types/node@22.19.21)(typescript@5.9.3))(ts-toolbelt@9.6.0)(typescript@5.9.3)(vite@8.0.16(@types/node@22.19.21)(esbuild@0.18.20)(terser@5.48.0))(webpack@5.107.2(esbuild@0.18.20)(lightningcss@1.32.0))
-      rdlib0:
-        specifier: ^0.2.106
-        version: 0.2.106
-      rdy-protocols:
-        specifier: ^1.0.14
-        version: 1.0.14(rdyjs@13.6.30)
-      rdyjs:
-        specifier: 13.6.30
-        version: 13.6.30
       redis:
         specifier: ^4.7.1
         version: 4.7.1
@@ -89,6 +83,12 @@ importers:
       uuid:
         specifier: ^11.1.0
         version: 11.1.1
+      y-protocols:
+        specifier: ^1.0.7
+        version: 1.0.7(yjs@13.6.31)
+      yjs:
+        specifier: 13.6.31
+        version: 13.6.31
     devDependencies:
       '@types/express':
         specifier: ^5.0.3
@@ -3348,6 +3348,11 @@ packages:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
     engines: {node: '>= 0.8.0'}
 
+  lib0@0.2.117:
+    resolution: {integrity: sha512-DeXj9X5xDCjgKLU/7RR+/HQEVzuuEUiwldwOGsHK/sfAfELGWEyTcf0x+uOvCvK3O2zPmZePXWL85vtia6GyZw==}
+    engines: {node: '>=16'}
+    hasBin: true
+
   lightningcss-android-arm64@1.32.0:
     resolution: {integrity: sha512-YK7/ClTt4kAK0vo6w3X+Pnm0D2cf2vPHbhOXdoNti1Ga0al1P4TBZhwjATvjNwLEBCnKvjJc2jQgHXH0NEwlAg==}
     engines: {node: '>= 12.0.0'}
@@ -4129,21 +4134,6 @@ packages:
 
   rdjs-wheel@0.0.32:
     resolution: {integrity: sha512-oY/xWocyZb5iEggosf29bdcmpuB77l/bswDA8BuVzOcV6SclwUcvPYOWqm59XhQth5O7bK4HxQH3YjMI0HifqQ==}
-
-  rdlib0@0.2.106:
-    resolution: {integrity: sha512-5W6hDDstLldwgagiF668lSapLrVXLPCMXAKU1YUtZX/9ZaNldJBpdPyXy2pHNh5uoGpPcdM3/bBI7nfN70H+oQ==}
-    engines: {node: '>=16'}
-    hasBin: true
-
-  rdy-protocols@1.0.14:
-    resolution: {integrity: sha512-J/1Qtu5yYaHIhhbFTT2IiQTj3dno66ekpyBfuf0JF9GnfMCVmZCWa2tTSvTs3DRnOqEgDcthfzPEcruSBuxT5w==}
-    engines: {node: '>=16.0.0', npm: '>=8.0.0'}
-    peerDependencies:
-      rdyjs: ^13.6.26
-
-  rdyjs@13.6.30:
-    resolution: {integrity: sha512-pvRKLTMkcB/i64MpnD4NWD9QCky6hyHwRBG3a7kT/xgrsRoqVbGk6ZvYtrrV1qy83IYRHzY3nFCvmQMed0XU1Q==}
-    engines: {node: '>=16.0.0', npm: '>=8.0.0'}
 
   react-refresh@0.17.0:
     resolution: {integrity: sha512-z6F7K9bV85EfseRCp2bzrpyQ0Gkw1uLoCel9XBVWPg/TjRj94SkJzUTGfOa4bs7iJvBWtQG0Wq7wnI0syw3EBQ==}
@@ -5130,6 +5120,12 @@ packages:
     resolution: {integrity: sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==}
     engines: {node: '>=0.4'}
 
+  y-protocols@1.0.7:
+    resolution: {integrity: sha512-YSVsLoXxO67J6eE/nV4AtFtT3QEotZf5sK5BHxFBXso7VDUT3Tx07IfA6hsu5Q5OmBdMkQVmFZ9QOA7fikWvnw==}
+    engines: {node: '>=16.0.0', npm: '>=8.0.0'}
+    peerDependencies:
+      yjs: ^13.0.0
+
   yallist@3.1.1:
     resolution: {integrity: sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==}
 
@@ -5138,6 +5134,10 @@ packages:
 
   yauzl@2.10.0:
     resolution: {integrity: sha512-p4a9I6X6nu6IhoGmBqAcbJy1mlC4j27vEPZX9F4L4/vZT3Lyq1VkFHw/V/PUcB9Buo+DG3iHkT0x3Qya58zc3g==}
+
+  yjs@13.6.31:
+    resolution: {integrity: sha512-Eq+5BRfbeGyqGVrTJL3bEcr8gKkxPuyuoHmAwpk52fDb8kOVMrfVSTRPd6yiGgX5Fskb96qCRjzjbRjrL4YEnw==}
+    engines: {node: '>=16.0.0', npm: '>=8.0.0'}
 
   yn@3.1.1:
     resolution: {integrity: sha512-Ux4ygGWsu2c7isFWe8Yu1YluJmqVhxqK2cLXNQA5AcC3QfbGNpM7fu0Y8b/z16pXLnFxZYvWhd3fhBY9DLmC6Q==}
@@ -8803,6 +8803,10 @@ snapshots:
       prelude-ls: 1.2.1
       type-check: 0.4.0
 
+  lib0@0.2.117:
+    dependencies:
+      isomorphic.js: 0.2.5
+
   lightningcss-android-arm64@1.32.0:
     optional: true
 
@@ -9457,19 +9461,6 @@ snapshots:
       - utf-8-validate
       - vite
       - webpack
-
-  rdlib0@0.2.106:
-    dependencies:
-      isomorphic.js: 0.2.5
-
-  rdy-protocols@1.0.14(rdyjs@13.6.30):
-    dependencies:
-      rdlib0: 0.2.106
-      rdyjs: 13.6.30
-
-  rdyjs@13.6.30:
-    dependencies:
-      rdlib0: 0.2.106
 
   react-refresh@0.17.0: {}
 
@@ -10491,6 +10482,11 @@ snapshots:
 
   xtend@4.0.2: {}
 
+  y-protocols@1.0.7(yjs@13.6.31):
+    dependencies:
+      lib0: 0.2.117
+      yjs: 13.6.31
+
   yallist@3.1.1: {}
 
   yallist@4.0.0: {}
@@ -10499,6 +10495,10 @@ snapshots:
     dependencies:
       buffer-crc32: 0.2.13
       fd-slicer: 1.1.0
+
+  yjs@13.6.31:
+    dependencies:
+      lib0: 0.2.117
 
   yn@3.1.1: {}
 

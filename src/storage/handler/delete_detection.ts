@@ -1,5 +1,5 @@
 // @ts-ignore
-import * as Y from "rdyjs";
+import * as Y from "yjs";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { PostgresqlPersistance } from "../adapter/postgresql/postgresql_persistance.js";
 import { persistencePostgresql } from "../storage.js";

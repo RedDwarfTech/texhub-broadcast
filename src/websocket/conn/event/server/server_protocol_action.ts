@@ -1,12 +1,12 @@
 import { WSSharedDoc } from "@/collar/ws_share_doc.js";
 import { Socket } from "socket.io";
 // @ts-ignore
-import * as encoding from "rdlib0/dist/encoding.mjs";
+import * as encoding from "lib0/encoding";
 import { SyncMessageType } from "@/model/texhub/sync_msg_type.js";
 import { SyncMessageContext } from "@/model/texhub/sync_msg_context.js";
 import { v4 as uuidv4 } from "uuid";
 // @ts-ignore
-import * as syncProtocol from "rdy-protocols/dist/sync.mjs";
+import * as syncProtocol from "y-protocols/sync";
 import { send, sendPure } from "../../action/ws_action.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 

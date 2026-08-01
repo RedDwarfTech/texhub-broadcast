@@ -1,5 +1,5 @@
 // @ts-ignore
-import * as Y from "rdyjs";
+import * as Y from "yjs";
 import {
   getCurrentUpdateClock
 } from "./history/pg_history_operation.js";

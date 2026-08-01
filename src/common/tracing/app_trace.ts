@@ -1,7 +1,7 @@
 // @ts-ignore
-import * as Y from "rdyjs";
+import * as Y from "yjs";
 // @ts-ignore
-import * as decoding from "rdlib0/decoding.js";
+import * as decoding from "lib0/decoding.js";
 import { UpdateOrigin } from "@/model/yjs/net/update_origin";
 
 export function msgProbe() {
@@ -21,7 +21,7 @@ export function logYjsUnwrapMsg(decoder: any, docContext: any) {
       );
       return;
     }
-    const structDecoder = new Y.UpdateDecoderV2(update);
+    const structDecoder = new Y.UpdateDecoderV2(decoding.createDecoder(update));
     console.log("structDecoder: ", structDecoder);
     let ydoc = new Y.Doc();
     let uo: UpdateOrigin = {

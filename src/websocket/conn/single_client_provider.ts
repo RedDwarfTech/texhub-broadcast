@@ -1,6 +1,6 @@
 import { SocketIOClientProvider } from "./socket_io_client_provider";
 // @ts-ignore
-import * as Y from "rdyjs";
+import * as Y from "yjs";
 import { ManagerOptions, SocketOptions } from "socket.io-client";
 import { WsParam } from "@model/texhub/ws_param.js";
 

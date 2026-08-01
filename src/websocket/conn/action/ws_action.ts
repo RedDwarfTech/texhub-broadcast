@@ -1,5 +1,5 @@
 // @ts-ignore
-import * as awarenessProtocol from "rdy-protocols/dist/awareness.mjs";
+import * as awarenessProtocol from "y-protocols/awareness";
 import { docs, messageSync } from "@collar/yjs_utils.js";
 import { WSSharedDoc } from "@collar/ws_share_doc.js";
 import log4js from "log4js";
@@ -7,19 +7,19 @@ import { persistencePostgresql } from "@storage/storage.js";
 import { Socket } from "socket.io";
 var logger = log4js.getLogger();
 // @ts-ignore
-import * as encoding from "rdlib0/dist/encoding.mjs";
+import * as encoding from "lib0/encoding";
 // @ts-ignore
-import * as decoding from "rdlib0/dist/decoding.mjs";
+import * as decoding from "lib0/decoding";
 // @ts-ignore
-import * as bc from "rdlib0/broadcastchannel";
+import * as bc from "lib0/broadcastchannel";
 import {
   createEncoder,
   toUint8Array,
   writeVarUint,
   // @ts-ignore
-} from "rdlib0/dist/encoding.mjs";
+} from "lib0/encoding";
 // @ts-ignore
-import * as syncProtocol from "rdy-protocols/dist/sync.mjs";
+import * as syncProtocol from "y-protocols/sync";
 import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
 import { getTexFileInfo } from "@storage/appfile.js";
 import { handleControlSignals } from "../event/server/app_control_handler.js";
@@ -29,17 +29,17 @@ import {
   createDecoder,
   readVarUint,
   // @ts-ignore
-} from "rdlib0/dist/decoding.mjs";
+} from "lib0/decoding";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 
 /**
  * send message without broadcast
  * @param {WebsocketProvider} provider
- * @param {ArrayBuffer} buf
+ * @param {Uint8Array} buf
  */
 export const sendMessage = (
   provider: SocketIOClientProvider,
-  buf: ArrayBuffer
+  buf: Uint8Array
 ) => {
   const ws = provider.ws;
   if (provider.wsconnected && ws && ws.connected) {
@@ -49,11 +49,11 @@ export const sendMessage = (
 
 /**
  * @param {WebsocketProvider} provider
- * @param {ArrayBuffer} buf
+ * @param {Uint8Array} buf
  */
 export const broadcastMessage = (
   provider: SocketIOClientProvider,
-  buf: ArrayBuffer
+  buf: Uint8Array
 ) => {
   const ws = provider.ws;
   if (provider.wsconnected && ws && ws.connected) {

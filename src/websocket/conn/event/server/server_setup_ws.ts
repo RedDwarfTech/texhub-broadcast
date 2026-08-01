@@ -6,12 +6,12 @@ import {
   writeVarUint,
   writeVarUint8Array,
   // @ts-ignore
-} from "rdlib0/dist/encoding.mjs";
+} from "lib0/encoding";
 // @ts-ignore
-import * as syncProtocol from "rdy-protocols/dist/sync.mjs";
+import * as syncProtocol from "y-protocols/sync";
 import { messageAwareness, WSSharedDoc } from "@collar/ws_share_doc.js";
 // @ts-ignore
-import * as awarenessProtocol from "rdy-protocols/dist/awareness.mjs";
+import * as awarenessProtocol from "y-protocols/awareness";
 import { Socket } from "socket.io";
 import http from "http";
 import logger from "@common/log4js_config.js";

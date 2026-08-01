@@ -1,7 +1,7 @@
 // 仅导入类型定义，避免在浏览器环境中导入实际模块
 import type * as pg from "pg";
 // @ts-ignore
-import * as Y from "rdyjs";
+import * as Y from "yjs";
 import {
   flushDocument,
   getCurrentUpdateClock,

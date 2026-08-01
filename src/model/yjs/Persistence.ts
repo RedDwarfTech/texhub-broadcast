@@ -1,5 +1,5 @@
 import { PostgresqlPersistance } from "@storage/adapter/postgresql/postgresql_persistance";
-import * as Y from "rdyjs";
+import * as Y from "yjs";
 import { SyncFileAttr } from "../texhub/sync_file_attr";
 
 export type Persistence = {

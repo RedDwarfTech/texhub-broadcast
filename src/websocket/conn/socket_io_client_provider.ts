@@ -1,25 +1,25 @@
 // @ts-ignore
-import { Observable } from "rdlib0/observable";
+import { Observable } from "lib0/observable";
 // @ts-ignore
-import * as Y from "rdyjs";
+import * as Y from "yjs";
 // @ts-ignore
-import * as awarenessProtocol from "rdy-protocols/awareness";
+import * as awarenessProtocol from "y-protocols/awareness";
 import {
   createEncoder,
   toUint8Array,
   writeVarUint,
   // @ts-ignore
-} from "rdlib0/dist/encoding.mjs";
+} from "lib0/encoding";
 // @ts-ignore
-import * as syncProtocol from "rdy-protocols/sync";
+import * as syncProtocol from "y-protocols/sync";
 // @ts-ignore
-import * as url from "rdlib0/url";
+import * as url from "lib0/url";
 // @ts-ignore
-import * as encoding from "rdlib0/encoding";
+import * as encoding from "lib0/encoding";
 // @ts-ignore
-import * as bc from "rdlib0/broadcastchannel";
+import * as bc from "lib0/broadcastchannel";
 // @ts-ignore
-import * as time from "rdlib0/time";
+import * as time from "lib0/time";
 import { ManagerOptions, Socket, SocketOptions } from "socket.io-client";
 import { WsParam } from "@model/texhub/ws_param.js";
 import { TeXSocket } from "@texhub/client/tex_socket.js";

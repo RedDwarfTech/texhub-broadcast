@@ -1,15 +1,15 @@
 // @ts-ignore
-import { setIfUndefined } from "rdlib0/dist/map.mjs";
+import { setIfUndefined } from "lib0/map";
 import { WSSharedDoc } from "./ws_share_doc.js";
 import { persistencePostgresql } from "../storage/storage.js";
 // @ts-ignore
-import * as encoding from "rdlib0/dist/encoding.mjs";
+import * as encoding from "lib0/encoding";
 import { sendPure } from "../websocket/conn/action/ws_action.js";
 import { callbackRequest, getContent } from "./ydoc_callback.js";
 // @ts-ignore
-import * as syncProtocol from "rdy-protocols/dist/sync.mjs";
+import * as syncProtocol from "y-protocols/sync";
 // @ts-ignore
-import * as Y from "rdyjs";
+import * as Y from "yjs";
 import debounce from "lodash";
 import { PostgresqlPersistance } from "@/storage/adapter/postgresql/postgresql_persistance.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";

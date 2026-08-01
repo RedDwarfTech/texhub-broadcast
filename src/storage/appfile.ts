@@ -4,7 +4,7 @@ import lodash, { ThrottleSettings } from "lodash";
 import path from "path";
 import fs from "fs";
 // @ts-ignore
-import * as Y from "rdyjs";
+import * as Y from "yjs";
 import { updateFullsearch } from "./fulltext.js";
 import { getFileJsonData } from "../texhub/client/texhub_interop.js";
 import { FileContent } from "../model/texhub/file_content.js";

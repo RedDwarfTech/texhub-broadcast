@@ -1,17 +1,17 @@
 import { Socket } from "socket.io";
 import { WSSharedDoc } from "@collar/ws_share_doc.js";
 // @ts-ignore
-import * as encoding from "rdlib0/dist/encoding.mjs";
+import * as encoding from "lib0/encoding";
 // @ts-ignore
-import * as Y from "rdyjs";
+import * as Y from "yjs";
 // @ts-ignore
-import * as decoding from "rdlib0/dist/decoding.mjs";
+import * as decoding from "lib0/decoding";
 import logger from "@common/log4js_config.js";
 import { getYDoc } from "@collar/yjs_utils.js";
 import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
 import { send } from "../../action/ws_action.js";
 // @ts-ignore
-import * as syncProtocol from "rdy-protocols/dist/sync.mjs";
+import * as syncProtocol from "y-protocols/sync";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { getTexFileInfo } from "@/storage/appfile.js";
 import { FileContent } from "@/model/texhub/file_content.js";

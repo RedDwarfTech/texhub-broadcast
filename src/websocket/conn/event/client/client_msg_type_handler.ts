@@ -1,24 +1,24 @@
 import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
 import { SocketIOClientProvider } from "../../socket_io_client_provider.js";
 // @ts-ignore
-import * as decoding from "rdlib0/decoding.js";
+import * as decoding from "lib0/decoding.js";
 // @ts-ignore
-import * as encoding from "rdlib0/encoding";
+import * as encoding from "lib0/encoding";
 // @ts-ignore
-import * as syncProtocol from "rdy-protocols/sync";
+import * as syncProtocol from "y-protocols/sync";
 // @ts-ignore
-import * as authProtocol from "rdy-protocols/auth";
+import * as authProtocol from "y-protocols/auth";
 import {
   writeVarUint,
   writeVarUint8Array,
   // @ts-ignore
-} from "rdlib0/dist/encoding.mjs";
+} from "lib0/encoding";
 import {
   readVarUint8Array,
   // @ts-ignore
-} from "rdlib0/dist/decoding.mjs";
+} from "lib0/decoding";
 // @ts-ignore
-import * as awarenessProtocol from "rdy-protocols/awareness";
+import * as awarenessProtocol from "y-protocols/awareness";
 import { MessageHandler } from "@/model/yjs/net/msg_handler_fun.js";
 import { enableTracing, logYjsUnwrapMsg } from "@/common/tracing/app_trace.js";
 import { v4 as uuidv4 } from "uuid";

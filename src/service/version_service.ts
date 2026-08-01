@@ -9,7 +9,7 @@ import {
 import { ScrollQueryResult } from "@/common/types/scroll_query.js";
 import logger from "@/common/log4js_config.js";
 // @ts-ignore
-import * as Y from "rdyjs";
+import * as Y from "yjs";
 import { UpdateOrigin } from "@/model/yjs/net/update_origin";
 import { MAX_I64 } from "@/common/app/global_constant.js";
 

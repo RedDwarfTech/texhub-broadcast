@@ -2,7 +2,7 @@ import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { pgHistoryDb } from "@/storage/feat/version/doc_history.js";
 import _ from "lodash";
 //@ts-ignore
-import * as Y from "rdyjs";
+import * as Y from "yjs";
 
 const historyDocsThrottlePool = new Map<string, ReturnType<typeof _.throttle>>();
 

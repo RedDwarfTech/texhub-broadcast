@@ -3,7 +3,7 @@ import { handleHistoryDoc } from "../feat/version/doc_history.js";
 import { postgresqlDb } from "../storage.js";
 import { throttledFn as throttledFlushToDiskAndSearchEngine } from "../appfile.js";
 // @ts-ignore
-import * as Y from "rdyjs";
+import * as Y from "yjs";
 import { detectFullDelete } from "./delete_detection.js";
 import { recordFullDeletion } from "./deletion_audit.js";
 import { UpdateOrigin } from "@/model/yjs/net/update_origin.js";

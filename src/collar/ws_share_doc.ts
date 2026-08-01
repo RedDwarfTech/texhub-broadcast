@@ -1,5 +1,5 @@
 // @ts-ignore
-import * as Y from "rdyjs";
+import * as Y from "yjs";
 // @ts-ignore
 import {
   createEncoder,
@@ -7,9 +7,9 @@ import {
   writeVarUint8Array,
   toUint8Array,
   // @ts-ignore
-} from "rdlib0/dist/encoding.mjs";
+} from "lib0/encoding";
 // @ts-ignore
-import * as awarenessProtocol from "rdy-protocols/dist/awareness.mjs";
+import * as awarenessProtocol from "y-protocols/awareness";
 import debounce from "lodash";
 import { send, sendPure } from "../websocket/conn/action/ws_action.js";
 import { callbackHandler, updateHandler } from "./yjs_utils.js";

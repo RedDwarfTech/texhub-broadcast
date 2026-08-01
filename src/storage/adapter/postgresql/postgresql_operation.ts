@@ -1,11 +1,11 @@
 //@ts-ignore
-import * as Y from "rdyjs";
+import * as Y from "yjs";
 // @ts-ignore
-import * as binary from "rdlib0/binary.js";
+import * as binary from "lib0/binary.js";
 // @ts-ignore
-import * as encoding from "rdlib0/encoding.js";
+import * as encoding from "lib0/encoding.js";
 // @ts-ignore
-import * as decoding from "rdlib0/decoding.js";
+import * as decoding from "lib0/decoding.js";
 // 仅导入类型定义，避免在浏览器环境中导入实际模块
 import type * as pg from "pg";
 import type { QueryResult } from "pg";

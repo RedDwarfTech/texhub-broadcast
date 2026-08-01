@@ -1,13 +1,13 @@
 import { SyncMessageType } from "@/model/texhub/sync_msg_type.js";
 // @ts-ignore
-import * as encoding from "rdlib0/encoding";
+import * as encoding from "lib0/encoding";
 // @ts-ignore
-import * as syncProtocol from "rdy-protocols/sync";
+import * as syncProtocol from "y-protocols/sync";
 import { Socket } from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
 import { SyncMessageContext } from "@/model/texhub/sync_msg_context.js";
 // @ts-ignore
-import * as Y from "rdyjs";
+import * as Y from "yjs";
 
 export const clientSendSyncStep1 = (
   docName: string,
