@@ -23,7 +23,10 @@ import * as syncProtocol from "y-protocols/sync";
 import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
 import { getTexFileInfo } from "@storage/appfile.js";
 import { handleControlSignals } from "../event/server/app_control_handler.js";
-import { handleSubDocMsg } from "../event/server/subdoc_msg_handler.js";
+import {
+  handleSubDocMsg,
+  clearSubdocsForRootDoc,
+} from "../event/server/subdoc_msg_handler.js";
 import { SocketIOClientProvider } from "../socket_io_client_provider.js";
 import {
   createDecoder,
@@ -116,6 +119,7 @@ export const closeConn = (doc: WSSharedDoc, conn: Socket) => {
         doc.destroy();
       });
       docs.delete(doc.name);
+      clearSubdocsForRootDoc(doc.name);
     }
   }
 };

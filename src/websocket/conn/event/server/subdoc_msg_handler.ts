@@ -37,6 +37,22 @@ let cryptoModule: any | null = null;
 const subdocsMap: Map<String, Map<String, WSSharedDoc>> = new Map();
 
 /**
+ * Remove every subdoc entry for a rootDoc from the in-memory map.
+ * Must be called whenever a rootDoc is evicted from the docs cache, otherwise
+ * stale entries keep pointing to destroyed instances and the update handler
+ * keeps broadcasting to the destroyed rootDoc's (empty) conn set.
+ *
+ * @param rootDocName
+ */
+export const clearSubdocsForRootDoc = (rootDocName: string) => {
+  const removed = subdocsMap.delete(rootDocName);
+  if (removed) {
+    logger.info(`[subdocsMap] cleared for rootDoc ${rootDocName}`);
+  }
+  return removed;
+};
+
+/**
  * Create an update handler for a subdocument using a snapshot of context.
  * Kept as a factory to keep handleSubDocFirstTimePut small and testable.
  */
@@ -159,6 +175,31 @@ const handleNormalMsg = (
   );
   try {
     if (curSubdocMap && curSubdocMap.has(subdocGuid)) {
+      // diagnostic: verify handler/instance state before applying the sync message
+      const cachedSubDoc: WSSharedDoc | undefined = curSubdocMap.get(subdocGuid);
+      logger.info("[handleNormalMsg] diag", {
+        subdocGuid,
+        rootDoc: rootDoc.name,
+        curSubDocGuid: (curSubDoc as any).guid || "unknown",
+        cachedSubDocGuid: cachedSubDoc
+          ? (cachedSubDoc as any).guid || "unknown"
+          : "none",
+        sameInstance: cachedSubDoc === curSubDoc,
+        handlerRegistered: !!(curSubDoc as any).__subdocUpdateHandler,
+        handlerBoundRootDoc: (curSubDoc as any).__subdocHandlerRootDoc
+          ? (curSubDoc as any).__subdocHandlerRootDoc.name
+          : "none",
+        hasContent: decoding.hasContent(decoder),
+        time: new Date().toISOString(),
+      });
+
+      // self-heal: if the doc instance changed or its handler was bound to a
+      // destroyed rootDoc, (re)register the update handler and refresh the map
+      ensureSubdocUpdateHandler(curSubDoc, conn, rootDoc, syncFileAttr);
+      if (cachedSubDoc !== curSubDoc) {
+        curSubdocMap.set(subdocGuid, curSubDoc);
+      }
+
       encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
 
       const uniqueValue = uuidv4();
@@ -202,6 +243,63 @@ const handleSubDocUpdate = async (
     handleYDocUpdate(update, curSubDoc, syncFileAttr);
   }
 };
+
+/**
+ * Register (or re-register) the subdoc update handler on the given doc instance.
+ *
+ * Idempotent per (curSubDoc, rootDoc) pair. The previous handler captured the
+ * rootDoc via closure; if that rootDoc has been destroyed and recreated (the
+ * docs cache evicts rootDocs when the last conn closes), the old handler would
+ * broadcast to an empty conn set and all downstream sync silently breaks.
+ * This re-binds the handler whenever the bound rootDoc differs.
+ *
+ * @param curSubDoc
+ * @param conn
+ * @param rootDoc
+ * @param syncFileAttr
+ */
+function ensureSubdocUpdateHandler(
+  curSubDoc: WSSharedDoc,
+  conn: Socket,
+  rootDoc: WSSharedDoc,
+  syncFileAttr: SyncFileAttr
+): void {
+  const subdocGuid = syncFileAttr.docName;
+  if (subdocGuid === rootDoc.name) {
+    return;
+  }
+  // @ts-ignore
+  const existingHandler = (curSubDoc as any).__subdocUpdateHandler;
+  // @ts-ignore
+  const boundRootDoc: WSSharedDoc | undefined = (curSubDoc as any).__subdocHandlerRootDoc;
+  if (existingHandler && boundRootDoc === rootDoc) {
+    return;
+  }
+  if (existingHandler && typeof curSubDoc.off === "function") {
+    // @ts-ignore
+    curSubDoc.off("update", existingHandler);
+  }
+  const snapshotSyncFileAttr = structuredClone(syncFileAttr);
+  const snapshotSubdocGuid = String(subdocGuid);
+  const handler = createSubdocUpdateHandler(
+    curSubDoc,
+    conn,
+    rootDoc,
+    snapshotSyncFileAttr,
+    snapshotSubdocGuid
+  );
+  // @ts-ignore
+  (curSubDoc as any).__subdocUpdateHandler = handler;
+  // @ts-ignore
+  (curSubDoc as any).__subdocHandlerRootDoc = rootDoc;
+  curSubDoc.on("update", handler);
+  logger.info("[subdoc_update_handler] registered", {
+    subdocGuid,
+    rootDoc: rootDoc.name,
+    connId: conn.id,
+    time: new Date().toISOString(),
+  });
+}
 
 const handleSubDoc = async (
   curSubDoc: WSSharedDoc,
@@ -252,29 +350,7 @@ const handleSubDocFirstTimePut = async (
   try {
     // register a stable handler created from a snapshot of current context
     // avoid double registration by storing handler reference on the doc
-    // @ts-ignore
-    if (!(curSubDoc as any).__subdocUpdateHandler) {
-      const snapshotSyncFileAttr = structuredClone(syncFileAttr);
-      const snapshotSubdocGuid = String(subdocGuid);
-
-      // create handler via factory to keep code clear
-      const handler = createSubdocUpdateHandler(
-        curSubDoc,
-        conn,
-        rootDoc,
-        snapshotSyncFileAttr,
-        snapshotSubdocGuid
-      );
-
-      // @ts-ignore
-      (curSubDoc as any).__subdocUpdateHandler = handler;
-      if (subdocGuid !== rootDoc.name) {
-        // @ts-ignore
-        curSubDoc.on("update", handler);
-      }
-    } else {
-      logger.debug(`update handler already registered for subdoc ${subdocGuid}`);
-    }
+    ensureSubdocUpdateHandler(curSubDoc, conn, rootDoc, syncFileAttr);
     const subDocText = curSubDoc.getText(subdocGuid);
     subDocText.observe((event: Y.YTextEvent, tr: Y.Transaction) => {
     });
