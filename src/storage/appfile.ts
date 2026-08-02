@@ -29,9 +29,10 @@ export const throttledFn = lodash.throttle(
   options,
 );
 
-const flushFileToDiskAndSearchEngine = async (
+export const flushFileToDiskAndSearchEngine = async (
   syncFileAttr: SyncFileAttr,
   ldb: PostgresqlPersistance,
+  throwOnError: boolean = false,
 ) => {
   try {
     /**
@@ -69,16 +70,8 @@ const flushFileToDiskAndSearchEngine = async (
       `/opt/data/project/${year}/${month}/${projectId}`,
       filePath,
     );
-    fs.mkdir(folderPath, { recursive: true }, (error) => {
-      if (error) {
-        logger.error("craete directory failed,", error);
-      }
-    });
-    fs.writeFile(path.join(folderPath, fileName), textContext, (err) => {
-      if (err) {
-        logger.error("Failed to write file:", err);
-      }
-    });
+    await fs.promises.mkdir(folderPath, { recursive: true });
+    await fs.promises.writeFile(path.join(folderPath, fileName), textContext);
     let ct = fileInfo.created_time;
     let ut = fileInfo.updated_time;
     let fid = fileInfo.file_id;
@@ -94,6 +87,9 @@ const flushFileToDiskAndSearchEngine = async (
     updateFullsearch(file);
   } catch (err) {
     logger.error("Failed to sync file to disk", err);
+    if (throwOnError) {
+      throw err;
+    }
   }
 };
 
@@ -105,4 +101,51 @@ export const getTexFileInfo = async (docName: string): Promise<FileContent> => {
     );
   }
   return fileContent.result;
+};
+
+export interface FlushProjectResult {
+  projectId: string;
+  flushed: string[];
+  skipped: string[];
+  failed: { fileId: string; error: string }[];
+}
+
+/**
+ * 编译前强制 flush：等待每个文档的更新落库稳定后，把最新文本写盘。
+ * 保证 texhub-server 在入队编译前，磁盘上是点击编译时刻的最新内容。
+ */
+export const flushProjectToDisk = async (
+  projectId: string,
+  fileIds: string[],
+  ldb: PostgresqlPersistance,
+): Promise<FlushProjectResult> => {
+  const result: FlushProjectResult = {
+    projectId,
+    flushed: [],
+    skipped: [],
+    failed: [],
+  };
+  for (const fileId of fileIds) {
+    const syncFileAttr: SyncFileAttr = {
+      docName: fileId,
+      docType: TeXFileType.TEX,
+      projectId,
+      docIntId: "",
+      docShowName: "flush-before-compile",
+      src: "flush-project",
+    };
+    try {
+      const hasUpdates = await ldb.waitDocUpdateStable(fileId);
+      if (!hasUpdates) {
+        result.skipped.push(fileId);
+        continue;
+      }
+      await flushFileToDiskAndSearchEngine(syncFileAttr, ldb, true);
+      result.flushed.push(fileId);
+    } catch (err) {
+      logger.error(`flush file to disk failed, fileId: ${fileId}`, err);
+      result.failed.push({ fileId, error: String(err) });
+    }
+  }
+  return result;
 };

@@ -11,6 +11,8 @@ import logger from "@/common/log4js_config.js";
 import { AppResponse } from "@/texhub/biz/AppResponse.js";
 import { ProjectScrollVersionAttributes } from "@/model/texhub/project_scroll_version";
 import { queryFullDeletions } from "@/storage/handler/deletion_audit.js";
+import { flushProjectToDisk } from "@/storage/appfile.js";
+import { postgresqlDb } from "@/storage/storage.js";
 import { MAX_I64 } from "@/common/app/global_constant.js";
 
 export const routerDoc: Router = express.Router();
@@ -71,6 +73,44 @@ routerDoc.post("/initial", async (req: Request, res: Response) => {
   const fileContent = req.body.file_content;
   await initTpl(docId, projectId, fileContent);
   res.end("success");
+});
+
+/**
+ * 编译前强制 flush 接口（由 texhub-server 调用）。
+ * body: { project_id: string, file_ids: string[] }
+ * 返回每个文件 flush 的结果。
+ */
+routerDoc.post("/flush/project", async (req: Request, res: Response) => {
+  const projectId = (req.body?.project_id || "").toString();
+  const fileIds: string[] = Array.isArray(req.body?.file_ids)
+    ? req.body.file_ids.map((id: any) => String(id))
+    : [];
+  if (!projectId) {
+    const response: AppResponse<any> = {
+      result: null,
+      message: "project_id is required",
+      code: 400,
+    };
+    res.status(400).json(response);
+    return;
+  }
+  try {
+    const result = await flushProjectToDisk(projectId, fileIds, postgresqlDb);
+    const response: AppResponse<any> = {
+      result,
+      message: "success",
+      code: 200,
+    };
+    res.json(response);
+  } catch (error) {
+    logger.error("flush project failed", error);
+    const response: AppResponse<any> = {
+      result: null,
+      message: "flush project failed",
+      code: 500,
+    };
+    res.status(500).json(response);
+  }
 });
 
 /**

@@ -190,6 +190,47 @@ export class PostgresqlPersistance {
     }
   }
 
+  /**
+   * 等待某个文档的更新落库并趋于稳定。
+   *
+   * 编译前强制 flush 使用：保证点击编译时的内容已经写入 tex_sync，
+   * 从而 getYDoc 能重建出最新文本。返回 false 表示该文档在库中
+   * 没有任何更新（无需 flush）。
+   */
+  async waitDocUpdateStable(
+    docName: string,
+    settleMs: number = 100,
+    timeoutMs: number = 5000
+  ): Promise<boolean> {
+    if (typeof window !== "undefined" || !this.pool) {
+      return false;
+    }
+    const start = Date.now();
+    let prevClock = await getCurrentUpdateClock(docName);
+    if (prevClock === -1) {
+      return false;
+    }
+    const queue = this.queueMap.get(docName);
+    if (queue) {
+      await queue.onIdle();
+    }
+    let stableCount = 0;
+    while (Date.now() - start < timeoutMs) {
+      await new Promise((resolve) => setTimeout(resolve, settleMs));
+      const curClock = await getCurrentUpdateClock(docName);
+      if (curClock === prevClock) {
+        stableCount += 1;
+        if (stableCount >= 2) {
+          return true;
+        }
+      } else {
+        stableCount = 0;
+        prevClock = curClock;
+      }
+    }
+    return true;
+  }
+
   async storeUpdateWithSource(keys: any[], update: Uint8Array) {
     if (typeof window !== "undefined" || !this.pool) {
       return;
