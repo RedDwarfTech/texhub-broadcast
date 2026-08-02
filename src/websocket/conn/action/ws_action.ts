@@ -195,6 +195,21 @@ export const send = async (
   }
 };
 
+const logSubDocRawMessage = (message: Uint8Array) => {
+  try {
+    const len = message.length;
+    const hex = (arr: Uint8Array) =>
+      Array.from(arr)
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+    const head = hex(message.slice(0, Math.min(len, 32)));
+    const tail = hex(message.slice(Math.max(0, len - 32)));
+    logger.info(`[raw SubDocMessageSync] len=${len} head=${head} tail=${tail}`);
+  } catch (e) {
+    // ignore
+  }
+};
+
 export const messageListener = async (
   conn: Socket,
   rootDoc: WSSharedDoc,
@@ -206,6 +221,7 @@ export const messageListener = async (
     const messageType: number = decoding.readVarUint(decoder);
     switch (messageType) {
       case SyncMessageType.SubDocMessageSync:
+        logSubDocRawMessage(message);
         /**
          * https://github.com/yjs/y-websocket/issues/81
          */

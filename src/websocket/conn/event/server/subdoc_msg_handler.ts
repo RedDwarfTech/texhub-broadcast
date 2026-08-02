@@ -177,9 +177,20 @@ const handleNormalMsg = (
     if (curSubdocMap && curSubdocMap.has(subdocGuid)) {
       // diagnostic: verify handler/instance state before applying the sync message
       const cachedSubDoc: WSSharedDoc | undefined = curSubdocMap.get(subdocGuid);
+      let remainingBytes = -1;
+      try {
+        const d: any = decoder;
+        if (d && typeof d.pos === "number" && d.arr) {
+          remainingBytes = d.arr.length - d.pos;
+        }
+      } catch (e) {
+        // ignore
+      }
       logger.info("[handleNormalMsg] diag", {
         subdocGuid,
         rootDoc: rootDoc.name,
+        msgBody: syncFileAttr.msgBody || null,
+        remainingBytes,
         curSubDocGuid: (curSubDoc as any).guid || "unknown",
         cachedSubDocGuid: cachedSubDoc
           ? (cachedSubDoc as any).guid || "unknown"
@@ -218,7 +229,18 @@ const handleNormalMsg = (
             send(rootDoc, conn, encoding.toUint8Array(encoder), syncFileAttr);
           }
         } else {
-          syncProtocol.readSyncMessage(decoder, encoder, curSubDoc, conn);
+          const syncMsgType = syncProtocol.readSyncMessage(
+            decoder,
+            encoder,
+            curSubDoc,
+            conn
+          );
+          logger.info("[handleNormalMsg] applied", {
+            subdocGuid,
+            syncMsgType,
+            remainingBytes,
+            time: new Date().toISOString(),
+          });
           if (encoding.length(encoder) > 1 && needSend(encoder)) {
             send(curSubDoc, conn, encoding.toUint8Array(encoder), syncFileAttr);
           }
