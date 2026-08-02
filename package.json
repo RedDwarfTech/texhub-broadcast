@@ -2,6 +2,10 @@
   "name": "texhub-broadcast",
   "version": "1.0.135",
   "description": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RedDwarfTech/texhub-broadcast.git"
+  },
   "engines": {
     "node": ">=20.0.0"
   },
