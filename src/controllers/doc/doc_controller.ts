@@ -12,6 +12,7 @@ import { AppResponse } from "@/texhub/biz/AppResponse.js";
 import { ProjectScrollVersionAttributes } from "@/model/texhub/project_scroll_version";
 import { queryFullDeletions } from "@/storage/handler/deletion_audit.js";
 import { flushProjectToDisk } from "@/storage/appfile.js";
+import { flushHistoryDoc } from "@/common/app/throttle_util.js";
 import { postgresqlDb } from "@/storage/storage.js";
 import { MAX_I64 } from "@/common/app/global_constant.js";
 
@@ -107,6 +108,48 @@ routerDoc.post("/flush/project", async (req: Request, res: Response) => {
     const response: AppResponse<any> = {
       result: null,
       message: "flush project failed",
+      code: 500,
+    };
+    res.status(500).json(response);
+  }
+});
+
+/**
+ * 查看历史版本前强制刷新历史快照接口（由 texhub-server 调用）。
+ * body: { project_id: string, file_ids?: string[] }
+ * file_ids 省略时刷新该项目下所有处于节流挂起状态的文件。
+ * 返回成功或失败。
+ */
+routerDoc.post("/flush/history", async (req: Request, res: Response) => {
+  const projectId = (req.body?.project_id || "").toString();
+  const fileIds: string[] = Array.isArray(req.body?.file_ids)
+    ? req.body.file_ids.map((id: any) => String(id))
+    : [];
+  if (!projectId) {
+    const response: AppResponse<any> = {
+      result: null,
+      message: "project_id is required",
+      code: 400,
+    };
+    res.status(400).json(response);
+    return;
+  }
+  try {
+    const result = await flushHistoryDoc(
+      projectId,
+      fileIds.length > 0 ? fileIds : undefined
+    );
+    const response: AppResponse<any> = {
+      result,
+      message: result ? "success" : "flush project history failed",
+      code: result ? 200 : 500,
+    };
+    res.status(result ? 200 : 500).json(response);
+  } catch (error) {
+    logger.error("flush project history failed", error);
+    const response: AppResponse<any> = {
+      result: false,
+      message: "flush project history failed",
       code: 500,
     };
     res.status(500).json(response);

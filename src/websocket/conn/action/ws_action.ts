@@ -34,6 +34,7 @@ import {
   // @ts-ignore
 } from "lib0/decoding";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
+import { cleanupHistoryDocForProject } from "@/common/app/throttle_util.js";
 
 /**
  * send message without broadcast
@@ -114,6 +115,7 @@ export const closeConn = (doc: WSSharedDoc, conn: Socket) => {
       logger.debug("error while removing subdoc handlers on closeConn", e);
     }
     if (doc.conns.size === 0 && persistencePostgresql !== null) {
+      cleanupHistoryDocForProject(doc.name);
       // if persisted, we store state and destroy ydocument
       persistencePostgresql.writeState(doc.name, doc).then(() => {
         doc.destroy();
