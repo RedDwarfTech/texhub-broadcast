@@ -115,16 +115,13 @@ routerDoc.post("/flush/project", async (req: Request, res: Response) => {
 });
 
 /**
- * 查看历史版本前强制刷新历史快照接口（由 texhub-server 调用）。
- * body: { project_id: string, file_ids?: string[] }
- * file_ids 省略时刷新该项目下所有处于节流挂起状态的文件。
+ * 查看历史版本前强制刷新项目历史快照接口（由 texhub-server 调用）。
+ * body: { project_id: string }
+ * 具体哪些文件需要刷新由本服务自行决定（内存节流池 + Redis 挂起标记）。
  * 返回成功或失败。
  */
 routerDoc.post("/flush/history", async (req: Request, res: Response) => {
   const projectId = (req.body?.project_id || "").toString();
-  const fileIds: string[] = Array.isArray(req.body?.file_ids)
-    ? req.body.file_ids.map((id: any) => String(id))
-    : [];
   if (!projectId) {
     const response: AppResponse<any> = {
       result: null,
@@ -136,14 +133,10 @@ routerDoc.post("/flush/history", async (req: Request, res: Response) => {
   }
   logger.info("[history] /doc/flush/history called", {
     projectId,
-    fileIds,
     time: new Date().toISOString(),
   });
   try {
-    const result = await flushHistoryDoc(
-      projectId,
-      fileIds.length > 0 ? fileIds : undefined
-    );
+    const result = await flushHistoryDoc(projectId);
     const response: AppResponse<any> = {
       result,
       message: result ? "success" : "flush project history failed",

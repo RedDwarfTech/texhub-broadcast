@@ -1,5 +1,5 @@
 // @ts-ignore
-import { getHistoryDocsThrottledFn, recordHistoryDocSnapshot } from "@/common/app/throttle_util.js";
+import { getHistoryDocsThrottledFn, recordHistoryDocSnapshot, markHistoryPending } from "@/common/app/throttle_util.js";
 import logger from "@/common/log4js_config.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr";
 import { PgHisotoryPersistance } from "@/storage/adapter/postgresql/pg_history_persistance.js";
@@ -23,6 +23,7 @@ export async function handleHistoryDoc(
     const throttledSave = getHistoryDocsThrottledFn(docIntId);
     if (typeof throttledSave === 'function') {
       recordHistoryDocSnapshot(syncFileAttr, ydoc);
+      await markHistoryPending(syncFileAttr.projectId, docIntId, syncFileAttr.docName);
       logger.info("[history] queued snapshot", {
         docIntId,
         docName: syncFileAttr.docName,
