@@ -18,6 +18,7 @@ import logger from "@common/log4js_config.js";
 import { ws_msg_handle } from "./message_handler.js";
 import { URLSearchParams } from "url";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
+import { TeXFileType } from "@/model/enum/tex_file_type.js";
 
 export async function setupWSConnection(
   socket: Socket,
@@ -27,10 +28,13 @@ export async function setupWSConnection(
   let url: URL = new URL(req.url!, `http://${req.headers.host}`);
   let urlParams: URLSearchParams = url.searchParams;
   const docId = urlParams.get("docId");
-  const docIntId = urlParams.get("docIntId");
+  const docIntIdParam = urlParams.get("docIntId");
   const projId = urlParams.get("projId");
   const docType = urlParams.get("docType");
   const docShowName = urlParams.get("docShowName");
+  // 根文档若是 PROJECT 容器（subdoc 模式），docIntId 不应携带活动文件的 id，
+  // 否则会与子文档共用同一个 docIntId，导致历史快照池/Redis 挂起标记被根文档（空内容）污染。
+  let docIntId = Number(docType) === TeXFileType.PROJECT ? "" : (docIntIdParam || "");
   let syncFileAttr: SyncFileAttr = {
     docName: docId!,
     docType: Number(docType),
