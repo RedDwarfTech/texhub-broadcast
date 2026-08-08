@@ -16,6 +16,10 @@ export const getHistoryDocsThrottledFn = (docIntId: string) => {
       6000,
       { leading: false, trailing: true }
     ));
+    logger.info("[history] throttle created", {
+      docIntId,
+      time: new Date().toISOString(),
+    });
   }
   return historyDocsThrottlePool.get(docIntId)!;
 };
@@ -34,9 +38,34 @@ export const recordHistoryDocSnapshot = (syncFileAttr: SyncFileAttr, ydoc: Y.Doc
 
 const flushSingleHistoryDoc = async (projectId: string, fileId: string) => {
   const throttledSave = historyDocsThrottlePool.get(fileId);
-  const result = throttledSave?.flush();
-  if (!result) return;
-  await result;
+  if (!throttledSave) {
+    logger.warn("[history] flush: throttle not found", {
+      projectId,
+      fileId,
+      poolKeys: Array.from(historyDocsThrottlePool.keys()),
+      time: new Date().toISOString(),
+    });
+    return;
+  }
+  try {
+    const result = throttledSave.flush();
+    if (!result) {
+      logger.info("[history] flush: no pending snapshot", {
+        projectId,
+        fileId,
+        time: new Date().toISOString(),
+      });
+      return;
+    }
+    await result;
+    logger.info("[history] flush: snapshot stored", {
+      projectId,
+      fileId,
+      time: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error(`[history] flush failed, projectId: ${projectId}, fileId: ${fileId}`, error);
+  }
 };
 
 export const flushHistoryDoc = async (projectId: string, fileIds?: string[]): Promise<boolean> => {
@@ -47,6 +76,13 @@ export const flushHistoryDoc = async (projectId: string, fileIds?: string[]): Pr
     const projectFiles = historyDocSnapshotPool.get(projectId);
     targets = projectFiles ? Array.from(projectFiles.keys()) : [];
   }
+  logger.info("[history] flush requested", {
+    projectId,
+    mode: fileIds && fileIds.length > 0 ? "file_ids" : "project_pool",
+    targetCount: targets.length,
+    targets,
+    time: new Date().toISOString(),
+  });
   const results = await Promise.allSettled(
     targets.map((fileId) => flushSingleHistoryDoc(projectId, fileId))
   );

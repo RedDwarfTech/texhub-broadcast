@@ -134,6 +134,11 @@ routerDoc.post("/flush/history", async (req: Request, res: Response) => {
     res.status(400).json(response);
     return;
   }
+  logger.info("[history] /doc/flush/history called", {
+    projectId,
+    fileIds,
+    time: new Date().toISOString(),
+  });
   try {
     const result = await flushHistoryDoc(
       projectId,

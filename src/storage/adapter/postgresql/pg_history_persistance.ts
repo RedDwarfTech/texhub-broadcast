@@ -32,12 +32,24 @@ export class PgHisotoryPersistance {
       const encoded = Y.encodeSnapshot(snapshot);
       const curContent = doc.getText(syncFileAttr.docName).toString();
       if (curContent === latestSnapshot?.content) {
+        logger.info("[history] skip snapshot, content unchanged", {
+          docName: syncFileAttr.docName,
+          docIntId: syncFileAttr.docIntId,
+          projectId: syncFileAttr.projectId,
+          time: new Date().toISOString(),
+        });
         return;
       }
       const diff = latestSnapshot
         ? this.getSnapshotDiffFromText(curContent, latestSnapshot.content)
         : this.getSnapshotDiffFromText(curContent, "");
       if (diff === "") {
+        logger.info("[history] skip snapshot, empty diff", {
+          docName: syncFileAttr.docName,
+          docIntId: syncFileAttr.docIntId,
+          projectId: syncFileAttr.projectId,
+          time: new Date().toISOString(),
+        });
         return;
       }
       const client = await pool.connect();
@@ -64,6 +76,15 @@ export class PgHisotoryPersistance {
         );
 
         await client.query("COMMIT");
+        logger.info("[history] snapshot stored", {
+          docName: syncFileAttr.docName,
+          docIntId: syncFileAttr.docIntId,
+          projectId: syncFileAttr.projectId,
+          contentLength: curContent.length,
+          diffLength: diff.length,
+          key,
+          time: new Date().toISOString(),
+        });
       } catch (error) {
         await client.query("ROLLBACK");
         logger.error("storeHistorySnapshot error", error);

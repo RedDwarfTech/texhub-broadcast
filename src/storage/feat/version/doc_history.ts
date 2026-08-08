@@ -13,9 +13,22 @@ export async function handleHistoryDoc(
 ) {
   try {
     const docIntId = syncFileAttr.docIntId!;
+    if (!docIntId) {
+      logger.error("[history] skip snapshot, docIntId is empty", {
+        docName: syncFileAttr.docName,
+        projectId: syncFileAttr.projectId,
+      });
+      return;
+    }
     const throttledSave = getHistoryDocsThrottledFn(docIntId);
     if (typeof throttledSave === 'function') {
       recordHistoryDocSnapshot(syncFileAttr, ydoc);
+      logger.info("[history] queued snapshot", {
+        docIntId,
+        docName: syncFileAttr.docName,
+        projectId: syncFileAttr.projectId,
+        time: new Date().toISOString(),
+      });
       await throttledSave(syncFileAttr, ydoc);
     }
   } catch (error: any) {
