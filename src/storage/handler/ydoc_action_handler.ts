@@ -8,6 +8,7 @@ import { detectFullDelete } from "./delete_detection.js";
 import { recordFullDeletion } from "./deletion_audit.js";
 import { UpdateOrigin } from "@/model/yjs/net/update_origin.js";
 import logger from "@/common/log4js_config.js";
+import { markDiskFlushPending, markDiskFlushPendingRedis } from "@/common/app/throttle_util.js";
 
 export const handleYDocUpdate = async (
   update: Uint8Array,
@@ -71,6 +72,11 @@ export const preCheckBeforeFlush = async (
     await postgresqlDb.putUpdateToQueue(syncFileAttr, update);
     throttledFlushToDiskAndSearchEngine(syncFileAttr, postgresqlDb);
     handleHistoryDoc(syncFileAttr, ydoc);
+
+    // Track dirty files for fast disk flush (use in-memory Y.Doc instead of DB reconstruction)
+    const fileId = syncFileAttr.docIntId || syncFileAttr.docName;
+    markDiskFlushPending(syncFileAttr, ydoc);
+    markDiskFlushPendingRedis(syncFileAttr.projectId, fileId, syncFileAttr.docName);
 
   } catch (error) {
     logger.error("Failed to process YDoc update", error);

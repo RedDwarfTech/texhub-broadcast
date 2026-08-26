@@ -9,6 +9,9 @@ import * as Y from "yjs";
 const HISTORY_PENDING_PREFIX = "texhub:history:pending";
 const HISTORY_PENDING_TTL_SECONDS = 6 * 3600;
 
+const DISK_FLUSH_PENDING_PREFIX = "texhub:disk:flush:pending";
+const DISK_FLUSH_PENDING_TTL_SECONDS = 30 * 60;
+
 const historyPendingSetKey = (projectId: string) =>
   `${HISTORY_PENDING_PREFIX}:${projectId}`;
 const historyPendingFileKey = (docIntId: string) =>
@@ -221,4 +224,130 @@ export const cleanupHistoryDocForProject = async (projectId: string) => {
     }
   }
   historyDocSnapshotPool.delete(projectId);
+};
+
+// ==================== Disk Flush Pending Pool ====================
+
+const diskFlushPendingPool = new Map<string, Map<string, { syncFileAttr: SyncFileAttr; ydoc: Y.Doc }>>();
+
+const diskFlushPendingSetKey = (projectId: string) =>
+  `${DISK_FLUSH_PENDING_PREFIX}:${projectId}`;
+const diskFlushPendingFileKey = (docIntId: string) =>
+  `${DISK_FLUSH_PENDING_PREFIX}:file:${docIntId}`;
+
+/**
+ * Record a file as having unsaved in-memory changes for disk flush.
+ * Called on every YDoc update so that /doc/flush/project can use the live Y.Doc
+ * instead of reconstructing from PostgreSQL.
+ */
+export const markDiskFlushPending = (
+  syncFileAttr: SyncFileAttr,
+  ydoc: Y.Doc
+) => {
+  const projectId = syncFileAttr.projectId;
+  const fileId = syncFileAttr.docIntId || syncFileAttr.docName;
+  let projectFiles = diskFlushPendingPool.get(projectId);
+  if (!projectFiles) {
+    projectFiles = new Map();
+    diskFlushPendingPool.set(projectId, projectFiles);
+  }
+  projectFiles.set(fileId, { syncFileAttr, ydoc });
+};
+
+/**
+ * Mark disk flush pending in Redis for cross-instance awareness.
+ */
+export const markDiskFlushPendingRedis = async (
+  projectId: string,
+  docIntId: string,
+  docName: string
+) => {
+  if (!redis) return;
+  try {
+    await redis
+      .pipeline()
+      .sadd(diskFlushPendingSetKey(projectId), docIntId)
+      .hset(diskFlushPendingFileKey(docIntId), { projectId, docName, docIntId })
+      .expire(diskFlushPendingSetKey(projectId), DISK_FLUSH_PENDING_TTL_SECONDS)
+      .expire(diskFlushPendingFileKey(docIntId), DISK_FLUSH_PENDING_TTL_SECONDS)
+      .exec();
+  } catch (error) {
+    logger.error("[disk-flush] mark pending failed", error);
+  }
+};
+
+/**
+ * Clear disk flush pending marker after successful flush.
+ */
+export const clearDiskFlushPending = async (projectId: string, docIntId: string) => {
+  if (!redis) return;
+  try {
+    await redis
+      .pipeline()
+      .srem(diskFlushPendingSetKey(projectId), docIntId)
+      .del(diskFlushPendingFileKey(docIntId))
+      .exec();
+  } catch (error) {
+    logger.error("[disk-flush] clear pending failed", error);
+  }
+};
+
+/**
+ * Remove a file from the in-memory disk flush pending pool.
+ */
+export const removeDiskFlushPending = (projectId: string, fileId: string) => {
+  const projectFiles = diskFlushPendingPool.get(projectId);
+  if (projectFiles) {
+    projectFiles.delete(fileId);
+    if (projectFiles.size === 0) {
+      diskFlushPendingPool.delete(projectId);
+    }
+  }
+};
+
+/**
+ * Get all file IDs that need disk flush for a project.
+ * Merges in-memory pool and Redis pending markers.
+ */
+export const getDiskFlushPendingFileIds = async (projectId: string): Promise<string[]> => {
+  const inMemoryIds = Array.from(diskFlushPendingPool.get(projectId)?.keys() ?? []);
+  let redisIds: string[] = [];
+  if (redis) {
+    try {
+      redisIds = await redis.smembers(diskFlushPendingSetKey(projectId));
+    } catch (error) {
+      logger.error("[disk-flush] get pending file ids failed", error);
+    }
+  }
+  return Array.from(new Set([...inMemoryIds, ...redisIds]));
+};
+
+/**
+ * Get the live Y.Doc from in-memory pool for a specific file.
+ * Returns null if the file is not in memory (edited in another instance or not edited).
+ */
+export const getDiskFlushPendingDoc = (
+  projectId: string,
+  fileId: string
+): { syncFileAttr: SyncFileAttr; ydoc: Y.Doc } | null => {
+  return diskFlushPendingPool.get(projectId)?.get(fileId) ?? null;
+};
+
+/**
+ * Get Redis pending file info for fallback (reconstruct from DB).
+ */
+export const getDiskFlushPendingFile = async (
+  docIntId: string
+): Promise<{ projectId: string; docName: string } | null> => {
+  if (!redis) return null;
+  try {
+    const info = await redis.hgetall(diskFlushPendingFileKey(docIntId));
+    if (!info || !info.projectId || !info.docName) {
+      return null;
+    }
+    return { projectId: info.projectId, docName: info.docName };
+  } catch (error) {
+    logger.error("[disk-flush] get pending file failed", error);
+    return null;
+  }
 };
