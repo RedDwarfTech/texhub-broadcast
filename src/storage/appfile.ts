@@ -15,6 +15,7 @@ import { TeXFileType } from "@/model/enum/tex_file_type.js";
 import {
   getDiskFlushPendingDoc,
   getDiskFlushPendingFile,
+  getDiskFlushPendingFileIds,
   clearDiskFlushPending,
   removeDiskFlushPending,
 } from "@/common/app/throttle_util.js";
@@ -173,13 +174,14 @@ export interface FlushProjectResult {
 }
 
 /**
- * 编译前强制 flush：优先使用内存中的活 Y.Doc 直接写盘（O(1) 操作），
- * 仅对内存中没有的文件 fallback 到 PostgreSQL 重建（逐条 replay）。
- * 保证 texhub-server 在入队编译前，磁盘上是点击编译时刻的最新内容。
+ * 编译前强制 flush：由本服务自行决定哪些文件需要落盘。
+ * 目标文件 = 本实例内存挂起池 ∪ Redis 挂起标记（跨实例）。
+ * 优先使用内存中的活 Y.Doc 直接写盘（O(1) 操作），
+ * 仅对内存中没有的文件（跨实例编辑）fallback 到 PostgreSQL 重建。
+ * 一般情况下仅 flush 最近几秒编辑过的 1-N 个文件。
  */
 export const flushProjectToDisk = async (
   projectId: string,
-  fileIds: string[],
   ldb: PostgresqlPersistance,
 ): Promise<FlushProjectResult> => {
   const result: FlushProjectResult = {
@@ -188,71 +190,76 @@ export const flushProjectToDisk = async (
     skipped: [],
     failed: [],
   };
-  for (const fileId of fileIds) {
-    const syncFileAttr: SyncFileAttr = {
-      docName: fileId,
-      docType: TeXFileType.TEX,
-      projectId,
-      docIntId: "",
-      docShowName: "flush-before-compile",
-      src: "flush-project",
-    };
-    try {
-      // Fast path: check in-memory live Y.Doc (edited in this instance)
-      const inMemoryDoc = getDiskFlushPendingDoc(projectId, fileId);
-      if (inMemoryDoc) {
-        await flushFileToDiskFromDoc(syncFileAttr, inMemoryDoc.ydoc, true);
-        removeDiskFlushPending(projectId, fileId);
-        await clearDiskFlushPending(projectId, fileId);
-        result.flushed.push(fileId);
-        logger.info("[disk-flush] flushed from live doc", {
-          projectId,
-          fileId,
-          time: new Date().toISOString(),
-        });
-        continue;
-      }
+  const targets = await getDiskFlushPendingFileIds(projectId);
+  logger.info("[disk-flush] flush requested", {
+    projectId,
+    targetCount: targets.length,
+    targets,
+    time: new Date().toISOString(),
+  });
 
-      // Slow path: check Redis pending markers (edited in another instance)
-      // or fallback to DB reconstruction
-      const pendingFile = await getDiskFlushPendingFile(fileId);
-      if (pendingFile && pendingFile.projectId === projectId) {
-        // File was edited in another instance, reconstruct from DB
-        syncFileAttr.docName = pendingFile.docName;
-        const hasUpdates = await ldb.waitDocUpdateStable(pendingFile.docName);
-        if (!hasUpdates) {
-          result.skipped.push(fileId);
-          continue;
-        }
-        await flushFileToDiskAndSearchEngine(syncFileAttr, ldb, true);
-        await clearDiskFlushPending(projectId, fileId);
-        result.flushed.push(fileId);
-        logger.info("[disk-flush] flushed from DB fallback (cross-instance)", {
-          projectId,
-          fileId,
-          time: new Date().toISOString(),
-        });
-        continue;
-      }
+  const flushOne = async (fileId: string) => {
+    // Fast path: check in-memory live Y.Doc (edited in this instance)
+    const inMemoryDoc = getDiskFlushPendingDoc(projectId, fileId);
+    if (inMemoryDoc) {
+      const syncFileAttr: SyncFileAttr = {
+        docName: inMemoryDoc.syncFileAttr.docName,
+        docType: TeXFileType.TEX,
+        projectId,
+        docIntId: fileId,
+        docShowName: "flush-before-compile",
+        src: "flush-project",
+      };
+      await flushFileToDiskFromDoc(syncFileAttr, inMemoryDoc.ydoc, true);
+      removeDiskFlushPending(projectId, fileId);
+      await clearDiskFlushPending(projectId, fileId);
+      result.flushed.push(fileId);
+      return;
+    }
 
-      // No in-memory doc and no Redis marker: file hasn't been edited recently
-      // Still check DB for any unflushed updates (legacy safety net)
-      const hasUpdates = await ldb.waitDocUpdateStable(fileId);
+    // Slow path: file edited in another instance, reconstruct from DB
+    const pendingFile = await getDiskFlushPendingFile(fileId);
+    if (pendingFile && pendingFile.projectId === projectId) {
+      const syncFileAttr: SyncFileAttr = {
+        docName: pendingFile.docName,
+        docType: TeXFileType.TEX,
+        projectId,
+        docIntId: fileId,
+        docShowName: "flush-before-compile",
+        src: "flush-project",
+      };
+      const hasUpdates = await ldb.waitDocUpdateStable(pendingFile.docName);
       if (!hasUpdates) {
         result.skipped.push(fileId);
-        continue;
+        return;
       }
       await flushFileToDiskAndSearchEngine(syncFileAttr, ldb, true);
+      await clearDiskFlushPending(projectId, fileId);
       result.flushed.push(fileId);
-      logger.info("[disk-flush] flushed from DB (no dirty markers)", {
-        projectId,
-        fileId,
-        time: new Date().toISOString(),
-      });
-    } catch (err) {
-      logger.error(`[disk-flush] flush file to disk failed, fileId: ${fileId}`, err);
-      result.failed.push({ fileId, error: String(err) });
+      return;
     }
-  }
+
+    // No in-memory doc and no Redis marker: file is no longer dirty, skip
+    result.skipped.push(fileId);
+  };
+
+  // Pending files are usually few (1-N), flush them with bounded concurrency
+  const CONCURRENCY = 10;
+  let index = 0;
+  const workers = Array.from(
+    { length: Math.min(CONCURRENCY, targets.length) },
+    async () => {
+      while (index < targets.length) {
+        const fileId = targets[index++];
+        try {
+          await flushOne(fileId);
+        } catch (err) {
+          logger.error(`[disk-flush] flush file to disk failed, fileId: ${fileId}`, err);
+          result.failed.push({ fileId, error: String(err) });
+        }
+      }
+    },
+  );
+  await Promise.all(workers);
   return result;
 };

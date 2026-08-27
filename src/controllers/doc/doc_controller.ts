@@ -78,14 +78,12 @@ routerDoc.post("/initial", async (req: Request, res: Response) => {
 
 /**
  * 编译前强制 flush 接口（由 texhub-server 调用）。
- * body: { project_id: string, file_ids: string[] }
+ * body: { project_id: string }
+ * 具体哪些文件需要落盘由本服务自行决定（内存挂起池 + Redis 待写标记）。
  * 返回每个文件 flush 的结果。
  */
 routerDoc.post("/flush/project", async (req: Request, res: Response) => {
   const projectId = (req.body?.project_id || "").toString();
-  const fileIds: string[] = Array.isArray(req.body?.file_ids)
-    ? req.body.file_ids.map((id: any) => String(id))
-    : [];
   if (!projectId) {
     const response: AppResponse<any> = {
       result: null,
@@ -95,8 +93,12 @@ routerDoc.post("/flush/project", async (req: Request, res: Response) => {
     res.status(400).json(response);
     return;
   }
+  logger.info("[disk-flush] /doc/flush/project called", {
+    projectId,
+    time: new Date().toISOString(),
+  });
   try {
-    const result = await flushProjectToDisk(projectId, fileIds, postgresqlDb);
+    const result = await flushProjectToDisk(projectId, postgresqlDb);
     const response: AppResponse<any> = {
       result,
       message: "success",
