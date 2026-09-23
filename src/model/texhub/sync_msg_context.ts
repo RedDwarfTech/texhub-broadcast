@@ -27,4 +27,8 @@ export interface SyncMessageContext {
      * msg type, reserved field
      */
     msg_type?: string;
+    /**
+     * P0 Outbox：客户端本地 update 的单调序号，服务端应用成功后回 `sync:ack { doc, seq }`
+     */
+    seq?: number;
 }

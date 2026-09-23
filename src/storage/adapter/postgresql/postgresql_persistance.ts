@@ -9,7 +9,6 @@ import {
   insertKey,
   mergeUpdates,
   readStateVector,
-  storeUpdate,
   storeUpdateBySrc,
   storeUpdateTrans,
 } from "./postgresql_operation.js";
@@ -17,24 +16,17 @@ import { dbConfig } from "./conf/db_config.js";
 import { PREFERRED_TRIM_SIZE } from "./conf/postgresql_const.js";
 import { TeXSync } from "@model/yjs/storage/sync/tex_sync.js";
 import logger from "@common/log4js_config.js";
-import PQueue from "p-queue";
-import { LRUCache } from "lru-cache";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { UpdateOrigin } from "@/model/yjs/net/update_origin.js";
-import { FileContent } from "@/model/texhub/file_content.js";
-import { getTexFileInfo } from "@/storage/appfile.js";
-import { TeXFileType } from "@/model/enum/tex_file_type.js";
-import { checkAndMarkUpdateHash } from "@/common/cache/redis_util.js";
+import {
+  appendUpdateToWAL,
+  waitDocWALDrained,
+} from "@/storage/wal/wal_update_handler.js";
 
 export class PostgresqlPersistance {
   pool: pg.Pool | null = null;
-  queueMap: LRUCache<string, PQueue>;
 
   constructor() {
-    this.queueMap = new LRUCache({
-      max: 100,
-    });
-
     // 仅在Node环境下初始化数据库连接池
     if (typeof window === "undefined") {
       this.initPool();
@@ -145,49 +137,22 @@ export class PostgresqlPersistance {
     }
   }
 
+  /**
+   * @deprecated 使用 appendUpdateToWAL（Redis Stream 预写日志）替代。
+   * 原"进程内 PQueue + fire-and-forget"的排队职责整体由 WAL 顶替（R2 修复）。
+   * 保留此方法仅作为兼容入口。
+   */
   async putUpdateToQueue(syncFileAttr: SyncFileAttr, update: Uint8Array) {
-    if (typeof window !== "undefined" || !this.pool) {
-      return;
-    }
-    if (syncFileAttr.docType === TeXFileType.PROJECT) {
-      return;
-    }
-    if (
-      await checkAndMarkUpdateHash(update, syncFileAttr, "putUpdateToQueue")
-    ) {
-      return 0;
-    }
-    let fileInfo: FileContent = await getTexFileInfo(syncFileAttr.docName);
-    if (!fileInfo || !fileInfo.file_path) {
-      logger.warn(
-        "putUpdateToQueue fileInfo is null or fileInfo.file_path is null" +
-          JSON.stringify(fileInfo) +
-          "," +
-          JSON.stringify(syncFileAttr)
-      );
-      return;
-    }
-    syncFileAttr.docShowName = fileInfo.name;
-    try {
-      const cacheQueue = this.queueMap.get(syncFileAttr.docName);
-      if (cacheQueue) {
-        (async () => {
-          await cacheQueue.add(async () => {
-            await storeUpdate(syncFileAttr, update);
-          });
-        })();
-      } else {
-        const queue = new PQueue({ concurrency: 1 });
-        this.queueMap.set(syncFileAttr.docName, queue);
-        (async () => {
-          await queue.add(async () => {
-            await storeUpdate(syncFileAttr, update);
-          });
-        })();
-      }
-    } catch (error) {
-      logger.error("store update failed", error);
-    }
+    return this.appendUpdateToWAL(syncFileAttr, update);
+  }
+
+  /**
+   * 追加更新到 Redis Stream WAL（await XADD，命令级确认）。
+   * PROJECT 根 doc 跳过；缺 docShowName 时自动用 getTexFileInfo 富化。
+   * WAL Worker 幂等消费后写入 tex_sync。
+   */
+  async appendUpdateToWAL(syncFileAttr: SyncFileAttr, update: Uint8Array) {
+    return appendUpdateToWAL(syncFileAttr, update);
   }
 
   /**
@@ -205,14 +170,12 @@ export class PostgresqlPersistance {
     if (typeof window !== "undefined" || !this.pool) {
       return false;
     }
+    // 先等待 WAL 消费排空（XPENDING == 0），保证待落库 update 已进入 tex_sync
+    await waitDocWALDrained(docName, timeoutMs);
     const start = Date.now();
     let prevClock = await getCurrentUpdateClock(docName);
     if (prevClock === -1) {
       return false;
-    }
-    const queue = this.queueMap.get(docName);
-    if (queue) {
-      await queue.onIdle();
     }
     let stableCount = 0;
     while (Date.now() - start < timeoutMs) {

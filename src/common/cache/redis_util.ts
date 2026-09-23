@@ -87,8 +87,17 @@ export async function unlockDistriKey(lockKey: string, uniqueValue: string) {
   }
 }
 
-// 检查update hash是否已存在
-export const checkAndMarkUpdateHash = async (
+export const getUpdateHashKey = (
+  src: string,
+  syncFileAttr: SyncFileAttr,
+  updateHash: string
+): string => src + `:updatehash:${syncFileAttr.docName}:${updateHash}`;
+
+/**
+ * 仅检查 update hash 是否已存在（不落标记）。
+ * 用于幂等存储前判断"该内容是否已经成功落库"。
+ */
+export const isUpdateHashDuplicated = async (
   update: Uint8Array,
   syncFileAttr: SyncFileAttr,
   src: string
@@ -101,20 +110,57 @@ export const checkAndMarkUpdateHash = async (
     return false;
   }
   const updateHash = crypto.createHash("sha256").update(update).digest("hex");
-  const redisKey = src + `:updatehash:${syncFileAttr.docName}:${updateHash}`;
-  if (redis) {
-    const exists = await redis.get(redisKey);
-    if (exists) {
-      logger.warn(
-        src +
-          ` 重复update内容，hash=${updateHash}，doc=${JSON.stringify(
-            syncFileAttr
-          )}，跳过存储`
-      );
-      return true;
-    }
-    // 标记已存在，设置过期时间30秒
-    await redis.set(redisKey, "1", "EX", 30);
+  if (!redis) {
+    // Redis 不可用时（非 Node 环境/降级），无状态可查，视为未重复
+    return false;
   }
+  const exists = await redis.get(
+    getUpdateHashKey(src, syncFileAttr, updateHash)
+  );
+  if (exists) {
+    logger.warn(
+      src +
+        ` 重复update内容，hash=${updateHash}，doc=${JSON.stringify(
+          syncFileAttr
+        )}，跳过存储`
+    );
+    return true;
+  }
+  return false;
+};
+
+/**
+ * 标记 update hash 已存在。仅在"内容确认已成功写入 tex_sync 之后"调用，
+ * 以保证 hash 标记 == 已持久化，重试不会误跳。
+ */
+export const markUpdateHash = async (
+  update: Uint8Array,
+  syncFileAttr: SyncFileAttr,
+  src: string
+): Promise<void> => {
+  let crypto;
+  try {
+    crypto = await import("crypto");
+  } catch (e) {
+    logger.error("crypto import failed", e);
+    return;
+  }
+  if (!redis) {
+    return;
+  }
+  const updateHash = crypto.createHash("sha256").update(update).digest("hex");
+  await redis.set(getUpdateHashKey(src, syncFileAttr, updateHash), "1", "EX", 30);
+};
+
+// 检查update hash是否已存在
+export const checkAndMarkUpdateHash = async (
+  update: Uint8Array,
+  syncFileAttr: SyncFileAttr,
+  src: string
+): Promise<boolean> => {
+  if (await isUpdateHashDuplicated(update, syncFileAttr, src)) {
+    return true;
+  }
+  await markUpdateHash(update, syncFileAttr, src);
   return false;
 };

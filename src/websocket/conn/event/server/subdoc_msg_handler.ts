@@ -27,6 +27,7 @@ import {
   serverWriteUpdate,
   writeSyncStep2,
 } from "./server_protocol_action.js";
+import { emitSyncAck } from "../../action/ws_action.js";
 
 let cryptoModule: any | null = null;
 
@@ -156,6 +157,12 @@ const preHandleSubDoc = async (
     };
     let curSubDoc = await getYDoc(syncFileAttr);
     handleSubDoc(curSubDoc, conn, rootDoc, syncFileAttr, decoder, encoder);
+
+    // P0：客户端 Outbox ACK。客户端在子文档 update 帧的 context 中内嵌 seq，
+    // 服务端应用成功后回执 `sync:ack { doc, seq }`，客户端据此从 Outbox 删除对应条目。
+    if (docContext && typeof docContext.seq === "number") {
+      emitSyncAck(conn, subdocGuid, docContext.seq);
+    }
   } catch (err) {
     logger.error("handle sub doc facing issue:" + rootDoc.name, err);
   }

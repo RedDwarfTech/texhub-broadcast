@@ -33,6 +33,10 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
       }
       //provider.emit("message", [data, provider]);
     });
+    // P0：服务端 Outbox ACK（server -> client），确认后从 Outbox 删除对应条目
+    socketio.on("sync:ack", (payload: any) => {
+      provider.handleSyncAck(payload);
+    });
     // additional lifecycle listeners to help debug disconnect reasons
     socketio.on("disconnect", (reason: any) => {
       try {
@@ -121,7 +125,7 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
         provider
       );
     });
-    socketio.on("connect", () => {
+    socketio.on("connect", async () => {
       provider.wsLastMessageReceived = time.getUnixTime();
       provider.wsconnecting = false;
       provider.wsconnected = true;
@@ -134,6 +138,13 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
           status: "connected",
         },
       ]);
+      // P0：先重放 Outbox 中未确认的 update（保证服务端拿到断线期间的本地编辑），
+      // 再发 sync step1 对账。重放与对账都幂等，顺序安全。
+      try {
+        await provider.replayOutbox(socketio);
+      } catch (e) {
+        logger.warn("replay outbox before sync failed", e);
+      }
       if (provider.enableSubDoc) {
         handleSubdocConnect(provider, socketio);
       } else {

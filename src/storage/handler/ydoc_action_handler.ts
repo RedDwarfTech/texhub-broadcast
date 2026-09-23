@@ -68,8 +68,8 @@ export const preCheckBeforeFlush = async (
       });
     }
 
-    // 继续正常的处理流程
-    await postgresqlDb.putUpdateToQueue(syncFileAttr, update);
+    // 继续正常的处理流程（P0：先写 Redis Stream WAL，再由 Worker 幂等落库）
+    await postgresqlDb.appendUpdateToWAL(syncFileAttr, update);
     throttledFlushToDiskAndSearchEngine(syncFileAttr, postgresqlDb);
     handleHistoryDoc(syncFileAttr, ydoc);
 

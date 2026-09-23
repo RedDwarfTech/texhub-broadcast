@@ -197,6 +197,88 @@ export const send = async (
   }
 };
 
+/**
+ * P0：客户端 Outbox ACK（docs/design/message-reliable.md §5.3）。
+ * `sync:ack`（服务端->客户端）：服务端已把该 seq 的 update 应用进内存 doc。
+ */
+export const emitSyncAck = (
+  conn: Socket,
+  doc: string,
+  seq: number
+) => {
+  try {
+    conn.emit("sync:ack", { doc, seq });
+  } catch (e) {
+    logger.error(`emit sync:ack failed for doc=${doc} seq=${seq}`, e);
+  }
+};
+
+type SyncAckState = {
+  /**
+   * FIFO：本连接上"已应用但尚未被 sync:ack_req 消费"的文档名。
+   * Socket.IO 对同一连接上的 message（二进制帧）与自定义事件保序，
+   * 因此每个 sync:ack_req 与排在前面的应用标记一一对应，按序消费即可。
+   */
+  applied: string[];
+  /**
+   * ack_req 已达而对应应用标记未到（极少数乱序兜底）时先挂起，
+   * 下次 markDocUpdateApplied 时再排空。
+   */
+  pending: Array<{ doc: string; seq: number }>;
+};
+
+const getSyncAckState = (conn: Socket): SyncAckState => {
+  const key = "__syncAckState";
+  const existing = (conn as any)[key];
+  if (existing) return existing as SyncAckState;
+  const state: SyncAckState = { applied: [], pending: [] };
+  (conn as any)[key] = state;
+  return state;
+};
+
+const consumeOneApplied = (conn: Socket): string | null => {
+  const state = getSyncAckState(conn);
+  if (state.pending.length > 0) return null;
+  return state.applied.shift() ?? null;
+};
+
+/**
+ * 服务端在成功应用完一条 Yjs update 后调用，把该 doc 加入 ACK FIFO。
+ * 若此前有挂起的 ack_req（乱序兜底），顺便排空。
+ */
+export const markDocUpdateApplied = (conn: Socket, doc: string) => {
+  if (!conn) return;
+  const state = getSyncAckState(conn);
+  state.applied.push(doc);
+  while (state.pending.length > 0) {
+    const req = state.pending.shift()!;
+    emitSyncAck(conn, req.doc, req.seq);
+  }
+};
+
+/**
+ * 处理客户端 `sync:ack_req { doc, seq }`：
+ * 同一连接上 ack_req 紧跟在对应 update 帧之后（Socket.IO 保序），
+ * 从 FIFO 里消费一个已应用标记，用 ack_req 携带的 seq 回 `sync:ack`。
+ */
+export const handleSyncAckReq = (conn: Socket, payload: any) => {
+  if (!conn) return;
+  const doc = payload && payload.doc;
+  const seq = payload && payload.seq;
+  if (!doc || typeof seq !== "number") {
+    logger.warn("invalid sync:ack_req payload", payload);
+    return;
+  }
+  const state = getSyncAckState(conn);
+  const applied = consumeOneApplied(conn);
+  if (applied !== null) {
+    emitSyncAck(conn, doc, seq);
+    return;
+  }
+  // 应用标记尚未到达（乱序）：挂起，等下一次应用成功后补回执
+  state.pending.push({ doc, seq });
+};
+
 const logSubDocRawMessage = (message: Uint8Array) => {
   try {
     const len = message.length;
@@ -231,7 +313,12 @@ export const messageListener = async (
         break;
       case SyncMessageType.MessageSync:
         encoding.writeVarUint(encoder, messageSync);
+        const hasContent = decoding.hasContent(decoder);
         syncProtocol.readSyncMessage(decoder, encoder, rootDoc, conn);
+        if (hasContent) {
+          // P0 Outbox ACK：该连接上已成功应用一条根文档 update，写入 ACK FIFO
+          markDocUpdateApplied(conn, rootDoc.name);
+        }
 
         // If the `encoder` only contains the type of reply message and no
         // message, there is no need to send the message. When `encoder` only

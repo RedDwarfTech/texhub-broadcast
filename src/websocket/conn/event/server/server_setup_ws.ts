@@ -1,5 +1,9 @@
 import { getYDoc, messageSync } from "@collar/yjs_utils.js";
-import { closeConn, send } from "../../action/ws_action.js";
+import {
+  closeConn,
+  handleSyncAckReq,
+  send,
+} from "../../action/ws_action.js";
 import {
   createEncoder,
   toUint8Array,
@@ -49,6 +53,9 @@ export async function setupWSConnection(
   // listen and reply to events
   socket.on("message", (message: Uint8Array) => {
     ws_msg_handle(message, socket, rootDoc);
+  });
+  socket.on("sync:ack_req", (payload: any) => {
+    handleSyncAckReq(socket, payload);
   });
   socket.on("probe", (data: any) => {
     socket.emit("probe_ack", {

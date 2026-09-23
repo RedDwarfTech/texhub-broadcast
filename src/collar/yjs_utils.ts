@@ -131,5 +131,5 @@ export const initTpl = async (
     docShowName: "initTplate",
     src: "initTpl"
   };
-  await postgresqlDb.putUpdateToQueue(syncFileAttr, newUpdates);
+  await postgresqlDb.appendUpdateToWAL(syncFileAttr, newUpdates);
 };

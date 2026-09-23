@@ -32,6 +32,7 @@ import { SyncMessageContext } from "@/model/texhub/sync_msg_context.js";
 import { v4 as uuidv4 } from "uuid";
 import { enableDebug } from "@/common/log_util_web.js";
 import { UpdateOrigin } from "@/model/yjs/net/update_origin.js";
+import { outbox, OutboxEntryType } from "@/common/outbox/outbox.js";
 
 // @todo - this should depend on awareness.outdatedTime
 const messageReconnectTimeout = 30000;
@@ -175,7 +176,13 @@ export class SocketIOClientProvider extends Observable<string> {
         const encoder = encoding.createEncoder();
         encoding.writeVarUint(encoder, SyncMessageType.MessageSync);
         syncProtocol.writeUpdate(encoder, update);
-        broadcastMessage(this, encoding.toUint8Array(encoder));
+        this.sendWithOutbox(
+          this.roomname,
+          update,
+          "root",
+          encoding.toUint8Array(encoder),
+          true
+        );
       }
     };
     // @ts-ignore
@@ -248,15 +255,17 @@ export class SocketIOClientProvider extends Observable<string> {
         const encoder = encoding.createEncoder();
         encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
         const uniqueValue = uuidv4();
+        const seq = this.nextSeq(id);
         let msg: SyncMessageContext = {
           doc_name: id,
           src: "subdocUpdateHandler",
           trace_id: uniqueValue,
+          seq: seq,
         };
         let msgStr = JSON.stringify(msg);
         encoding.writeVarString(encoder, msgStr);
         syncProtocol.writeUpdate(encoder, update);
-        broadcastMessage(this, encoding.toUint8Array(encoder));
+        this.sendWithOutbox(id, update, "subdoc", encoding.toUint8Array(encoder), false, seq);
       };
       return result;
     };
@@ -308,17 +317,26 @@ export class SocketIOClientProvider extends Observable<string> {
       const encoder = encoding.createEncoder();
       encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
       const uniqueValue = uuidv4();
+      const seq = this.nextSeq(subdoc.guid);
       let msg: SyncMessageContext = {
         doc_name: subdoc.guid,
         src: "subdocUpdateHandler",
         trace_id: uniqueValue,
+        seq: seq,
       };
       let msgStr = JSON.stringify(msg);
       encoding.writeVarString(encoder, msgStr);
       syncProtocol.writeUpdate(encoder, update);
-      broadcastMessage(this, encoding.toUint8Array(encoder));
+      this.sendWithOutbox(
+        subdoc.guid,
+        update,
+        "subdoc",
+        encoding.toUint8Array(encoder),
+        false,
+        seq
+      );
       console.log(
-        `[subdoc update] handler已广播: guid=${subdoc.guid}, trace_id=${uniqueValue}`
+        `[subdoc update] handler已广播: guid=${subdoc.guid}, trace_id=${uniqueValue}, seq=${seq}`
       );
     };
     // 注册新的 handler
@@ -456,6 +474,102 @@ export class SocketIOClientProvider extends Observable<string> {
     if (this.ws !== null && this.ws) {
       this.ws.disconnect();
     }
+  }
+
+  /**
+   * P0 Outbox：为 doc 分配下一个单调 seq（IndexedDB 持久化，跨会话不重置）。
+   */
+  nextSeq(doc: string): number {
+    return outbox.nextSeq(doc);
+  }
+
+  /**
+   * P0 Outbox：把本地产生的 Yjs update 先入 Outbox，再走原 broadcastMessage 发送链路。
+   * root 类型（MessageSync 帧不含上下文）额外发 `sync:ack_req` 请求回执；
+   * subdoc 类型已把 seq 内嵌进帧上下文，由服务端应用成功后直接回 `sync:ack`。
+   */
+  sendWithOutbox(
+    docName: string,
+    update: Uint8Array,
+    type: OutboxEntryType,
+    frame: Uint8Array,
+    askAck: boolean,
+    seq?: number
+  ) {
+    const outboxSeq = seq ?? this.nextSeq(docName);
+    outbox
+      .enqueue({ doc: docName, seq: outboxSeq, type, update })
+      .catch((e) => console.error("outbox enqueue failed", e));
+    // 原发送链路（ws 连接时直连发送 + 跨标签页 bc 广播）
+    broadcastMessage(this, frame);
+    if (askAck && this.wsconnected && this.ws && this.ws.connected) {
+      this.ws.emit("sync:ack_req", { doc: docName, seq: outboxSeq });
+    }
+  }
+
+  /**
+   * 处理服务端 `sync:ack { doc, seq }`：从 Outbox 删除已确认条目。
+   */
+  handleSyncAck(payload: any) {
+    const doc = payload && payload.doc;
+    const seq = payload && payload.seq;
+    if (!doc || typeof seq !== "number") return;
+    outbox
+      .ack(doc, seq)
+      .catch((e) => console.error("outbox ack failed", e));
+  }
+
+  /**
+   * 重连时重放 Outbox 中未确认的 update（保证服务端拿到最新），再交由调用方发起
+   * sync step1 对账。重放帧与原始帧完全一致（含原始 seq），服务端幂等消费安全。
+   */
+  async replayOutbox(socketio: Socket): Promise<void> {
+    await outbox.init().catch(() => {});
+    const entries = outbox.getUnacked();
+    if (entries.length === 0) return;
+    for (const entry of entries) {
+      try {
+        let frame: Uint8Array;
+        if (entry.type === "subdoc") {
+          frame = this.buildSubdocUpdateFrame(entry.doc, entry.update, entry.seq);
+        } else {
+          const encoder = encoding.createEncoder();
+          encoding.writeVarUint(encoder, SyncMessageType.MessageSync);
+          syncProtocol.writeUpdate(encoder, entry.update);
+          frame = encoding.toUint8Array(encoder);
+        }
+        socketio.send(frame);
+        if (entry.type === "root") {
+          socketio.emit("sync:ack_req", { doc: entry.doc, seq: entry.seq });
+        }
+      } catch (e) {
+        console.error(
+          `replay outbox entry failed doc=${entry.doc} seq=${entry.seq}`,
+          e
+        );
+      }
+    }
+  }
+
+  /** 构造 subdoc update 帧（与实时发送完全一致，供 Outbox 重放复用）。 */
+  buildSubdocUpdateFrame(
+    docName: string,
+    update: Uint8Array,
+    seq: number
+  ): Uint8Array {
+    const encoder = encoding.createEncoder();
+    encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
+    const uniqueValue = uuidv4();
+    let msg: SyncMessageContext = {
+      doc_name: docName,
+      src: "outboxReplay",
+      trace_id: uniqueValue,
+      seq: seq,
+    };
+    let msgStr = JSON.stringify(msg);
+    encoding.writeVarString(encoder, msgStr);
+    syncProtocol.writeUpdate(encoder, update);
+    return encoding.toUint8Array(encoder);
   }
 
   connect() {
