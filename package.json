@@ -1,6 +1,6 @@
 {
   "name": "texhub-broadcast",
-  "version": "1.0.139",
+  "version": "1.0.140",
   "description": "",
   "repository": {
     "type": "git",
@@ -60,6 +60,7 @@
     "meilisearch": "^0.35.1",
     "p-queue": "^8.1.1",
     "pg": "^8.23.0",
+    "pg-hstore": "^2.3.4",
     "prom-client": "^14.2.0",
     "rdjs-wheel": "0.0.32",
     "sequelize": "^6.37.8",

@@ -53,6 +53,9 @@ importers:
       pg:
         specifier: ^8.23.0
         version: 8.23.0
+      pg-hstore:
+        specifier: ^2.3.4
+        version: 2.3.4
       prom-client:
         specifier: ^14.2.0
         version: 14.2.0
@@ -8701,7 +8704,6 @@ snapshots:
   pg-hstore@2.3.4:
     dependencies:
       underscore: 1.13.8
-    optional: true
 
   pg-int8@1.0.1: {}
 
@@ -9567,8 +9569,7 @@ snapshots:
 
   uid2@1.0.0: {}
 
-  underscore@1.13.8:
-    optional: true
+  underscore@1.13.8: {}
 
   undici-types@5.26.5: {}
 
