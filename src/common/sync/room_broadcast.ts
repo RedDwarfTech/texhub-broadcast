@@ -1,18 +1,35 @@
-import { websocketServer } from "@/app.js";
-import type { Socket } from "socket.io";
+import type { Server, Socket } from "socket.io";
 import logger from "@common/log4js_config.js";
 
 const ROOM_PREFIX = "doc:" as const;
 
-let texhubNs: ReturnType<typeof websocketServer.of> | null = null;
+let roomServer: Server | null = null;
+let texhubNs: ReturnType<Server["of"]> | null = null;
 
 /**
- * 惰性获取 /texhub namespace：避免模块加载期（app.ts 尚未执行完）取到未初始化
- * 的 websocketServer。首次调用时 app.ts 一定已完成启动。
+ * 由服务端启动入口（src/app.ts，websocketServer 创建完成后）注入 Socket.IO
+ * Server 实例。
+ *
+ * 注意：不能在这里 `import { websocketServer } from "@/app.js"`——room_broadcast
+ * 处于客户端 provider 的打包图内（ws_action -> yjs_utils -> room_broadcast），
+ * 静态引用服务端入口会把整条 server 链（含 y-leveldb 等 Node 依赖）拖入前端
+ * bundle。改为注册注入后，浏览器端打包时 roomServer 为 null，广播函数不会执行。
+ */
+export const registerRoomServer = (server: Server) => {
+  roomServer = server;
+  texhubNs = null;
+};
+
+/**
+ * 惰性获取 /texhub namespace：首次调用时 app.ts 一定已完成启动并注册 server。
  */
 const getTexhubNamespace = () => {
+  if (!roomServer) {
+    logger.warn("[room] server not registered, broadcast dropped");
+    return null;
+  }
   if (!texhubNs) {
-    texhubNs = websocketServer.of("/texhub");
+    texhubNs = roomServer.of("/texhub");
   }
   return texhubNs;
 };
@@ -65,14 +82,13 @@ export const broadcastToDocRoom = (
   exceptSocketId?: string
 ) => {
   try {
+    const ns = getTexhubNamespace();
+    if (!ns) return;
     const buf = Buffer.from(message);
     if (exceptSocketId) {
-      getTexhubNamespace()
-        .to(room)
-        .except(exceptSocketId)
-        .emit("message", buf);
+      ns.to(room).except(exceptSocketId).emit("message", buf);
     } else {
-      getTexhubNamespace().to(room).emit("message", buf);
+      ns.to(room).emit("message", buf);
     }
   } catch (e: any) {
     logger.error(`[room] broadcast failed room=${room}`, e);

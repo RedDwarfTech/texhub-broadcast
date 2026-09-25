@@ -4,6 +4,7 @@ import http from "http";
 import "dotenv/config";
 import { initialize } from "@websocket/entry/init.js";
 import { handleMiddlewareAuthCheck } from "@websocket/entry/handle/auth.js";
+import { registerRoomServer } from "@common/sync/room_broadcast.js";
 import logger from "@common/log4js_config.js";
 const PORT = 1234;
 export const app: Express = express();
@@ -43,6 +44,10 @@ websocketServer.use((socket: Socket, next) => {
 });
 
 handleMiddlewareAuthCheck(websocketServer);
+
+// P1（docs/design/message-reliable.md §6.1）：把 Server 实例注入 room 广播模块。
+// 必须在此注册（bundle 侧的 provider 依赖 room_broadcast，但绝不能反向引用 app）。
+registerRoomServer(websocketServer);
 
 initialize();
 process.on("uncaughtException", (error, origin) => {
