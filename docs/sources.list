@@ -1,24 +1,11 @@
-#http://mirrors.163.com/debian/为软件源也可以为其他的 bullseye为版本代号 main non-free contrib区别如下
-deb http://mirrors.163.com/debian/ bullseye main non-free contrib
+# Debian 12 (bookworm) — deb822 格式 apt 源，适配 node:22-bookworm-slim
+# （Debian 12 使用 /etc/apt/sources.list.d/debian.sources 而非旧的 /etc/apt/sources.list）
+Types: deb
+URIs: http://mirrors.ustc.edu.cn/debian/
+Suites: bookworm bookworm-updates bookworm-backports
+Components: main contrib non-free
 
-deb http://mirrors.163.com/debian/ bullseye-updates main non-free contrib
-
-deb http://mirrors.163.com/debian/ bullseye-backports main non-free contrib
-
-deb-src http://mirrors.163.com/debian/ bullseye main non-free contrib
-
-deb-src http://mirrors.163.com/debian/ bullseye-updates main non-free contrib
-
-deb-src http://mirrors.163.com/debian/ bullseye-backports main non-free contrib
-
-#deb http://mirrors.163.com/debian-security/ bullseye/updates main non-free contrib
-
-#deb http://mirrors.ustc.edu.cn/debian-security/ bullseye/updates main non-free contrib
-
-#deb-src http://mirrors.163.com/debian-security/ bullseye/updates main non-free contrib
-
-#deb-src http://mirrors.ustc.edu.cn/debian-security/ bullseye/updates main non-free contrib
-
-deb http://mirrors.ustc.edu.cn/debian-security/ stable-security main non-free contrib
-
-deb-src http://mirrors.ustc.edu.cn/debian-security/ stable-security main non-free contrib
+Types: deb
+URIs: http://mirrors.ustc.edu.cn/debian-security/
+Suites: bookworm-security
+Components: main contrib non-free
