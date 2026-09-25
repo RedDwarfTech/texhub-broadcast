@@ -7,7 +7,7 @@ import * as Y from "yjs";
 // @ts-ignore
 import * as decoding from "lib0/decoding";
 import logger from "@common/log4js_config.js";
-import { getYDoc } from "@collar/yjs_utils.js";
+import { getYDoc, docs } from "@collar/yjs_utils.js";
 import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
 import { send } from "../../action/ws_action.js";
 // @ts-ignore
@@ -16,7 +16,13 @@ import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { getTexFileInfo } from "@/storage/appfile.js";
 import { FileContent } from "@/model/texhub/file_content.js";
 import { SyncMessageContext } from "@/model/texhub/sync_msg_context.js";
-import { handleYDocUpdate } from "@/storage/handler/ydoc_action_handler.js";
+import {
+  handleYDocUpdate,
+  beginYDocUpdateTracking,
+  cancelYDocUpdateTracking,
+  readYjsUpdatePayload,
+} from "@/storage/handler/ydoc_action_handler.js";
+import { persistencePostgresql } from "@/storage/storage.js";
 import { DocMeta } from "@/model/yjs/commom/doc_meta.js";
 import { v4 as uuidv4 } from "uuid";
 import { RdJsonUtil } from "rdjs-wheel";
@@ -27,7 +33,7 @@ import {
   serverWriteUpdate,
   writeSyncStep2,
 } from "./server_protocol_action.js";
-import { emitSyncAck } from "../../action/ws_action.js";
+import { emitSyncAck, emitSyncNack } from "../../action/ws_action.js";
 import {
   joinDocRoom,
   toDocRoom,
@@ -50,7 +56,25 @@ const subdocsMap: Map<String, Map<String, WSSharedDoc>> = new Map();
  * @param rootDocName
  */
 export const clearSubdocsForRootDoc = (rootDocName: string) => {
+  const subdocs = subdocsMap.get(rootDocName);
   const removed = subdocsMap.delete(rootDocName);
+  if (subdocs) {
+    for (const [subdocId, subdoc] of subdocs) {
+      const key = String(subdocId);
+      const hasOtherProjectOwner = Array.from(subdocsMap.entries()).some(
+        ([rootName, map]) =>
+          rootName !== rootDocName && map.get(String(subdocId)) === subdoc
+      );
+      if (
+        docs.get(key) === subdoc &&
+        !hasOtherProjectOwner &&
+        subdoc.conns.size === 0
+      ) {
+        docs.delete(key);
+        subdoc.destroy();
+      }
+    }
+  }
   if (removed) {
     logger.info(`[subdocsMap] cleared for rootDoc ${rootDocName}`);
   }
@@ -127,12 +151,18 @@ const preHandleSubDoc = async (
   conn: Socket,
   rootDoc: WSSharedDoc
 ) => {
+  let ackDoc = "";
+  let ackSeq: number | undefined;
   try {
     const encoder = encoding.createEncoder();
     const context = decoding.readVarString(decoder);
     const isJson = RdJsonUtil.hasJsonStructure(context);
     const docContext = isJson ? JSON.parse(context) : context;
     const subdocGuid = isJson ? docContext.doc_name : docContext;
+    ackDoc = subdocGuid;
+    if (docContext && typeof docContext === "object") {
+      ackSeq = typeof docContext.seq === "number" ? docContext.seq : undefined;
+    }
     let docIntId = "";
     let fileInfo: FileContent = {
       id: "",
@@ -159,111 +189,114 @@ const preHandleSubDoc = async (
       src: "preHandleSubDoc",
       msgBody: docContext,
     };
-    let curSubDoc = await getYDoc(syncFileAttr);
+    const curSubDoc = await getYDoc(syncFileAttr);
+    curSubDoc.__isSubdoc = subdocGuid !== rootDoc.name;
     // P1（docs/design/message-reliable.md §6.1）：连接首次接触某子文档即加入其
+
     // room，后续该子文档的 update/awareness 广播（含跨实例 Redis Adapter 转发）
     // 才能覆盖到本连接。
     joinDocRoom(conn, toDocRoom(subdocGuid));
-    handleSubDoc(curSubDoc, conn, rootDoc, syncFileAttr, decoder, encoder);
-
-    // P0：客户端 Outbox ACK。客户端在子文档 update 帧的 context 中内嵌 seq，
-    // 服务端应用成功后回执 `sync:ack { doc, seq }`，客户端据此从 Outbox 删除对应条目。
-    if (docContext && typeof docContext.seq === "number") {
-      emitSyncAck(conn, subdocGuid, docContext.seq);
+    const syncDocs = (conn as any).__syncDocs as Set<string> | undefined;
+    if (syncDocs) {
+      syncDocs.add(String(subdocGuid));
+    }
+    const applied = await handleSubDoc(
+      curSubDoc,
+      conn,
+      rootDoc,
+      syncFileAttr,
+      decoder,
+      encoder
+    );
+    if (applied && ackSeq !== undefined) {
+      emitSyncAck(conn, ackDoc, ackSeq);
+    } else if (ackSeq !== undefined) {
+      emitSyncNack(conn, ackDoc, ackSeq, "apply_failed");
     }
   } catch (err) {
+    if (ackSeq !== undefined) {
+      emitSyncNack(conn, ackDoc, ackSeq, "server_error");
+    }
     logger.error("handle sub doc facing issue:" + rootDoc.name, err);
   }
 };
 
-const handleNormalMsg = (
+const handleNormalMsg = async (
   rootDoc: WSSharedDoc,
   conn: Socket,
   decoder: any,
   encoder: any,
   curSubDoc: WSSharedDoc,
   syncFileAttr: SyncFileAttr
-) => {
-  let subdocGuid = syncFileAttr.docName;
+): Promise<boolean> => {
+  const subdocGuid = syncFileAttr.docName;
   const curSubdocMap: Map<String, WSSharedDoc> | undefined = subdocsMap.get(
     rootDoc.name
   );
+  if (!curSubdocMap || !curSubdocMap.has(subdocGuid)) {
+    return false;
+  }
+
+  const targetDoc = subdocGuid === rootDoc.name ? rootDoc : curSubDoc;
+  const tracker = persistencePostgresql
+    ? beginYDocUpdateTracking(conn, targetDoc)
+    : null;
   try {
-    if (curSubdocMap && curSubdocMap.has(subdocGuid)) {
-      // diagnostic: verify handler/instance state before applying the sync message
-      const cachedSubDoc: WSSharedDoc | undefined = curSubdocMap.get(subdocGuid);
-      let remainingBytes = -1;
-      try {
-        const d: any = decoder;
-        if (d && typeof d.pos === "number" && d.arr) {
-          remainingBytes = d.arr.length - d.pos;
-        }
-      } catch (e) {
-        // ignore
-      }
-      logger.info("[handleNormalMsg] diag", {
-        subdocGuid,
-        rootDoc: rootDoc.name,
-        msgBody: syncFileAttr.msgBody || null,
-        remainingBytes,
-        curSubDocGuid: (curSubDoc as any).guid || "unknown",
-        cachedSubDocGuid: cachedSubDoc
-          ? (cachedSubDoc as any).guid || "unknown"
-          : "none",
-        sameInstance: cachedSubDoc === curSubDoc,
-        handlerRegistered: !!(curSubDoc as any).__subdocUpdateHandler,
-        handlerBoundRootDoc: (curSubDoc as any).__subdocHandlerRootDoc
-          ? (curSubDoc as any).__subdocHandlerRootDoc.name
-          : "none",
-        hasContent: decoding.hasContent(decoder),
-        time: new Date().toISOString(),
-      });
-
-      // self-heal: if the doc instance changed or its handler was bound to a
-      // destroyed rootDoc, (re)register the update handler and refresh the map
-      ensureSubdocUpdateHandler(curSubDoc, conn, rootDoc, syncFileAttr);
-      if (cachedSubDoc !== curSubDoc) {
-        curSubdocMap.set(subdocGuid, curSubDoc);
-      }
-
-      encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
-
-      const uniqueValue = uuidv4();
-      let msg: SyncMessageContext = {
-        doc_name: subdocGuid,
-        src: "handleNormalMsg",
-        trace_id: uniqueValue,
-      };
-      let msgStr = JSON.stringify(msg);
-
-      encoding.writeVarString(encoder, msgStr);
-      if (decoding.hasContent(decoder)) {
-        if (subdocGuid === rootDoc.name) {
-          syncProtocol.readSyncMessage(decoder, encoder, rootDoc, conn);
-          if (encoding.length(encoder) > 1 && needSend(encoder)) {
-            send(rootDoc, conn, encoding.toUint8Array(encoder), syncFileAttr);
-          }
-        } else {
-          const syncMsgType = syncProtocol.readSyncMessage(
-            decoder,
-            encoder,
-            curSubDoc,
-            conn
-          );
-          logger.info("[handleNormalMsg] applied", {
-            subdocGuid,
-            syncMsgType,
-            remainingBytes,
-            time: new Date().toISOString(),
-          });
-          if (encoding.length(encoder) > 1 && needSend(encoder)) {
-            send(curSubDoc, conn, encoding.toUint8Array(encoder), syncFileAttr);
-          }
-        }
-      }
+    const cachedSubDoc = curSubdocMap.get(subdocGuid);
+    ensureSubdocUpdateHandler(curSubDoc, conn, rootDoc, syncFileAttr);
+    if (cachedSubDoc !== curSubDoc) {
+      curSubdocMap.set(subdocGuid, curSubDoc);
     }
+    if (!decoding.hasContent(decoder)) {
+      cancelYDocUpdateTracking(conn, tracker);
+      return false;
+    }
+
+    const updatePayload = readYjsUpdatePayload(decoder);
+    encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
+    const uniqueValue = uuidv4();
+    const msg: SyncMessageContext = {
+      doc_name: subdocGuid,
+      src: "handleNormalMsg",
+      trace_id: uniqueValue,
+    };
+    encoding.writeVarString(encoder, JSON.stringify(msg));
+
+    let syncError: Error | null = null;
+    const syncMsgType = syncProtocol.readSyncMessage(
+      decoder,
+      encoder,
+      targetDoc,
+      conn,
+      (error: Error) => {
+        syncError = error;
+      }
+    );
+    if (encoding.length(encoder) > 1 && needSend(encoder)) {
+      await send(targetDoc, conn, encoding.toUint8Array(encoder), syncFileAttr);
+    }
+    if (
+      syncMsgType !== syncProtocol.messageYjsUpdate ||
+      syncError !== null
+    ) {
+      cancelYDocUpdateTracking(conn, tracker);
+      return false;
+    }
+    if (!persistencePostgresql) {
+      return true;
+    }
+    if (tracker?.observed) {
+      return await tracker.promise;
+    }
+    cancelYDocUpdateTracking(conn, tracker);
+    if (!updatePayload) {
+      return false;
+    }
+    return await handleYDocUpdate(updatePayload, targetDoc, syncFileAttr);
   } catch (e) {
+    cancelYDocUpdateTracking(conn, tracker);
     logger.error("write sub document sync failed, docGuid:" + subdocGuid, e);
+    return false;
   }
 };
 
@@ -276,9 +309,6 @@ const handleSubDocUpdate = async (
   rootDoc: WSSharedDoc
 ) => {
   serverWriteUpdate(update, subdocGuid, rootDoc, origin as Socket);
-  if (subdocGuid !== rootDoc.name) {
-    handleYDocUpdate(update, curSubDoc, syncFileAttr);
-  }
 };
 
 /**
@@ -345,35 +375,51 @@ const handleSubDoc = async (
   syncFileAttr: SyncFileAttr,
   decoder: any,
   encoder: any
-) => {
-  let subdocGuid = syncFileAttr.docName;
+): Promise<boolean> => {
+  const subdocGuid = syncFileAttr.docName;
   if (!rootDoc.conns.has(conn)) {
     rootDoc.conns.set(conn, new Set());
   }
   const curSubdocMap: Map<String, WSSharedDoc> | undefined = subdocsMap.get(
     rootDoc.name
   );
-  if (syncFileAttr.msgBody) {
-    if (
-      syncFileAttr.msgBody.msg_type &&
-      syncFileAttr.msgBody.msg_type === "sync_step_1"
-    ) {
-      writeSyncStep2(curSubDoc, conn, syncFileAttr);
-    }
+  const isSyncStep1 = Boolean(
+    syncFileAttr.msgBody && syncFileAttr.msgBody.msg_type === "sync_step_1"
+  );
+  if (isSyncStep1) {
+    writeSyncStep2(curSubDoc, conn, syncFileAttr);
   }
   if (curSubdocMap && curSubdocMap.has(subdocGuid)) {
-    // sync step 1 done before.
-    handleNormalMsg(rootDoc, conn, decoder, encoder, curSubDoc, syncFileAttr);
-  } else {
-    await handleSubDocFirstTimePut(
-      curSubdocMap,
-      subdocGuid,
-      curSubDoc,
-      rootDoc,
-      conn,
-      syncFileAttr
-    );
+    return isSyncStep1
+      ? true
+      : await handleNormalMsg(
+          rootDoc,
+          conn,
+          decoder,
+          encoder,
+          curSubDoc,
+          syncFileAttr
+        );
   }
+  const registered = await handleSubDocFirstTimePut(
+    curSubdocMap,
+    subdocGuid,
+    curSubDoc,
+    rootDoc,
+    conn,
+    syncFileAttr
+  );
+  if (!registered || isSyncStep1) {
+    return registered;
+  }
+  return await handleNormalMsg(
+    rootDoc,
+    conn,
+    decoder,
+    encoder,
+    curSubDoc,
+    syncFileAttr
+  );
 };
 
 const handleSubDocFirstTimePut = async (
@@ -383,15 +429,12 @@ const handleSubDocFirstTimePut = async (
   rootDoc: WSSharedDoc,
   conn: Socket,
   syncFileAttr: SyncFileAttr
-) => {
+): Promise<boolean> => {
   try {
-    // register a stable handler created from a snapshot of current context
-    // avoid double registration by storing handler reference on the doc
     ensureSubdocUpdateHandler(curSubDoc, conn, rootDoc, syncFileAttr);
     const subDocText = curSubDoc.getText(subdocGuid);
-    subDocText.observe((event: Y.YTextEvent, tr: Y.Transaction) => {
-    });
-    let docMeta: DocMeta = {
+    subDocText.observe(() => undefined);
+    const docMeta: DocMeta = {
       name: subdocGuid,
       id: syncFileAttr.docIntId!,
       src: "server",
@@ -405,8 +448,10 @@ const handleSubDocFirstTimePut = async (
       newMap.set(subdocGuid, curSubDoc);
       subdocsMap.set(rootDoc.name, newMap);
     }
+    return true;
   } catch (e) {
     logger.error("handle first time put failed, docGuid:" + subdocGuid, e);
+    return false;
   }
 };
 

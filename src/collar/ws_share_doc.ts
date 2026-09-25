@@ -35,6 +35,7 @@ const JWT_SIGN_KEY = process.env.JWT_SIGN_KEY || "key-missing";
 
 export class WSSharedDoc extends Y.Doc {
   name: string;
+  __isSubdoc: boolean;
   conns: Map<Socket, Set<number>>;
   awareness: any;
   /**
@@ -43,6 +44,7 @@ export class WSSharedDoc extends Y.Doc {
   constructor(name: string) {
     super({ gc: gcEnabled });
     this.name = name;
+    this.__isSubdoc = false;
     /**
      * Maps from conn to set of controlled user ids. Delete all user ids from awareness when this conn is closed
      * @type {Map<Object, Set<number>>}

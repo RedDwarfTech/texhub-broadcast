@@ -157,6 +157,9 @@ export const flushDocument = async (
 ) => {
   let docName = syncFileAttr.docName;
   const clock = await storeHistoryUpdate(syncFileAttr, stateAsUpdate);
+  if (clock < 0) {
+    throw new Error(`storeHistoryUpdate failed with clock ${clock}`);
+  }
   await writeStateVector(syncFileAttr, stateVector, clock);
   await clearUpdatesRange(db, docName, 0, clock); // intentionally not waiting for the promise to resolve!
   return clock;
@@ -196,7 +199,7 @@ export const storeHistoryUpdate = async (
   } finally {
     await unlockDistriKey(lockKey, uniqueValue);
   }
-  return 0;
+  return -2;
 };
 
 export const storeUpdateBySrc = async (

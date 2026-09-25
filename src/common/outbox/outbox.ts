@@ -20,10 +20,31 @@ export interface OutboxEntry {
 
 const DB_NAME = "texhub:outbox";
 const STORE = "updates";
-const DB_VERSION = 1;
+const COUNTER_STORE = "counters";
+const DB_VERSION = 2;
 
+const isBrowser = (): boolean => typeof window !== "undefined";
 const inBrowser = (): boolean =>
-  typeof window !== "undefined" && typeof window.indexedDB !== "undefined";
+  isBrowser() && typeof window.indexedDB !== "undefined";
+
+const seqStorageKey = (doc: string) => `texhub:outbox:seq:${doc}`;
+
+const readPersistedSeq = (doc: string): number => {
+  if (!inBrowser()) return 0;
+  try {
+    const value = Number(window.localStorage.getItem(seqStorageKey(doc)));
+    return Number.isFinite(value) && value > 0 ? value : 0;
+  } catch (e) {
+    return 0;
+  }
+};
+
+const writePersistedSeq = (doc: string, seq: number): void => {
+  if (!inBrowser()) return;
+  try {
+    window.localStorage.setItem(seqStorageKey(doc), String(seq));
+  } catch (e) {}
+};
 
 export class Outbox {
   private db: IDBDatabase | null = null;
@@ -34,30 +55,61 @@ export class Outbox {
   private initPromise: Promise<void> | null = null;
 
   init(): Promise<void> {
-    if (!inBrowser()) return Promise.resolve();
+    if (!isBrowser()) return Promise.resolve();
+    if (!inBrowser()) {
+      return Promise.reject(new Error("IndexedDB is unavailable"));
+    }
     if (!this.initPromise) {
-      this.initPromise = this._init();
+      const promise = this._init().catch((error) => {
+        this.db?.close();
+        this.db = null;
+        this.initPromise = null;
+        throw error;
+      });
+      this.initPromise = promise;
     }
     return this.initPromise;
   }
 
   private _init(): Promise<void> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       let request: IDBOpenDBRequest;
+      let settled = false;
+      const resolveOnce = () => {
+        if (settled) return;
+        settled = true;
+        resolve();
+      };
+      const rejectOnce = (error: unknown) => {
+        if (settled) return;
+        settled = true;
+        reject(error instanceof Error ? error : new Error(String(error)));
+      };
       try {
         request = window.indexedDB.open(DB_NAME, DB_VERSION);
       } catch (e) {
-        // 隐私模式等极端场景：仅内存兜底
-        resolve();
+        rejectOnce(e);
         return;
       }
       request.onupgradeneeded = (event) => {
-        const db = (event.target as IDBOpenDBRequest).result;
-        if (!db.objectStoreNames.contains(STORE)) {
-          db.createObjectStore(STORE, { keyPath: "key" });
+        if (settled) return;
+        try {
+          const db = (event.target as IDBOpenDBRequest).result;
+          if (!db.objectStoreNames.contains(STORE)) {
+            db.createObjectStore(STORE, { keyPath: "key" });
+          }
+          if (!db.objectStoreNames.contains(COUNTER_STORE)) {
+            db.createObjectStore(COUNTER_STORE, { keyPath: "doc" });
+          }
+        } catch (e) {
+          rejectOnce(e);
         }
       };
       request.onsuccess = () => {
+        if (settled) {
+          request.result.close();
+          return;
+        }
         this.db = request.result;
         this.db.onversionchange = () => {
           this.db?.close();
@@ -65,134 +117,371 @@ export class Outbox {
           this.initPromise = null;
         };
         this._loadAll()
-          .catch(() => {})
-          .finally(() => resolve());
+          .then(() => this._seedCounters())
+          .then(resolveOnce)
+          .catch((e) => {
+            this.db?.close();
+            this.db = null;
+            rejectOnce(e);
+          });
       };
       request.onerror = () => {
-        resolve();
+        request.result?.close();
+        rejectOnce(request.error || new Error("IndexedDB open failed"));
+      };
+      request.onblocked = () => {
+        rejectOnce(new Error("IndexedDB open blocked"));
       };
     });
   }
 
   private _loadAll(): Promise<void> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       if (!this.db) {
-        resolve();
+        reject(new Error("IndexedDB is unavailable"));
         return;
       }
       try {
         const tx = this.db.transaction(STORE, "readonly");
         const store = tx.objectStore(STORE);
         const req = store.getAll();
+        const rows: any[] = [];
         req.onsuccess = () => {
-          const rows: any[] = req.result || [];
-          for (const row of rows) {
-            if (!row || typeof row.doc !== "string") continue;
-            let map = this.pending.get(row.doc);
-            if (!map) {
-              map = new Map();
-              this.pending.set(row.doc, map);
+          try {
+            for (const row of (req.result || []) as any[]) {
+              rows.push(row);
             }
-            if (typeof row.seq === "number") {
-              map.set(row.seq, {
-                doc: row.doc,
-                seq: row.seq,
-                type: row.type === "subdoc" ? "subdoc" : "root",
-                update: new Uint8Array(row.update || []),
-              });
-              const cur = this.lastSeq.get(row.doc) || 0;
-              if (row.seq > cur) this.lastSeq.set(row.doc, row.seq);
-            }
+          } catch (e) {
+            reject(e instanceof Error ? e : new Error(String(e)));
           }
-          resolve();
         };
-        req.onerror = () => resolve();
+        tx.oncomplete = () => {
+          try {
+            const loaded = new Map<string, Map<number, OutboxEntry>>();
+            for (const row of rows) {
+              if (!row || typeof row.doc !== "string") continue;
+              let map = loaded.get(row.doc);
+              if (!map) {
+                map = new Map();
+                loaded.set(row.doc, map);
+              }
+              if (typeof row.seq === "number") {
+                map.set(row.seq, {
+                  doc: row.doc,
+                  seq: row.seq,
+                  type: row.type === "subdoc" ? "subdoc" : "root",
+                  update: new Uint8Array(row.update || []),
+                });
+                const cur = Math.max(
+                  this.lastSeq.get(row.doc) || 0,
+                  readPersistedSeq(row.doc)
+                );
+                if (row.seq > cur) {
+                  this.lastSeq.set(row.doc, row.seq);
+                  writePersistedSeq(row.doc, row.seq);
+                } else if (cur > 0) {
+                  this.lastSeq.set(row.doc, cur);
+                }
+              }
+            }
+            this.pending = loaded;
+            resolve();
+          } catch (e) {
+            reject(e instanceof Error ? e : new Error(String(e)));
+          }
+        };
+        req.onerror = () => {
+          reject(req.error || new Error("IndexedDB read failed"));
+        };
+        tx.onerror = () => {
+          reject(tx.error || new Error("IndexedDB read transaction failed"));
+        };
+        tx.onabort = () => {
+          reject(tx.error || new Error("IndexedDB read transaction aborted"));
+        };
       } catch (e) {
-        resolve();
+        reject(e instanceof Error ? e : new Error(String(e)));
       }
     });
   }
 
-  private _store(entry: OutboxEntry): Promise<void> {
-    return new Promise((resolve) => {
-      if (!this.db) {
-        resolve();
-        return;
-      }
+  private _seedCounters(): Promise<void> {
+    if (!this.db || this.pending.size === 0) return Promise.resolve();
+    return new Promise((resolve, reject) => {
       try {
-        const tx = this.db.transaction(STORE, "readwrite");
-        const store = tx.objectStore(STORE);
-        const updateBuffer = new Uint8Array(entry.update).buffer;
-        store.put({
-          key: `${entry.doc}:${entry.seq}`,
-          doc: entry.doc,
-          seq: entry.seq,
-          type: entry.type,
-          update: updateBuffer,
-        });
+        const db = this.db;
+        if (!db) {
+          reject(new Error("IndexedDB is unavailable"));
+          return;
+        }
+        const tx = db.transaction(COUNTER_STORE, "readwrite");
+        const store = tx.objectStore(COUNTER_STORE);
+        for (const doc of this.pending.keys()) {
+          const req = store.get(doc);
+          req.onsuccess = () => {
+            const row = req.result as { seq?: number } | undefined;
+            const target = Math.max(
+              Number(row?.seq) || 0,
+              this.lastSeq.get(doc) || 0,
+              readPersistedSeq(doc)
+            );
+            if (target > (Number(row?.seq) || 0)) {
+              store.put({ doc, seq: target });
+            }
+          };
+        }
         tx.oncomplete = () => resolve();
-        tx.onerror = () => resolve();
-        tx.onabort = () => resolve();
+        tx.onerror = () => reject(tx.error || new Error("counter seed failed"));
+        tx.onabort = () => reject(tx.error || new Error("counter seed aborted"));
       } catch (e) {
-        resolve();
+        reject(e instanceof Error ? e : new Error(String(e)));
       }
     });
+  }
+
+  async refresh(): Promise<void> {
+    await this.init();
+    if (!this.db) return;
+    await this._loadAll();
   }
 
   private _remove(doc: string, seq: number): Promise<void> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       if (!this.db) {
-        resolve();
+        if (inBrowser()) {
+          reject(new Error("IndexedDB is unavailable"));
+        } else {
+          resolve();
+        }
         return;
       }
       try {
         const tx = this.db.transaction(STORE, "readwrite");
         const store = tx.objectStore(STORE);
-        store.delete(`${doc}:${seq}`);
+        const req = store.delete(`${doc}:${seq}`);
         tx.oncomplete = () => resolve();
-        tx.onerror = () => resolve();
-        tx.onabort = () => resolve();
+        tx.onerror = () => {
+          reject(tx.error || req.error || new Error("IndexedDB delete failed"));
+        };
+        tx.onabort = () => {
+          reject(tx.error || new Error("IndexedDB delete aborted"));
+        };
       } catch (e) {
-        resolve();
+        reject(e instanceof Error ? e : new Error(String(e)));
       }
     });
   }
 
-  /** 追加一条未确认 update。已在内存记录 seq 计数器，断线期间也可安全调用。 */
+  private _allocateSeq(doc: string): Promise<number> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) {
+        if (inBrowser()) {
+          reject(new Error("IndexedDB is unavailable"));
+          return;
+        }
+        const current = Math.max(
+          this.lastSeq.get(doc) || 0,
+          readPersistedSeq(doc)
+        );
+        const next = current + 1;
+        this.lastSeq.set(doc, next);
+        writePersistedSeq(doc, next);
+        resolve(next);
+        return;
+      }
+      let next = 0;
+      let settled = false;
+      const fail = (error: unknown) => {
+        if (settled) return;
+        settled = true;
+        reject(error instanceof Error ? error : new Error(String(error)));
+      };
+      try {
+        const tx = this.db.transaction(COUNTER_STORE, "readwrite");
+        const store = tx.objectStore(COUNTER_STORE);
+        const req = store.get(doc);
+        req.onsuccess = () => {
+          try {
+            const row = req.result as { seq?: number } | undefined;
+            const current = Math.max(
+              Number(row?.seq) || 0,
+              this.lastSeq.get(doc) || 0,
+              readPersistedSeq(doc)
+            );
+            next = current + 1;
+            store.put({ doc, seq: next });
+          } catch (e) {
+            fail(e);
+          }
+        };
+        req.onerror = () => {
+          fail(req.error || new Error("IndexedDB counter read failed"));
+        };
+        tx.oncomplete = () => {
+          if (settled) return;
+          try {
+            this.lastSeq.set(doc, next);
+            writePersistedSeq(doc, next);
+            settled = true;
+            resolve(next);
+          } catch (e) {
+            fail(e);
+          }
+        };
+        tx.onerror = () => {
+          fail(tx.error || new Error("IndexedDB counter transaction failed"));
+        };
+        tx.onabort = () => {
+          fail(tx.error || new Error("IndexedDB counter transaction aborted"));
+        };
+      } catch (e) {
+        fail(e);
+      }
+    });
+  }
+
+  private _persistEntry(
+    entry: Omit<OutboxEntry, "seq">,
+    requestedSeq: number,
+    allocate: boolean
+  ): Promise<number> {
+    return new Promise((resolve, reject) => {
+      let storedSeq = requestedSeq;
+      const addToMemory = () => {
+        const fullEntry: OutboxEntry = { ...entry, seq: storedSeq };
+        let map = this.pending.get(entry.doc);
+        if (!map) {
+          map = new Map();
+          this.pending.set(entry.doc, map);
+        }
+        map.set(storedSeq, fullEntry);
+        const current = Math.max(
+          this.lastSeq.get(entry.doc) || 0,
+          readPersistedSeq(entry.doc)
+        );
+        if (storedSeq > current) {
+          this.lastSeq.set(entry.doc, storedSeq);
+          writePersistedSeq(entry.doc, storedSeq);
+        } else {
+          this.lastSeq.set(entry.doc, current);
+        }
+      };
+      if (!this.db) {
+        if (inBrowser()) {
+          reject(new Error("IndexedDB is unavailable"));
+          return;
+        }
+        if (allocate) {
+          storedSeq =
+            Math.max(
+              this.lastSeq.get(entry.doc) || 0,
+              readPersistedSeq(entry.doc)
+            ) + 1;
+        }
+        try {
+          addToMemory();
+          resolve(storedSeq);
+        } catch (e) {
+          reject(e instanceof Error ? e : new Error(String(e)));
+        }
+        return;
+      }
+      let settled = false;
+      const fail = (error: unknown) => {
+        if (settled) return;
+        settled = true;
+        reject(error instanceof Error ? error : new Error(String(error)));
+      };
+      try {
+        const tx = this.db.transaction([COUNTER_STORE, STORE], "readwrite");
+        const counter = tx.objectStore(COUNTER_STORE);
+        const updates = tx.objectStore(STORE);
+        const req = counter.get(entry.doc);
+        req.onsuccess = () => {
+          try {
+            const row = req.result as { seq?: number } | undefined;
+            const current = Math.max(
+              Number(row?.seq) || 0,
+              this.lastSeq.get(entry.doc) || 0,
+              readPersistedSeq(entry.doc)
+            );
+            if (allocate) {
+              storedSeq = current + 1;
+              counter.put({ doc: entry.doc, seq: storedSeq });
+            } else {
+              storedSeq = requestedSeq;
+              if (requestedSeq > current) {
+                counter.put({ doc: entry.doc, seq: requestedSeq });
+              }
+            }
+            const update = new Uint8Array(entry.update);
+            updates.put({
+              key: `${entry.doc}:${storedSeq}`,
+              doc: entry.doc,
+              seq: storedSeq,
+              type: entry.type,
+              update: update.buffer.slice(
+                update.byteOffset,
+                update.byteOffset + update.byteLength
+              ),
+            });
+          } catch (e) {
+            fail(e);
+          }
+        };
+        req.onerror = () => {
+          fail(req.error || new Error("IndexedDB counter read failed"));
+        };
+        tx.oncomplete = () => {
+          if (settled) return;
+          try {
+            addToMemory();
+            settled = true;
+            resolve(storedSeq);
+          } catch (e) {
+            fail(e);
+          }
+        };
+        tx.onerror = () => {
+          fail(tx.error || new Error("IndexedDB entry transaction failed"));
+        };
+        tx.onabort = () => {
+          fail(tx.error || new Error("IndexedDB entry transaction aborted"));
+        };
+      } catch (e) {
+        fail(e);
+      }
+    });
+  }
+
+  /** 追加一条未确认 update。 */
   async enqueue(entry: OutboxEntry): Promise<void> {
     await this.init();
-    let map = this.pending.get(entry.doc);
-    if (!map) {
-      map = new Map();
-      this.pending.set(entry.doc, map);
-    }
-    map.set(entry.seq, entry);
-    const cur = this.lastSeq.get(entry.doc) || 0;
-    if (entry.seq > cur) this.lastSeq.set(entry.doc, entry.seq);
-    await this._store(entry);
-    // 尾随清理：若 _store 落盘期间该条已被服务端 ack 删除（_remove 先于本次 put 生效），
-    // 会遗留一条孤儿 IDB 行，重连时被反复重放。此处按 pending 内存态复查补删。
-    if (!this.pending.get(entry.doc)?.has(entry.seq)) {
-      await this._remove(entry.doc, entry.seq);
-    }
+    await this._persistEntry(entry, entry.seq, false);
+  }
+
+  async enqueueNext(
+    entry: Omit<OutboxEntry, "seq">
+  ): Promise<number> {
+    await this.init();
+    return this._persistEntry(entry, 0, true);
   }
 
   /** 收到服务端 ack 后删除对应条目。 */
   async ack(doc: string, seq: number): Promise<void> {
+    await this.init();
+    await this._remove(doc, seq);
     const map = this.pending.get(doc);
     if (map) {
       map.delete(seq);
       if (map.size === 0) this.pending.delete(doc);
     }
-    await this._remove(doc, seq);
   }
 
   /** 该 doc 的下一个 seq（单调递增，跨会话不重置）。 */
-  nextSeq(doc: string): number {
-    const cur = this.lastSeq.get(doc) || 0;
-    const next = cur + 1;
-    this.lastSeq.set(doc, next);
-    return next;
+  async nextSeq(doc: string): Promise<number> {
+    await this.init();
+    return this._allocateSeq(doc);
   }
 
   /** 获取全部未确认条目（重连重放用），按 (doc, seq) 升序。 */

@@ -9,14 +9,129 @@ import { recordFullDeletion } from "./deletion_audit.js";
 import { UpdateOrigin } from "@/model/yjs/net/update_origin.js";
 import logger from "@/common/log4js_config.js";
 import { markDiskFlushPending, markDiskFlushPendingRedis } from "@/common/app/throttle_util.js";
+import { TeXFileType } from "@model/enum/tex_file_type.js";
+// @ts-ignore
+import * as decoding from "lib0/decoding";
+// @ts-ignore
+import * as syncProtocol from "y-protocols/sync";
+
+type YDocUpdateTracker = {
+  doc: Y.Doc;
+  observed: boolean;
+  active: boolean;
+  promise: Promise<boolean>;
+  resolve: (value: boolean) => void;
+};
+
+const pendingYDocUpdates = new WeakMap<object, Set<YDocUpdateTracker>>();
+
+const getOriginKey = (origin: any): object | null => {
+  if (
+    (typeof origin === "object" && origin !== null) ||
+    typeof origin === "function"
+  ) {
+    return origin as object;
+  }
+  return null;
+};
+
+const removeTracker = (
+  origin: any,
+  tracker: YDocUpdateTracker
+): void => {
+  const key = getOriginKey(origin);
+  if (!key) return;
+  const trackers = pendingYDocUpdates.get(key);
+  if (!trackers) return;
+  trackers.delete(tracker);
+  if (trackers.size === 0) pendingYDocUpdates.delete(key);
+};
+
+export const beginYDocUpdateTracking = (
+  origin: any,
+  doc: Y.Doc
+): YDocUpdateTracker | null => {
+  const key = getOriginKey(origin);
+  if (!key) return null;
+  let resolve!: (value: boolean) => void;
+  const promise = new Promise<boolean>((done) => {
+    resolve = done;
+  });
+  const tracker: YDocUpdateTracker = {
+    doc,
+    observed: false,
+    active: true,
+    promise,
+    resolve,
+  };
+  let trackers = pendingYDocUpdates.get(key);
+  if (!trackers) {
+    trackers = new Set<YDocUpdateTracker>();
+    pendingYDocUpdates.set(key, trackers);
+  }
+  trackers.add(tracker);
+  return tracker;
+};
+
+export const observeYDocUpdate = (origin: any, doc: Y.Doc): void => {
+  const key = getOriginKey(origin);
+  const trackers = key ? pendingYDocUpdates.get(key) : undefined;
+  if (!trackers) return;
+  for (const tracker of trackers) {
+    if (tracker.active && tracker.doc === doc && !tracker.observed) {
+      tracker.observed = true;
+      return;
+    }
+  }
+};
+
+export const completeYDocUpdate = (
+  origin: any,
+  doc: Y.Doc,
+  persisted: boolean
+): void => {
+  const key = getOriginKey(origin);
+  const trackers = key ? pendingYDocUpdates.get(key) : undefined;
+  if (!trackers) return;
+  for (const tracker of trackers) {
+    if (tracker.active && tracker.doc === doc && tracker.observed) {
+      tracker.active = false;
+      removeTracker(origin, tracker);
+      tracker.resolve(persisted);
+      return;
+    }
+  }
+};
+
+export const cancelYDocUpdateTracking = (
+  origin: any,
+  tracker: YDocUpdateTracker | null
+): void => {
+  if (!tracker || !tracker.active) return;
+  tracker.active = false;
+  removeTracker(origin, tracker);
+  tracker.resolve(true);
+};
+
+export const readYjsUpdatePayload = (decoder: any): Uint8Array | null => {
+  try {
+    const copy = decoding.clone(decoder);
+    if (decoding.readVarUint(copy) !== syncProtocol.messageYjsUpdate) {
+      return null;
+    }
+    return decoding.readVarUint8Array(copy);
+  } catch (e) {
+    return null;
+  }
+};
 
 export const handleYDocUpdate = async (
   update: Uint8Array,
   ydoc: Y.Doc,
   syncFileAttr: SyncFileAttr,
   userContext?: Partial<UpdateOrigin>
-) => {
-  await preCheckBeforeFlush(syncFileAttr, update, ydoc, userContext);
+): Promise<boolean> => {
+  return preCheckBeforeFlush(syncFileAttr, update, ydoc, userContext);
 };
 
 export const preCheckBeforeFlush = async (
@@ -24,16 +139,14 @@ export const preCheckBeforeFlush = async (
   update: Uint8Array,
   ydoc: Y.Doc,
   userContext?: Partial<UpdateOrigin>
-) => {
+): Promise<boolean> => {
   try {
-    // 检测是否为完全删除
     const detection = await detectFullDelete(update, ydoc, syncFileAttr);
 
     if (detection.isFullDelete) {
       const ydocTextLen =
         ydoc.getText(syncFileAttr.docName)?.toString()?.length ?? 0;
 
-      // 记录完全删除的审计日志
       await recordFullDeletion({
         docName: syncFileAttr.docName,
         docId: syncFileAttr.docIntId,
@@ -41,7 +154,7 @@ export const preCheckBeforeFlush = async (
         userName: userContext?.userName,
         previousContentSize: detection.previousSize,
         timestamp: Date.now(),
-        updateHash: syncFileAttr.hash
+        updateHash: syncFileAttr.hash,
       });
 
       logger.warn("[FULL_DELETE] Document completely deleted", {
@@ -68,18 +181,31 @@ export const preCheckBeforeFlush = async (
       });
     }
 
-    // 继续正常的处理流程（P0：先写 Redis Stream WAL，再由 Worker 幂等落库）
-    await postgresqlDb.appendUpdateToWAL(syncFileAttr, update);
-    throttledFlushToDiskAndSearchEngine(syncFileAttr, postgresqlDb);
-    handleHistoryDoc(syncFileAttr, ydoc);
+    const persisted = await postgresqlDb.appendUpdateToWAL(syncFileAttr, update);
+    if (!persisted && syncFileAttr.docType !== TeXFileType.PROJECT) {
+      logger.error("Failed to persist YDoc update", {
+        docName: syncFileAttr.docName,
+        src: syncFileAttr.src,
+      });
+      return false;
+    }
 
-    // Track dirty files for fast disk flush (use in-memory Y.Doc instead of DB reconstruction)
-    const fileId = syncFileAttr.docIntId || syncFileAttr.docName;
-    markDiskFlushPending(syncFileAttr, ydoc);
-    markDiskFlushPendingRedis(syncFileAttr.projectId, fileId, syncFileAttr.docName);
-
+    try {
+      throttledFlushToDiskAndSearchEngine(syncFileAttr, postgresqlDb);
+      handleHistoryDoc(syncFileAttr, ydoc);
+      const fileId = syncFileAttr.docIntId || syncFileAttr.docName;
+      markDiskFlushPending(syncFileAttr, ydoc);
+      markDiskFlushPendingRedis(
+        syncFileAttr.projectId,
+        fileId,
+        syncFileAttr.docName
+      );
+    } catch (error) {
+      logger.error("Failed to process post-persistence YDoc tasks", error);
+    }
+    return true;
   } catch (error) {
     logger.error("Failed to process YDoc update", error);
-    throw error;
+    return false;
   }
 };

@@ -19,7 +19,7 @@ import * as awarenessProtocol from "y-protocols/awareness";
 import { Socket } from "socket.io";
 import http from "http";
 import logger from "@common/log4js_config.js";
-import { ws_msg_handle } from "./message_handler.js";
+import { enqueueSocketTask, ws_msg_handle } from "./message_handler.js";
 import { URLSearchParams } from "url";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { TeXFileType } from "@/model/enum/tex_file_type.js";
@@ -55,6 +55,7 @@ export async function setupWSConnection(
   // get doc, initialize if it does not exist yet
   const rootDoc: WSSharedDoc = await getYDoc(syncFileAttr, gc);
   rootDoc.conns.set(socket, new Set());
+  (socket as any).__syncDocs = new Set<string>([rootDoc.name]);
   // P1（docs/design/message-reliable.md §6.1）：连接加入根文档/项目 room，
   // 使 root update/awareness 广播与跨实例（Redis Adapter）广播覆盖到本连接。
   joinDocRoom(socket, toDocRoom(rootDoc.name));
@@ -63,10 +64,12 @@ export async function setupWSConnection(
   socket.emit("sync:epoch", { epoch: SERVER_EPOCH });
   // listen and reply to events
   socket.on("message", (message: Uint8Array) => {
-    ws_msg_handle(message, socket, rootDoc);
+    ws_msg_handle(message, socket, rootDoc, syncFileAttr);
   });
   socket.on("sync:ack_req", (payload: any) => {
-    handleSyncAckReq(socket, payload);
+    enqueueSocketTask(socket, async () => {
+      handleSyncAckReq(socket, payload);
+    });
   });
   socket.on("probe", (data: any) => {
     socket.emit("probe_ack", {
@@ -77,7 +80,7 @@ export async function setupWSConnection(
     });
   });
   socket.on("disconnect", () => {
-    closeConn(rootDoc, socket);
+    void enqueueSocketTask(socket, () => closeConn(rootDoc, socket));
   });
   socket.on("close", (code, reason, wasClean) => {
     if (code !== 1000 && code !== 4001) {
@@ -92,7 +95,7 @@ export async function setupWSConnection(
           docId
       );
     }
-    closeConn(rootDoc, socket);
+    void enqueueSocketTask(socket, () => closeConn(rootDoc, socket));
   });
   // put the following in a variables in a block so the interval handlers don't keep in in
   // scope

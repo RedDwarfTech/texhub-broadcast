@@ -104,6 +104,9 @@ export const updateHandler = (
   doc: any,
   _tr: any
 ) => {
+  if ((doc as any).__isSubdoc) {
+    return;
+  }
   const encoder = encoding.createEncoder();
   encoding.writeVarUint(encoder, messageSync);
   syncProtocol.writeUpdate(encoder, update);

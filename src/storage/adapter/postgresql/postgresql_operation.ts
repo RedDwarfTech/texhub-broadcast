@@ -32,6 +32,9 @@ import {
 } from "@/common/cache/redis_util.js";
 import { ENABLE_DEBUG } from "@/common/log_util.js";
 
+export const STORE_UPDATE_DEDUP = -1;
+export const STORE_UPDATE_FAILED = -2;
+
 export const getDocAllUpdates = async (
   docName: string,
   opts = { values: true, keys: false, reverse: false }
@@ -182,9 +185,12 @@ export const flushDocument = async (
   stateVector: any
 ) => {
   const clock = await storeUpdate(syncFileAttr, stateAsUpdate);
-  if (clock < 0) {
+  if (clock === STORE_UPDATE_DEDUP) {
     // -1：内容与已落库完全一致（dedup），无需重复写状态向量/trim，直接返回
     return clock;
+  }
+  if (clock < 0) {
+    throw new Error(`storeUpdate failed with clock ${clock}`);
   }
   await writeStateVector(syncFileAttr.docName, stateVector, clock);
   await clearUpdatesRange(db, syncFileAttr.docName, 0, clock); // intentionally not waiting for the promise to resolve!
@@ -227,7 +233,7 @@ export const storeUpdate = async (
   const lockKey = `lock:${syncFileAttr.docName}:update`;
   // 纯检查：内容已成功落库则跳过（hash 仅在成功写库后才标记，见下方 markUpdateHash）
   if (await isUpdateHashDuplicated(update, syncFileAttr, "storeUpdate")) {
-    return -1;
+    return STORE_UPDATE_DEDUP;
   }
   try {
     if (await getRedisDestriLock(lockKey, uniqueValue, 0, syncFileAttr)) {
@@ -288,8 +294,7 @@ export const storeUpdate = async (
     // release lock (will do nothing if Redis is not available)
     await unlockDistriKey(lockKey, uniqueValue);
   }
-  // 0：锁竞争失败 / 内部异常（未持久化，调用方应保留 pending 以便重试）
-  return 0;
+  return STORE_UPDATE_FAILED;
 };
 
 export const storeUpdateBySrc = async (update: Uint8Array, keys: any[]) => {

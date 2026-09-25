@@ -6,7 +6,7 @@ import { PostgresqlPersistance } from "./adapter/postgresql/postgresql_persistan
 import logger from "../common/log4js_config.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { UpdateOrigin } from "@/model/yjs/net/update_origin.js";
-import { handleYDocUpdate } from "./handler/ydoc_action_handler.js";
+import { handleYDocUpdate, observeYDocUpdate, completeYDocUpdate } from "./handler/ydoc_action_handler.js";
 import crypto from "crypto";
 
 export let persistencePostgresql: Persistence;
@@ -36,6 +36,7 @@ if (typeof persistenceDir === "string") {
 
         // @ts-ignore
         ydoc.on("update", async (update: Uint8Array, origin: UpdateOrigin) => {
+          observeYDocUpdate(origin, ydoc);
           const updateHash = crypto
             .createHash("sha256")
             .update(update)
@@ -44,14 +45,24 @@ if (typeof persistenceDir === "string") {
           syncFileAttr.curTime = updateTime;
           syncFileAttr.hash = updateHash;
 
-          // 传递用户上下文信息
           const userContext: Partial<UpdateOrigin> = {
             userId: origin?.userId,
             userName: origin?.userName,
-            operationType: origin?.operationType || 'update'
+            operationType: origin?.operationType || "update",
           };
 
-          handleYDocUpdate(update, ydoc, syncFileAttr, userContext);
+          let persisted = false;
+          try {
+            persisted = await handleYDocUpdate(
+              update,
+              ydoc,
+              syncFileAttr,
+              userContext
+            );
+          } catch (error) {
+            logger.error("Failed to persist YDoc update event", error);
+          }
+          completeYDocUpdate(origin, ydoc, persisted);
         });
       } catch (err: any) {
         logger.error("process update failed", err);

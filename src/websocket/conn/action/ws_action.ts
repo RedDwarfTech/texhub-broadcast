@@ -4,6 +4,12 @@ import { docs, messageSync } from "@collar/yjs_utils.js";
 import { WSSharedDoc } from "@collar/ws_share_doc.js";
 import log4js from "log4js";
 import { persistencePostgresql } from "@storage/storage.js";
+import {
+  handleYDocUpdate,
+  beginYDocUpdateTracking,
+  cancelYDocUpdateTracking,
+  readYjsUpdatePayload,
+} from "@storage/handler/ydoc_action_handler.js";
 import { Socket } from "socket.io";
 var logger = log4js.getLogger();
 // @ts-ignore
@@ -85,45 +91,53 @@ export const readMessage = (
   return encoder;
 };
 
-export const closeConn = (doc: WSSharedDoc, conn: Socket) => {
-  if (doc.conns.has(conn)) {
-    const controlledIds = doc.conns.get(conn);
-    doc.conns.delete(conn);
-    awarenessProtocol.removeAwarenessStates(
-      doc.awareness,
-      Array.from(controlledIds!),
-      null
-    );
+export const closeConn = async (doc: WSSharedDoc, conn: Socket): Promise<void> => {
+  if (!doc.conns.has(conn)) return;
+  const controlledIds = doc.conns.get(conn);
+  doc.conns.delete(conn);
+  awarenessProtocol.removeAwarenessStates(
+    doc.awareness,
+    controlledIds ? Array.from(controlledIds) : [],
+    null
+  );
+  if (doc.conns.size !== 0) return;
+
+  try {
+    await cleanupHistoryDocForProject(doc.name);
+  } catch (e) {
+    logger.error(`failed to clean history state while closing doc=${doc.name}`, e);
+  }
+
+  if (persistencePostgresql) {
     try {
-      // try to remove subdoc update handlers associated with this connection
-      const subdocMap = (doc.getMap && doc.getMap("texhubsubdoc")) || null;
-      if (subdocMap && typeof subdocMap.forEach === "function") {
-        subdocMap.forEach((subdoc: any, key: any) => {
-          try {
-            const handler = (subdoc as any).__subdocUpdateHandler;
-            if (handler && typeof subdoc.off === "function") {
-              subdoc.off("update", handler);
-              delete (subdoc as any).__subdocUpdateHandler;
-            }
-          } catch (e) {
-            // best-effort: log and continue
-            logger.debug(`failed to remove subdoc handler for ${key}: ${e}`);
-          }
-        });
-      }
+      await persistencePostgresql.writeState(doc.name, doc);
     } catch (e) {
-      logger.debug("error while removing subdoc handlers on closeConn", e);
-    }
-    if (doc.conns.size === 0 && persistencePostgresql !== null) {
-      cleanupHistoryDocForProject(doc.name);
-      // if persisted, we store state and destroy ydocument
-      persistencePostgresql.writeState(doc.name, doc).then(() => {
-        doc.destroy();
-      });
-      docs.delete(doc.name);
-      clearSubdocsForRootDoc(doc.name);
+      logger.error(`failed to persist state while closing doc=${doc.name}`, e);
     }
   }
+  if (doc.conns.size > 0 || docs.get(doc.name) !== doc) return;
+
+  try {
+    const subdocMap = (doc.getMap && doc.getMap("texhubsubdoc")) || null;
+    if (subdocMap && typeof subdocMap.forEach === "function") {
+      subdocMap.forEach((subdoc: any, key: any) => {
+        try {
+          const handler = (subdoc as any).__subdocUpdateHandler;
+          if (handler && typeof subdoc.off === "function") {
+            subdoc.off("update", handler);
+            delete (subdoc as any).__subdocUpdateHandler;
+          }
+        } catch (e) {
+          logger.debug(`failed to remove subdoc handler for ${key}: ${e}`);
+        }
+      });
+    }
+  } catch (e) {
+    logger.debug("error while removing subdoc handlers on closeConn", e);
+  }
+  doc.destroy();
+  docs.delete(doc.name);
+  clearSubdocsForRootDoc(doc.name);
 };
 
 export const sendWithType = async (
@@ -137,13 +151,13 @@ export const sendWithType = async (
       conn.send(m);
     } else {
       logger.warn("sendWithType connection state is not open, doc:" + doc.name);
-      closeConn(doc, conn);
+      await closeConn(doc, conn);
     }
   } catch (e) {
     const decoder = new TextDecoder("utf-8");
     const text = decoder.decode(m);
     logger.error("send message facing error,text:" + text, e);
-    closeConn(doc, conn);
+    await closeConn(doc, conn);
   }
 };
 
@@ -160,13 +174,13 @@ export const sendPure = async (
       logger.warn("sendPure connection state is not open, doc:" + doc.name);
       console.trace();
       conn.send(msg);
-      closeConn(doc, conn);
+      await closeConn(doc, conn);
     }
   } catch (e) {
     const decoder = new TextDecoder("utf-8");
     const text = decoder.decode(msg);
     logger.error("send message facing error,text:" + text, e);
-    closeConn(doc, conn);
+    await closeConn(doc, conn);
   }
 };
 
@@ -187,13 +201,13 @@ export const send = async (
           ",file info:" +
           JSON.stringify(syncFileAttr)
       );
-      closeConn(doc, conn);
+      await closeConn(doc, conn);
     }
   } catch (e) {
     const decoder = new TextDecoder("utf-8");
     const text = decoder.decode(msg);
     logger.error("send message facing error,text:" + text, e);
-    closeConn(doc, conn);
+    await closeConn(doc, conn);
   }
 };
 
@@ -213,17 +227,27 @@ export const emitSyncAck = (
   }
 };
 
+export const emitSyncNack = (
+  conn: Socket,
+  doc: string,
+  seq: number,
+  reason: string
+) => {
+  try {
+    conn.emit("sync:nack", { doc, seq, reason });
+  } catch (e) {
+    logger.error(`emit sync:nack failed for doc=${doc} seq=${seq}`, e);
+  }
+};
+
+type SyncUpdateMarker = {
+  doc: string;
+  status: "applied" | "failed";
+  reason?: string;
+};
+
 type SyncAckState = {
-  /**
-   * FIFO：本连接上"已应用但尚未被 sync:ack_req 消费"的文档名。
-   * Socket.IO 对同一连接上的 message（二进制帧）与自定义事件保序，
-   * 因此每个 sync:ack_req 与排在前面的应用标记一一对应，按序消费即可。
-   */
-  applied: string[];
-  /**
-   * ack_req 已达而对应应用标记未到（极少数乱序兜底）时先挂起，
-   * 下次 markDocUpdateApplied 时再排空。
-   */
+  updates: SyncUpdateMarker[];
   pending: Array<{ doc: string; seq: number }>;
 };
 
@@ -231,51 +255,79 @@ const getSyncAckState = (conn: Socket): SyncAckState => {
   const key = "__syncAckState";
   const existing = (conn as any)[key];
   if (existing) return existing as SyncAckState;
-  const state: SyncAckState = { applied: [], pending: [] };
+  const state: SyncAckState = { updates: [], pending: [] };
   (conn as any)[key] = state;
   return state;
 };
 
-const consumeOneApplied = (conn: Socket): string | null => {
-  const state = getSyncAckState(conn);
-  if (state.pending.length > 0) return null;
-  return state.applied.shift() ?? null;
+const emitSyncMarker = (
+  conn: Socket,
+  doc: string,
+  seq: number,
+  marker: SyncUpdateMarker
+) => {
+  if (marker.status === "failed") {
+    emitSyncNack(conn, doc, seq, marker.reason || "apply_failed");
+    return;
+  }
+  emitSyncAck(conn, doc, seq);
 };
 
-/**
- * 服务端在成功应用完一条 Yjs update 后调用，把该 doc 加入 ACK FIFO。
- * 若此前有挂起的 ack_req（乱序兜底），顺便排空。
- */
+const addSyncMarker = (
+  conn: Socket,
+  doc: string,
+  marker: SyncUpdateMarker
+) => {
+  const state = getSyncAckState(conn);
+  const pendingIndex = state.pending.findIndex((request) => request.doc === doc);
+  if (pendingIndex >= 0) {
+    const request = state.pending.splice(pendingIndex, 1)[0];
+    emitSyncMarker(conn, request.doc, request.seq, marker);
+    return;
+  }
+  state.updates.push(marker);
+};
+
 export const markDocUpdateApplied = (conn: Socket, doc: string) => {
   if (!conn) return;
-  const state = getSyncAckState(conn);
-  state.applied.push(doc);
-  while (state.pending.length > 0) {
-    const req = state.pending.shift()!;
-    emitSyncAck(conn, req.doc, req.seq);
-  }
+  addSyncMarker(conn, doc, { doc, status: "applied" });
 };
 
-/**
- * 处理客户端 `sync:ack_req { doc, seq }`：
- * 同一连接上 ack_req 紧跟在对应 update 帧之后（Socket.IO 保序），
- * 从 FIFO 里消费一个已应用标记，用 ack_req 携带的 seq 回 `sync:ack`。
- */
+export const markDocUpdateFailed = (
+  conn: Socket,
+  doc: string,
+  reason: string
+) => {
+  if (!conn) return;
+  addSyncMarker(conn, doc, { doc, status: "failed", reason });
+};
+
 export const handleSyncAckReq = (conn: Socket, payload: any) => {
   if (!conn) return;
   const doc = payload && payload.doc;
   const seq = payload && payload.seq;
-  if (!doc || typeof seq !== "number") {
+  if (
+    typeof doc !== "string" ||
+    !doc ||
+    typeof seq !== "number" ||
+    !Number.isSafeInteger(seq) ||
+    seq <= 0
+  ) {
     logger.warn("invalid sync:ack_req payload", payload);
     return;
   }
-  const state = getSyncAckState(conn);
-  const applied = consumeOneApplied(conn);
-  if (applied !== null) {
-    emitSyncAck(conn, doc, seq);
+  const syncDocs = (conn as any).__syncDocs as Set<string> | undefined;
+  if (syncDocs && !syncDocs.has(doc)) {
+    logger.warn("sync:ack_req for unknown document", payload);
     return;
   }
-  // 应用标记尚未到达（乱序）：挂起，等下一次应用成功后补回执
+  const state = getSyncAckState(conn);
+  const markerIndex = state.updates.findIndex((marker) => marker.doc === doc);
+  if (markerIndex >= 0) {
+    const marker = state.updates.splice(markerIndex, 1)[0];
+    emitSyncMarker(conn, doc, seq, marker);
+    return;
+  }
   state.pending.push({ doc, seq });
 };
 
@@ -297,7 +349,8 @@ const logSubDocRawMessage = (message: Uint8Array) => {
 export const messageListener = async (
   conn: Socket,
   rootDoc: WSSharedDoc,
-  message: Uint8Array
+  message: Uint8Array,
+  syncFileAttr?: SyncFileAttr
 ) => {
   try {
     const encoder = encoding.createEncoder();
@@ -311,22 +364,66 @@ export const messageListener = async (
          */
         await handleSubDocMsg(rootDoc, conn, decoder);
         break;
-      case SyncMessageType.MessageSync:
+      case SyncMessageType.MessageSync: {
         encoding.writeVarUint(encoder, messageSync);
-        const hasContent = decoding.hasContent(decoder);
-        syncProtocol.readSyncMessage(decoder, encoder, rootDoc, conn);
-        if (hasContent) {
-          // P0 Outbox ACK：该连接上已成功应用一条根文档 update，写入 ACK FIFO
-          markDocUpdateApplied(conn, rootDoc.name);
+        const updatePayload = readYjsUpdatePayload(decoder);
+        const tracker = persistencePostgresql
+          ? beginYDocUpdateTracking(conn, rootDoc)
+          : null;
+        let syncError: Error | null = null;
+        try {
+          const syncMessageType = syncProtocol.readSyncMessage(
+            decoder,
+            encoder,
+            rootDoc,
+            conn,
+            (error: Error) => {
+              syncError = error;
+            }
+          );
+          if (syncMessageType === syncProtocol.messageYjsUpdate) {
+            let persisted = true;
+            if (persistencePostgresql) {
+              if (tracker?.observed) {
+                persisted = await tracker.promise;
+              } else {
+                cancelYDocUpdateTracking(conn, tracker);
+                if (!updatePayload || !syncFileAttr) {
+                  persisted = false;
+                } else {
+                  persisted = await handleYDocUpdate(
+                    updatePayload,
+                    rootDoc,
+                    syncFileAttr
+                  );
+                }
+              }
+            }
+            if (syncError === null && persisted) {
+              markDocUpdateApplied(conn, rootDoc.name);
+            } else {
+              markDocUpdateFailed(
+                conn,
+                rootDoc.name,
+                syncError ? "apply_failed" : "persist_failed"
+              );
+            }
+          } else {
+            cancelYDocUpdateTracking(conn, tracker);
+          }
+        } catch (error) {
+          cancelYDocUpdateTracking(conn, tracker);
+          if (updatePayload) {
+            markDocUpdateFailed(conn, rootDoc.name, "apply_failed");
+          }
+          logger.error("root sync message failed", error);
         }
 
-        // If the `encoder` only contains the type of reply message and no
-        // message, there is no need to send the message. When `encoder` only
-        // contains the type of reply, its length is 1.
         if (encoding.length(encoder) > 1) {
-          sendPure(rootDoc, conn, encoding.toUint8Array(encoder));
+          await sendPure(rootDoc, conn, encoding.toUint8Array(encoder));
         }
         break;
+      }
       case SyncMessageType.MessageAwareness: {
         awarenessProtocol.applyAwarenessUpdate(
           rootDoc.awareness,

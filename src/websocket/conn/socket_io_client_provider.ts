@@ -36,8 +36,29 @@ import { outbox, OutboxEntryType } from "@/common/outbox/outbox.js";
 
 // @todo - this should depend on awareness.outdatedTime
 const messageReconnectTimeout = 30000;
+const syncAckTimeout = 10000;
+const syncMaxRetries = 3;
+const syncRetryBaseDelayMs = 1000;
+const syncRetryMaxDelayMs = 30000;
+
+type SyncStatusPayload = {
+  doc: string;
+  seq: number;
+  state: "pending" | "synced" | "failed";
+  pending: number;
+  reason?: string;
+};
 
 type YDocUpdateHandler = (update: any, origin: any) => void;
+type OutboxFrame = Uint8Array | ((seq: number) => Uint8Array);
+type DeferredOutboxEnqueue = {
+  docName: string;
+  update: Uint8Array;
+  type: OutboxEntryType;
+  frame: OutboxFrame;
+  askAck: boolean;
+  seq?: number;
+};
 
 type UpdateHandlerFactory = (id: string) => YDocUpdateHandler;
 
@@ -77,6 +98,17 @@ export class SocketIOClientProvider extends Observable<string> {
   ) => void;
   _unloadHandler: () => void;
   _checkInterval: NodeJS.Timeout;
+  private outboxSendTail: Promise<void>;
+  private ackTimers: Map<string, ReturnType<typeof setTimeout>>;
+  private ackRetryTimers: Map<string, ReturnType<typeof setTimeout>>;
+  private ackAttempts: Map<string, number>;
+  private outboxEnqueueTimers: Map<string, ReturnType<typeof setTimeout>>;
+  private outboxEnqueueAttempts: Map<string, number>;
+  private outboxEnqueueDeferred: Map<string, DeferredOutboxEnqueue>;
+  private outboxEnqueueDeferredTimer: ReturnType<typeof setTimeout> | null;
+  private outboxEnqueueId: number;
+  private outboxRefreshTimer: ReturnType<typeof setTimeout> | null;
+  private outboxRefreshAttempts: number;
   subdocUpdateHandlersMap: Map<string, YDocUpdateHandler>;
   subdocUpdateHandler: UpdateHandlerFactory;
   updateHandler: (update: any, origin: any) => void;
@@ -129,6 +161,17 @@ export class SocketIOClientProvider extends Observable<string> {
     this.disableBc = disableBc;
     this.wsUnsuccessfulReconnects = 0;
     this.messageHandlers = messageHandlers.slice();
+    this.outboxSendTail = Promise.resolve();
+    this.ackTimers = new Map();
+    this.ackRetryTimers = new Map();
+    this.ackAttempts = new Map();
+    this.outboxEnqueueTimers = new Map();
+    this.outboxEnqueueAttempts = new Map();
+    this.outboxEnqueueDeferred = new Map();
+    this.outboxEnqueueDeferredTimer = null;
+    this.outboxEnqueueId = 0;
+    this.outboxRefreshTimer = null;
+    this.outboxRefreshAttempts = 0;
     /**
      * @type {boolean}
      */
@@ -268,23 +311,12 @@ export class SocketIOClientProvider extends Observable<string> {
      * @returns
      */
     this.subdocUpdateHandler = (id: string) => {
-      let result = (update: any, origin: any) => {
+      let result = async (update: any, origin: any) => {
         console.log("trigger subdocUpdateHandler");
         if (origin === this) return;
-        const encoder = encoding.createEncoder();
-        encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
-        const uniqueValue = uuidv4();
-        const seq = this.nextSeq(id);
-        let msg: SyncMessageContext = {
-          doc_name: id,
-          src: "subdocUpdateHandler",
-          trace_id: uniqueValue,
-          seq: seq,
-        };
-        let msgStr = JSON.stringify(msg);
-        encoding.writeVarString(encoder, msgStr);
-        syncProtocol.writeUpdate(encoder, update);
-        this.sendWithOutbox(id, update, "subdoc", encoding.toUint8Array(encoder), false, seq);
+        const frame = (seq: number) =>
+          this.buildSubdocUpdateFrame(id, update, seq, "subdocUpdateHandler");
+        await this.sendWithOutbox(id, update, "subdoc", frame, false);
       };
       return result;
     };
@@ -325,7 +357,7 @@ export class SocketIOClientProvider extends Observable<string> {
     }
 
     // 新的 update handler
-    const newHandler = (update: any, origin: any) => {
+    const newHandler = async (update: any, origin: any) => {
       console.log(
         `[subdoc update] guid=${subdoc.guid}, origin=`,
         origin,
@@ -333,30 +365,15 @@ export class SocketIOClientProvider extends Observable<string> {
         update
       );
       if (origin === this) return;
-      const encoder = encoding.createEncoder();
-      encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
-      const uniqueValue = uuidv4();
-      const seq = this.nextSeq(subdoc.guid);
-      let msg: SyncMessageContext = {
-        doc_name: subdoc.guid,
-        src: "subdocUpdateHandler",
-        trace_id: uniqueValue,
-        seq: seq,
-      };
-      let msgStr = JSON.stringify(msg);
-      encoding.writeVarString(encoder, msgStr);
-      syncProtocol.writeUpdate(encoder, update);
-      this.sendWithOutbox(
-        subdoc.guid,
-        update,
-        "subdoc",
-        encoding.toUint8Array(encoder),
-        false,
-        seq
-      );
-      console.log(
-        `[subdoc update] handler已广播: guid=${subdoc.guid}, trace_id=${uniqueValue}, seq=${seq}`
-      );
+      const frame = (seq: number) =>
+        this.buildSubdocUpdateFrame(
+          subdoc.guid,
+          update,
+          seq,
+          "subdocUpdateHandler"
+        );
+      await this.sendWithOutbox(subdoc.guid, update, "subdoc", frame, false);
+      console.log(`[subdoc update] handler已提交: guid=${subdoc.guid}`);
     };
     // 注册新的 handler
     // @ts-ignore
@@ -382,6 +399,9 @@ export class SocketIOClientProvider extends Observable<string> {
     console.log(
       `[addSubdoc] sync step1已广播: guid=${subdoc.guid}, trace_id=${uniqueValue}`
     );
+    if (this.wsconnected && this.ws?.connected) {
+      void this.replayOutbox(this.ws, subdoc.guid);
+    }
   }
 
   /**
@@ -498,32 +518,285 @@ export class SocketIOClientProvider extends Observable<string> {
   /**
    * P0 Outbox：为 doc 分配下一个单调 seq（IndexedDB 持久化，跨会话不重置）。
    */
-  nextSeq(doc: string): number {
+  nextSeq(doc: string): Promise<number> {
     return outbox.nextSeq(doc);
   }
 
-  /**
-   * P0 Outbox：把本地产生的 Yjs update 先入 Outbox，再走原 broadcastMessage 发送链路。
-   * root 类型（MessageSync 帧不含上下文）额外发 `sync:ack_req` 请求回执；
-   * subdoc 类型已把 seq 内嵌进帧上下文，由服务端应用成功后直接回 `sync:ack`。
-   */
+  private syncKey(doc: string, seq: number): string {
+    return `${doc}:${seq}`;
+  }
+
+  private emitSyncStatus(payload: SyncStatusPayload) {
+    // @ts-ignore
+    this.emit("sync:status", [payload]);
+  }
+
+  private clearAckTracking(doc: string, seq: number) {
+    const key = this.syncKey(doc, seq);
+    const timer = this.ackTimers.get(key);
+    if (timer) {
+      clearTimeout(timer);
+      this.ackTimers.delete(key);
+    }
+    const retryTimer = this.ackRetryTimers.get(key);
+    if (retryTimer) {
+      clearTimeout(retryTimer);
+      this.ackRetryTimers.delete(key);
+    }
+  }
+
+  private scheduleOutboxReplay(doc: string, seq: number, reason: string) {
+    const key = this.syncKey(doc, seq);
+    if (this.ackRetryTimers.has(key)) return;
+    const attempts = (this.ackAttempts.get(key) || 0) + 1;
+    this.ackAttempts.set(key, attempts);
+    if (attempts >= syncMaxRetries) {
+      this.emitSyncStatus({
+        doc,
+        seq,
+        state: "failed",
+        pending: outbox.getUnackedCount(doc),
+        reason: "retry_exhausted",
+      });
+      return;
+    }
+    this.emitSyncStatus({
+      doc,
+      seq,
+      state: "failed",
+      pending: outbox.getUnackedCount(doc),
+      reason,
+    });
+    const delay = Math.min(
+      syncRetryBaseDelayMs * Math.pow(2, attempts - 1),
+      syncRetryMaxDelayMs
+    );
+    const timer = setTimeout(() => {
+      this.ackRetryTimers.delete(key);
+      if (this.wsconnected && this.ws?.connected) {
+        void this.replayOutbox(this.ws);
+      }
+    }, delay);
+    this.ackRetryTimers.set(key, timer);
+  }
+
+  private trackAck(doc: string, seq: number) {
+    if (!this.wsconnected || !this.ws || !this.ws.connected) {
+      return;
+    }
+    const key = this.syncKey(doc, seq);
+    this.clearAckTracking(doc, seq);
+    const timer = setTimeout(() => {
+      this.ackTimers.delete(key);
+      this.scheduleOutboxReplay(doc, seq, "ack_timeout");
+    }, syncAckTimeout);
+    this.ackTimers.set(key, timer);
+  }
+
+  private scheduleDeferredOutboxRetry(): void {
+    if (
+      this.outboxEnqueueDeferredTimer ||
+      this.outboxEnqueueDeferred.size === 0
+    ) {
+      return;
+    }
+    this.outboxEnqueueDeferredTimer = setTimeout(() => {
+      this.outboxEnqueueDeferredTimer = null;
+      for (const [key, item] of this.outboxEnqueueDeferred) {
+        this.outboxEnqueueDeferred.delete(key);
+        this.outboxEnqueueAttempts.delete(key);
+        void this.sendWithOutbox(
+          item.docName,
+          item.update,
+          item.type,
+          item.frame,
+          item.askAck,
+          item.seq,
+          key
+        );
+      }
+      this.scheduleDeferredOutboxRetry();
+    }, syncRetryMaxDelayMs);
+  }
+
+  private flushDeferredOutboxEnqueues(): void {
+    if (this.outboxEnqueueDeferred.size === 0) return;
+    if (this.outboxEnqueueDeferredTimer) {
+      clearTimeout(this.outboxEnqueueDeferredTimer);
+      this.outboxEnqueueDeferredTimer = null;
+    }
+    for (const [key, item] of this.outboxEnqueueDeferred) {
+      this.outboxEnqueueDeferred.delete(key);
+      this.outboxEnqueueAttempts.delete(key);
+      void this.sendWithOutbox(
+        item.docName,
+        item.update,
+        item.type,
+        item.frame,
+        item.askAck,
+        item.seq,
+        key
+      );
+    }
+  }
+
+  private scheduleOutboxEnqueueRetry(
+    key: string,
+    docName: string,
+    update: Uint8Array,
+    type: OutboxEntryType,
+    frame: OutboxFrame,
+    askAck: boolean,
+    seq?: number
+  ): void {
+    if (this.outboxEnqueueTimers.has(key)) return;
+    const attempts = (this.outboxEnqueueAttempts.get(key) || 0) + 1;
+    if (attempts >= syncMaxRetries) {
+      this.outboxEnqueueAttempts.delete(key);
+      this.outboxEnqueueDeferred.set(key, {
+        docName,
+        update,
+        type,
+        frame,
+        askAck,
+        seq,
+      });
+      this.emitSyncStatus({
+        doc: docName,
+        seq: seq ?? 0,
+        state: "failed",
+        pending: outbox.getUnackedCount(docName),
+        reason: "retry_exhausted",
+      });
+      this.scheduleDeferredOutboxRetry();
+      return;
+    }
+    this.outboxEnqueueAttempts.set(key, attempts);
+    const delay = Math.min(
+      syncRetryBaseDelayMs * Math.pow(2, attempts - 1),
+      syncRetryMaxDelayMs
+    );
+    const timer = setTimeout(() => {
+      this.outboxEnqueueTimers.delete(key);
+      void this.sendWithOutbox(
+        docName,
+        update,
+        type,
+        frame,
+        askAck,
+        seq,
+        key
+      );
+    }, delay);
+    this.outboxEnqueueTimers.set(key, timer);
+  }
+
   sendWithOutbox(
     docName: string,
     update: Uint8Array,
     type: OutboxEntryType,
-    frame: Uint8Array,
+    frame: OutboxFrame,
     askAck: boolean,
-    seq?: number
-  ) {
-    const outboxSeq = seq ?? this.nextSeq(docName);
-    outbox
-      .enqueue({ doc: docName, seq: outboxSeq, type, update })
-      .catch((e) => console.error("outbox enqueue failed", e));
-    // 原发送链路（ws 连接时直连发送 + 跨标签页 bc 广播）
-    broadcastMessage(this, frame);
-    if (askAck && this.wsconnected && this.ws && this.ws.connected) {
-      this.ws.emit("sync:ack_req", { doc: docName, seq: outboxSeq });
-    }
+    seq?: number,
+    retryKey?: string
+  ): Promise<void> {
+    const key =
+      retryKey ||
+      `${docName}:${seq === undefined ? `new-${++this.outboxEnqueueId}` : seq}`;
+    const task = this.outboxSendTail.then(async () => {
+      try {
+        await outbox.init();
+      } catch (e) {
+        console.error("outbox initialization failed", e);
+        this.emitSyncStatus({
+          doc: docName,
+          seq: seq ?? 0,
+          state: "failed",
+          pending: outbox.getUnackedCount(docName),
+          reason: "outbox_error",
+        });
+        this.scheduleOutboxEnqueueRetry(
+          key,
+          docName,
+          update,
+          type,
+          frame,
+          askAck,
+          seq
+        );
+        return;
+      }
+      let outboxSeq: number;
+      try {
+        if (seq === undefined) {
+          outboxSeq = await outbox.enqueueNext({ doc: docName, type, update });
+        } else {
+          await outbox.enqueue({ doc: docName, seq, type, update });
+          outboxSeq = seq;
+        }
+      } catch (e) {
+        console.error("outbox enqueue failed", e);
+        this.emitSyncStatus({
+          doc: docName,
+          seq: seq ?? 0,
+          state: "failed",
+          pending: outbox.getUnackedCount(docName),
+          reason: "outbox_error",
+        });
+        this.scheduleOutboxEnqueueRetry(
+          key,
+          docName,
+          update,
+          type,
+          frame,
+          askAck,
+          seq
+        );
+        return;
+      }
+      let outboxFrame: Uint8Array;
+      try {
+        outboxFrame = typeof frame === "function" ? frame(outboxSeq) : frame;
+      } catch (e) {
+        console.error("outbox frame construction failed", e);
+        const enqueueTimer = this.outboxEnqueueTimers.get(key);
+        if (enqueueTimer) {
+          clearTimeout(enqueueTimer);
+          this.outboxEnqueueTimers.delete(key);
+        }
+        this.outboxEnqueueAttempts.delete(key);
+        this.outboxEnqueueDeferred.delete(key);
+        this.trackAck(docName, outboxSeq);
+        this.emitSyncStatus({
+          doc: docName,
+          seq: outboxSeq,
+          state: "failed",
+          pending: outbox.getUnackedCount(docName),
+          reason: "frame_error",
+        });
+        return;
+      }
+      const enqueueTimer = this.outboxEnqueueTimers.get(key);
+      if (enqueueTimer) {
+        clearTimeout(enqueueTimer);
+        this.outboxEnqueueTimers.delete(key);
+      }
+      this.outboxEnqueueAttempts.delete(key);
+      this.outboxEnqueueDeferred.delete(key);
+      this.emitSyncStatus({
+        doc: docName,
+        seq: outboxSeq,
+        state: "pending",
+        pending: outbox.getUnackedCount(docName),
+      });
+      this.trackAck(docName, outboxSeq);
+      broadcastMessage(this, outboxFrame);
+      if (askAck && this.wsconnected && this.ws && this.ws.connected) {
+        this.ws.emit("sync:ack_req", { doc: docName, seq: outboxSeq });
+      }
+    });
+    this.outboxSendTail = task.catch(() => undefined);
+    return task;
   }
 
   /**
@@ -600,25 +873,117 @@ export class SocketIOClientProvider extends Observable<string> {
     this._staleProbePendingAt = 0;
   }
 
-  /**
-   * 处理服务端 `sync:ack { doc, seq }`：从 Outbox 删除已确认条目。
-   */
   handleSyncAck(payload: any) {
     const doc = payload && payload.doc;
     const seq = payload && payload.seq;
-    if (!doc || typeof seq !== "number") return;
-    outbox
+    if (
+      typeof doc !== "string" ||
+      typeof seq !== "number" ||
+      !Number.isSafeInteger(seq) ||
+      seq <= 0 ||
+      (doc !== this.roomname && !this.docs.has(doc))
+    ) {
+      return;
+    }
+    void outbox
       .ack(doc, seq)
-      .catch((e) => console.error("outbox ack failed", e));
+      .then(() => {
+        this.clearAckTracking(doc, seq);
+        this.ackAttempts.delete(this.syncKey(doc, seq));
+        this.emitSyncStatus({
+          doc,
+          seq,
+          state: "synced",
+          pending: outbox.getUnackedCount(doc),
+        });
+      })
+      .catch((e) => {
+        console.error("outbox ack failed", e);
+        this.clearAckTracking(doc, seq);
+        this.scheduleOutboxReplay(doc, seq, "outbox_ack_error");
+      });
+  }
+
+  handleSyncNack(payload: any) {
+    const doc = payload && payload.doc;
+    const seq = payload && payload.seq;
+    if (
+      typeof doc !== "string" ||
+      typeof seq !== "number" ||
+      !Number.isSafeInteger(seq) ||
+      seq <= 0 ||
+      (doc !== this.roomname && !this.docs.has(doc))
+    ) {
+      return;
+    }
+    this.clearAckTracking(doc, seq);
+    this.scheduleOutboxReplay(doc, seq, payload.reason || "server_nack");
+  }
+
+  getUnackedCount(doc?: string): number {
+    return outbox.getUnackedCount(doc);
   }
 
   /**
    * 重连时重放 Outbox 中未确认的 update（保证服务端拿到最新），再交由调用方发起
    * sync step1 对账。重放帧与原始帧完全一致（含原始 seq），服务端幂等消费安全。
    */
-  async replayOutbox(socketio: Socket): Promise<void> {
-    await outbox.init().catch(() => {});
-    const entries = outbox.getUnacked();
+  private scheduleOutboxRefreshRetry(
+    socketio: Socket,
+    docName?: string
+  ): void {
+    if (this.outboxRefreshTimer) return;
+    this.outboxRefreshAttempts += 1;
+    if (this.outboxRefreshAttempts > syncMaxRetries) {
+      this.emitSyncStatus({
+        doc: docName || this.roomname,
+        seq: 0,
+        state: "failed",
+        pending: outbox.getUnackedCount(docName),
+        reason: "retry_exhausted",
+      });
+      return;
+    }
+    const delay = Math.min(
+      syncRetryBaseDelayMs * Math.pow(2, this.outboxRefreshAttempts - 1),
+      syncRetryMaxDelayMs
+    );
+    this.outboxRefreshTimer = setTimeout(() => {
+      this.outboxRefreshTimer = null;
+      if (socketio.connected) {
+        void this.replayOutbox(socketio, docName, true);
+      }
+    }, delay);
+  }
+
+  async replayOutbox(
+    socketio: Socket,
+    docName?: string,
+    retrying = false
+  ): Promise<void> {
+    if (!retrying) {
+      this.outboxRefreshAttempts = 0;
+      if (this.outboxRefreshTimer) {
+        clearTimeout(this.outboxRefreshTimer);
+        this.outboxRefreshTimer = null;
+      }
+    }
+    await this.outboxSendTail.catch(() => undefined);
+    try {
+      await outbox.refresh();
+    } catch (e) {
+      console.error("outbox refresh failed", e);
+      this.scheduleOutboxRefreshRetry(socketio, docName);
+      return;
+    }
+    this.outboxRefreshAttempts = 0;
+    const entries = outbox
+      .getUnacked()
+      .filter((entry) =>
+        docName
+          ? entry.doc === docName
+          : entry.doc === this.roomname || this.docs.has(entry.doc)
+      );
     if (entries.length === 0) return;
     for (const entry of entries) {
       try {
@@ -631,6 +996,13 @@ export class SocketIOClientProvider extends Observable<string> {
           syncProtocol.writeUpdate(encoder, entry.update);
           frame = encoding.toUint8Array(encoder);
         }
+        this.emitSyncStatus({
+          doc: entry.doc,
+          seq: entry.seq,
+          state: "pending",
+          pending: outbox.getUnackedCount(entry.doc),
+        });
+        this.trackAck(entry.doc, entry.seq);
         socketio.send(frame);
         if (entry.type === "root") {
           socketio.emit("sync:ack_req", { doc: entry.doc, seq: entry.seq });
@@ -648,14 +1020,15 @@ export class SocketIOClientProvider extends Observable<string> {
   buildSubdocUpdateFrame(
     docName: string,
     update: Uint8Array,
-    seq: number
+    seq: number,
+    src = "outboxReplay"
   ): Uint8Array {
     const encoder = encoding.createEncoder();
     encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
     const uniqueValue = uuidv4();
     let msg: SyncMessageContext = {
       doc_name: docName,
-      src: "outboxReplay",
+      src,
       trace_id: uniqueValue,
       seq: seq,
     };
@@ -667,7 +1040,9 @@ export class SocketIOClientProvider extends Observable<string> {
 
   connect() {
     this.shouldConnect = true;
+    this.flushDeferredOutboxEnqueues();
     if (!this.wsconnected || this.ws === null || this.ws === undefined) {
+      this.ackAttempts.clear();
       setupWebsocket(this);
       this.connectBc();
     }

@@ -45,6 +45,9 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
     socketio.on("sync:ack", (payload: any) => {
       provider.handleSyncAck(payload);
     });
+    socketio.on("sync:nack", (payload: any) => {
+      provider.handleSyncNack(payload);
+    });
     // additional lifecycle listeners to help debug disconnect reasons
     socketio.on("disconnect", (reason: any) => {
       try {

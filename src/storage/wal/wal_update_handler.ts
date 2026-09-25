@@ -5,7 +5,10 @@ import { TeXFileType } from "@/model/enum/tex_file_type.js";
 import { getTexFileInfo } from "@/storage/appfile.js";
 import { FileContent } from "@/model/texhub/file_content.js";
 import { Persistence } from "@/model/yjs/Persistence.js";
-import { storeUpdate } from "@/storage/adapter/postgresql/postgresql_operation.js";
+import {
+  STORE_UPDATE_DEDUP,
+  storeUpdate,
+} from "@/storage/adapter/postgresql/postgresql_operation.js";
 
 /**
  * Redis Stream 预写日志（WAL）——P0 消息可靠性优化（docs/design/message-reliable.md §5.1）。
@@ -56,7 +59,7 @@ export const appendUpdateToWAL = async (
   if (!redis) {
     // Redis 不可用：退化为直接落库，保证不丢
     const clock = await storeUpdate(syncFileAttr, update);
-    return clock >= 0;
+    return clock >= 0 || clock === STORE_UPDATE_DEDUP;
   }
 
   let fileInfo: FileContent | null = null;
@@ -81,6 +84,7 @@ export const appendUpdateToWAL = async (
   const stream = walStreamName(syncFileAttr.docName);
   const updateBase64 = Buffer.from(update as any).toString("base64");
   try {
+    await redis.sadd(REGISTRY_KEY, syncFileAttr.docName);
     await redis.xadd(
       stream,
       "*",
@@ -92,17 +96,13 @@ export const appendUpdateToWAL = async (
       "src", syncFileAttr.src || "wal",
       "update", updateBase64
     );
-    // 登记到 registry，供 Worker 扫描动态 Stream
-    await redis.sadd(REGISTRY_KEY, syncFileAttr.docName).catch((e) => {
-      logger.warn("sadd wal registry failed", e);
-    });
     return true;
   } catch (error) {
     logger.error(`appendUpdateToWAL XADD failed for ${stream}`, error);
     // 降级：直接落库，尽力不丢
     try {
       const clock = await storeUpdate(syncFileAttr, update);
-      return clock >= 0;
+      return clock >= 0 || clock === STORE_UPDATE_DEDUP;
     } catch (e2) {
       logger.error("appendUpdateToWAL fallback storeUpdate failed", e2);
     }
@@ -212,12 +212,11 @@ const processEntries = async (
         continue;
       }
       const update = new Uint8Array(Buffer.from(updateBase64, "base64"));
-      // storeUpdate 幂等：-1=已落库(dup)，>0=已落库(clock+1)，0=锁失败/异常(保留 pending 重试)
       const result = await storeUpdate(syncFileAttr, update);
-      if (result === -1 || result > 0) {
+      if (result === STORE_UPDATE_DEDUP || result >= 0) {
         await redis!.xack(stream, GROUP, item.id);
       } else {
-        logger.warn("[wal] storeUpdate returned 0, keep pending for retry", {
+        logger.warn("[wal] storeUpdate failed, keep pending for retry", {
           stream,
           id: item.id,
           doc: syncFileAttr.docName,
@@ -363,10 +362,58 @@ export const startWALWorker = (opts: WalWorkerOptions = {}): void => {
 };
 
 /**
- * 等待某文档的 WAL 消费完成（XPENDING == 0）。
+ * 等待某文档的 WAL 消费完成。
+ * 需同时满足 XPENDING == 0、消费组 lag == 0（或 last-delivered-id 覆盖 stream 末条），
+ * 否则未投递的 entry 可能被 XTRIM 丢弃。
+ * 消费组不存在（未创建或已销毁）时，只要 stream 为空即视为排空。
  * 供 writeState / waitDocUpdateStable / 编译前强一致使用。
  * 返回 false 表示超时仍未排空。
  */
+const streamIdParts = (value: unknown): [bigint, bigint] | null => {
+  const match = /^(\d+)-(\d+)$/.exec(String(value));
+  if (!match) return null;
+  return [BigInt(match[1]), BigInt(match[2])];
+};
+
+const compareStreamIds = (
+  left: unknown,
+  right: unknown
+): number | null => {
+  const leftParts = streamIdParts(left);
+  const rightParts = streamIdParts(right);
+  if (!leftParts || !rightParts) return null;
+  if (
+    leftParts[0] < rightParts[0] ||
+    (leftParts[0] === rightParts[0] && leftParts[1] < rightParts[1])
+  ) {
+    return -1;
+  }
+  if (
+    leftParts[0] > rightParts[0] ||
+    (leftParts[0] === rightParts[0] && leftParts[1] > rightParts[1])
+  ) {
+    return 1;
+  }
+  return 0;
+};
+
+const findConsumerGroup = (groups: unknown): Record<string, any> | null => {
+  if (!Array.isArray(groups)) return null;
+  for (const raw of groups) {
+    if (Array.isArray(raw)) {
+      const fields: Record<string, any> = {};
+      for (let index = 0; index + 1 < raw.length; index += 2) {
+        fields[String(raw[index])] = raw[index + 1];
+      }
+      if (String(fields.name) === GROUP) return fields;
+    } else if (raw && typeof raw === "object") {
+      const fields = raw as Record<string, any>;
+      if (String(fields.name) === GROUP) return fields;
+    }
+  }
+  return null;
+};
+
 export const waitDocWALDrained = async (
   docName: string,
   timeoutMs: number = 30000
@@ -375,16 +422,69 @@ export const waitDocWALDrained = async (
   const stream = walStreamName(docName);
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
+    let pendingCount: number;
     try {
       const pending = await redis.xpending(stream, GROUP);
-      // 原始回复：[count, minId, maxId, [consumers...]]
-      const count = Array.isArray(pending) ? Number(pending[0] ?? 0) : 0;
-      if (count === 0) return true;
+      pendingCount = Array.isArray(pending) ? Number(pending[0] ?? 0) : 0;
     } catch (e: any) {
-      // Stream 或消费组尚不存在：视为已排空
       if (String(e?.message || e).indexOf("NOGROUP") !== -1) {
-        return true;
+        try {
+          if ((await redis.xlen(stream)) === 0) return true;
+        } catch (innerError) {
+          void innerError;
+        }
       }
+      await sleep(200);
+      continue;
+    }
+
+    if (pendingCount !== 0) {
+      await sleep(200);
+      continue;
+    }
+
+    let group: Record<string, any> | null = null;
+    try {
+      group = findConsumerGroup(await redis.xinfo("GROUPS", stream));
+    } catch (e: any) {
+      if (String(e?.message || e).indexOf("NOGROUP") === -1) {
+        void e;
+      }
+    }
+
+    if (!group) {
+      try {
+        if ((await redis.xlen(stream)) === 0) return true;
+      } catch (e) {
+        void e;
+      }
+      await sleep(200);
+      continue;
+    }
+
+    const lagValue = group.lag;
+    if (lagValue !== undefined && lagValue !== null) {
+      const lag = Number(lagValue);
+      if (Number.isFinite(lag) && lag > 0) {
+        await sleep(200);
+        continue;
+      }
+      if (Number.isFinite(lag) && lag === 0) return true;
+    }
+
+    const lastEntry = (await redis.xrevrange(
+      stream,
+      "+",
+      "-",
+      "COUNT",
+      1
+    )) as unknown as Array<[string, string[]]>;
+    const comparison = compareStreamIds(
+      lastEntry?.[0]?.[0],
+      group["last-delivered-id"]
+    );
+    if (lastEntry.length === 0 || (comparison !== null && comparison <= 0)) {
+      return true;
     }
     await sleep(200);
   }
