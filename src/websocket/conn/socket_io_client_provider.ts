@@ -62,6 +62,12 @@ export class SocketIOClientProvider extends Observable<string> {
   _synced: boolean;
   ws: Socket | null;
   wsLastMessageReceived: number;
+  // P1 §6.2：僵尸连接探测状态
+  _staleProbePendingAt: number;
+  _staleProbeAcked: boolean;
+  // P1 §6.3：会话一致性 serverEpoch
+  serverEpoch: number | null;
+  serverEpochChanged: boolean;
   shouldConnect: boolean;
   _resyncInterval: any;
   bcSubscriber: (data: any, origin: any) => void;
@@ -129,6 +135,17 @@ export class SocketIOClientProvider extends Observable<string> {
     this._synced = false;
     this.ws = null;
     this.wsLastMessageReceived = 0;
+    // P1（docs/design/message-reliable.md §6.3）：会话一致性 serverEpoch。
+    // 记录最近一次握手下发的 serverEpoch；若与本地缓存不一致，说明服务器重启，
+    // 内存态 Yjs doc / 房间成员 / Outbox 确认态全部失效，需完整对账。
+    this.serverEpoch = null;
+    this.serverEpochChanged = false;
+    // P1（docs/design/message-reliable.md §6.2）：僵尸连接治理状态。
+    // 连接超过 messageReconnectTimeout 无任何消息时进入 stale 窗口，先发探活
+    // probe 二次确认（避免误杀"在线但闲置"的连接），probe_ack 仍未收到才强制
+    // close 触发重连。
+    this._staleProbePendingAt = 0;
+    this._staleProbeAcked = true;
     /**
      * Whether to connect to other peers or not
      * @type {boolean}
@@ -234,9 +251,11 @@ export class SocketIOClientProvider extends Observable<string> {
           time.getUnixTime() - this.wsLastMessageReceived
       ) {
         // no message received in a long time - not even your own awareness
-        // updates (which are updated every 15 seconds)
-        /** @type {WebSocket} */
-        //this.ws.close();
+        // updates (which are updated every 15 seconds).
+        // P1（docs/design/message-reliable.md §6.2）：不再直接 close，先探活，
+        // 剔除真正的僵尸连接（网络黑洞/CPU 卡死），闲置但存活连接会收到 probe_ack
+        // 刷新 wsLastMessageReceived 而不会误杀。
+        this._staleProbeTick();
       }
     }, messageReconnectTimeout / 10);
     if (connect) {
@@ -505,6 +524,80 @@ export class SocketIOClientProvider extends Observable<string> {
     if (askAck && this.wsconnected && this.ws && this.ws.connected) {
       this.ws.emit("sync:ack_req", { doc: docName, seq: outboxSeq });
     }
+  }
+
+  /**
+   * P1（docs/design/message-reliable.md §6.3）：处理服务端握手下发的 serverEpoch。
+   * epoch 与本地缓存（localStorage）不一致 => 服务器已重启，标记 serverEpochChanged
+   * 并重置 _synced，由连接建立流程（重放 Outbox + sync step1）完成完整对账。
+   */
+  handleServerEpoch(payload: any) {
+    const epoch = payload && payload.epoch;
+    if (typeof epoch !== "number") return;
+    let cached: number | null = null;
+    try {
+      const raw = localStorage.getItem("texhub:server-epoch");
+      if (raw) cached = Number(raw);
+    } catch (e) {}
+    this.serverEpoch = epoch;
+    if (cached !== null && Number.isFinite(cached) && cached !== epoch) {
+      this.serverEpochChanged = true;
+      this._synced = false;
+      console.warn(
+        `[serverEpoch] server restarted: epoch ${cached} -> ${epoch}, triggering full resync`
+      );
+    }
+    try {
+      localStorage.setItem("texhub:server-epoch", String(epoch));
+    } catch (e) {}
+  }
+
+  /**
+   * P1（docs/design/message-reliable.md §6.2）：僵尸连接探测。
+   * 进入 stale 窗口时先发 probe 探活；10s 内未收到 probe_ack（会经
+   * markMessageReceived 刷新）则判定为僵尸连接，强制 close 触发指数退避重连。
+   */
+  private _staleProbeTick() {
+    if (!this.wsconnected || !this.ws || !this.ws.connected) {
+      this._staleProbePendingAt = 0;
+      this._staleProbeAcked = true;
+      return;
+    }
+    const now = time.getUnixTime();
+    if (this._staleProbeAcked) {
+      this._staleProbeAcked = false;
+      this._staleProbePendingAt = now;
+      try {
+        this.ws.emit("probe", { probeId: "liveness" });
+      } catch (e: any) {
+        console.warn("[liveness] probe emit failed", e);
+        this._staleProbeAcked = true;
+      }
+      return;
+    }
+    const staleSeconds = now - this._staleProbePendingAt;
+    if (staleSeconds >= 10) {
+      console.warn(
+        `[liveness] connection considered stale: no message for ${now - this.wsLastMessageReceived}s, no probe_ack within ${staleSeconds}s, closing to trigger reconnect`
+      );
+      this._staleProbeAcked = true;
+      this._staleProbePendingAt = 0;
+      try {
+        this.ws.close();
+      } catch (e: any) {
+        console.warn("[liveness] close failed", e);
+      }
+    }
+  }
+
+  /**
+   * P1（docs/design/message-reliable.md §6.2）：业务消息/探活回执到达时刷新
+   * 活跃度状态，使凭据 stale 窗口的连接免于被误杀。
+   */
+  markMessageReceived() {
+    this.wsLastMessageReceived = time.getUnixTime();
+    this._staleProbeAcked = true;
+    this._staleProbePendingAt = 0;
   }
 
   /**

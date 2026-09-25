@@ -11,7 +11,11 @@ import {
 // @ts-ignore
 import * as awarenessProtocol from "y-protocols/awareness";
 import debounce from "lodash";
-import { send, sendPure } from "../websocket/conn/action/ws_action.js";
+import { send } from "../websocket/conn/action/ws_action.js";
+import {
+  broadcastToDocRoom,
+  toDocRoom,
+} from "../common/sync/room_broadcast.js";
 import { callbackHandler, updateHandler } from "./yjs_utils.js";
 import { ChangeReq } from "../model/yjs/ChangeReq.js";
 import { Socket } from "socket.io";
@@ -75,9 +79,7 @@ export class WSSharedDoc extends Y.Doc {
         awarenessProtocol.encodeAwarenessUpdate(this.awareness, changedClients)
       );
       const buff = toUint8Array(encoder);
-      this.conns.forEach((_, c) => {
-        sendPure(this, c, buff);
-      });
+      broadcastToDocRoom(toDocRoom(this.name), buff);
     };
     this.awareness.on("update", awarenessChangeHandler);
     // @ts-ignore

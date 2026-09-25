@@ -4,7 +4,10 @@ import { WSSharedDoc } from "./ws_share_doc.js";
 import { persistencePostgresql } from "../storage/storage.js";
 // @ts-ignore
 import * as encoding from "lib0/encoding";
-import { sendPure } from "../websocket/conn/action/ws_action.js";
+import {
+  broadcastToDocRoom,
+  toDocRoom,
+} from "../common/sync/room_broadcast.js";
 import { callbackRequest, getContent } from "./ydoc_callback.js";
 // @ts-ignore
 import * as syncProtocol from "y-protocols/sync";
@@ -105,7 +108,7 @@ export const updateHandler = (
   encoding.writeVarUint(encoder, messageSync);
   syncProtocol.writeUpdate(encoder, update);
   const message = encoding.toUint8Array(encoder);
-  doc.conns.forEach((_: any, conn: any) => sendPure(doc, conn, message));
+  broadcastToDocRoom(toDocRoom(doc.name), message);
 };
 
 export const initTpl = async (

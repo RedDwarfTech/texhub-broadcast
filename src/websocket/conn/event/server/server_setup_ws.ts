@@ -23,6 +23,11 @@ import { ws_msg_handle } from "./message_handler.js";
 import { URLSearchParams } from "url";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { TeXFileType } from "@/model/enum/tex_file_type.js";
+import {
+  joinDocRoom,
+  toDocRoom,
+} from "@/common/sync/room_broadcast.js";
+import { SERVER_EPOCH } from "@/common/sync/server_epoch.js";
 
 export async function setupWSConnection(
   socket: Socket,
@@ -50,6 +55,12 @@ export async function setupWSConnection(
   // get doc, initialize if it does not exist yet
   const rootDoc: WSSharedDoc = await getYDoc(syncFileAttr, gc);
   rootDoc.conns.set(socket, new Set());
+  // P1（docs/design/message-reliable.md §6.1）：连接加入根文档/项目 room，
+  // 使 root update/awareness 广播与跨实例（Redis Adapter）广播覆盖到本连接。
+  joinDocRoom(socket, toDocRoom(rootDoc.name));
+  // P1（docs/design/message-reliable.md §6.3）：握手下发 serverEpoch，
+  // 客户端据此判断服务器是否重启（内存态/房间/Outbox 确认态失效）并触发完整对账。
+  socket.emit("sync:epoch", { epoch: SERVER_EPOCH });
   // listen and reply to events
   socket.on("message", (message: Uint8Array) => {
     ws_msg_handle(message, socket, rootDoc);

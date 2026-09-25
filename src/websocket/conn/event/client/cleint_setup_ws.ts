@@ -4,8 +4,6 @@ import logger from "@common/log4js_config.js";
 // @ts-ignore
 import { math } from "lib0";
 // @ts-ignore
-import * as time from "lib0/time";
-// @ts-ignore
 import * as encoding from "lib0/encoding";
 // @ts-ignore
 import * as awarenessProtocol from "y-protocols/awareness";
@@ -26,12 +24,22 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
     provider._synced = false;
 
     socketio.on("message", (data) => {
-      provider.wsLastMessageReceived = time.getUnixTime();
+      provider.markMessageReceived();
       const encoder = readMessage(provider, new Uint8Array(data), true);
       if (encoding.length(encoder) > 1) {
         socketio.send(encoding.toUint8Array(encoder));
       }
       //provider.emit("message", [data, provider]);
+    });
+    // P1（docs/design/message-reliable.md §6.2）：服务端探活回执秒回，据此刷新
+    // 活跃度，使在线但闲置的连接免于被僵尸检测误杀。
+    socketio.on("probe_ack", () => {
+      provider.markMessageReceived();
+    });
+    // P1（docs/design/message-reliable.md §6.3）：握手下发的 serverEpoch，
+    // 对比本地缓存判定服务器是否重启，重启则强制完整对账。
+    socketio.on("sync:epoch", (payload: any) => {
+      provider.handleServerEpoch(payload);
     });
     // P0：服务端 Outbox ACK（server -> client），确认后从 Outbox 删除对应条目
     socketio.on("sync:ack", (payload: any) => {
@@ -126,7 +134,7 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
       );
     });
     socketio.on("connect", async () => {
-      provider.wsLastMessageReceived = time.getUnixTime();
+      provider.markMessageReceived();
       provider.wsconnecting = false;
       provider.wsconnected = true;
       provider.ws = socketio;

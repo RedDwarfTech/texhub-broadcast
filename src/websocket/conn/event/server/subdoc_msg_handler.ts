@@ -28,6 +28,10 @@ import {
   writeSyncStep2,
 } from "./server_protocol_action.js";
 import { emitSyncAck } from "../../action/ws_action.js";
+import {
+  joinDocRoom,
+  toDocRoom,
+} from "@/common/sync/room_broadcast.js";
 
 let cryptoModule: any | null = null;
 
@@ -156,6 +160,10 @@ const preHandleSubDoc = async (
       msgBody: docContext,
     };
     let curSubDoc = await getYDoc(syncFileAttr);
+    // P1（docs/design/message-reliable.md §6.1）：连接首次接触某子文档即加入其
+    // room，后续该子文档的 update/awareness 广播（含跨实例 Redis Adapter 转发）
+    // 才能覆盖到本连接。
+    joinDocRoom(conn, toDocRoom(subdocGuid));
     handleSubDoc(curSubDoc, conn, rootDoc, syncFileAttr, decoder, encoder);
 
     // P0：客户端 Outbox ACK。客户端在子文档 update 帧的 context 中内嵌 seq，

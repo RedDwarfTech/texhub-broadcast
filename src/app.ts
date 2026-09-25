@@ -25,6 +25,12 @@ export const websocketServer: Server = new Server(httpServer, {
     methods: ["GET", "HEAD", "OPTIONS", "POST"],
   },
   path: "/sync",
+  // P1（docs/design/message-reliable.md §6.1/§6.2）：支持连接状态恢复。
+  // 短暂断线（<2min）重连后自动恢复房间成员与已 emit 参数；但注意服务器重启后
+  // 内存态会丢失，客户端以 sync:epoch 兜底做完整对账。
+  connectionStateRecovery: {
+    maxDisconnectionDuration: 2 * 60 * 1000,
+  },
 });
 
 websocketServer.use((socket: Socket, next) => {

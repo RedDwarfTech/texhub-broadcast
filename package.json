@@ -1,6 +1,6 @@
 {
   "name": "texhub-broadcast",
-  "version": "1.0.136",
+  "version": "1.0.137",
   "description": "",
   "repository": {
     "type": "git",
@@ -46,6 +46,7 @@
   "license": "ISC",
   "dependencies": {
     "@socket.io/admin-ui": "^0.5.1",
+    "@socket.io/redis-adapter": "^8.3.0",
     "diff": "^8.0.2",
     "dotenv": "^16.6.1",
     "esm-module-alias": "^2.2.1",
@@ -54,6 +55,7 @@
     "globals": "^15.15.0",
     "ioredis": "^5.8.0",
     "jsonwebtoken": "^9.0.2",
+    "lib0": "^0.2.117",
     "lodash": "^4.17.21",
     "log4js": "^6.9.1",
     "lru-cache": "^11.2.2",
@@ -63,15 +65,14 @@
     "pg": "^8.16.3",
     "pg-hstore": "^2.3.4",
     "prom-client": "^14.2.0",
-    "lib0": "^0.2.117",
     "rdjs-wheel": "0.0.32",
-    "y-protocols": "^1.0.7",
-    "yjs": "13.6.31",
     "redis": "^4.7.1",
     "sequelize": "^6.37.7",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "y-protocols": "^1.0.7",
+    "yjs": "13.6.31"
   },
   "devDependencies": {
     "@types/express": "^5.0.3",

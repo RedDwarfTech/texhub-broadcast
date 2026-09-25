@@ -7,8 +7,12 @@ import { SyncMessageContext } from "@/model/texhub/sync_msg_context.js";
 import { v4 as uuidv4 } from "uuid";
 // @ts-ignore
 import * as syncProtocol from "y-protocols/sync";
-import { send, sendPure } from "../../action/ws_action.js";
+import { send } from "../../action/ws_action.js";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
+import {
+  broadcastToDocRoom,
+  toDocRoom,
+} from "@/common/sync/room_broadcast.js";
 
 export const serverSendSyncStep1 = (
   curSubDoc: WSSharedDoc,
@@ -60,7 +64,7 @@ export const writeSyncStep2 = (
 export const serverWriteUpdate = (
   update: Uint8Array,
   subdocGuid: string,
-  rootDoc: WSSharedDoc,
+  _rootDoc: WSSharedDoc,
   origin: Socket
 ) => {
   const encoder = encoding.createEncoder();
@@ -79,9 +83,8 @@ export const serverWriteUpdate = (
   syncProtocol.writeUpdate(encoder, update);
 
   const message = encoding.toUint8Array(encoder);
-  rootDoc.conns.forEach((_: Set<number>, conn: Socket) => {
-    if (conn !== origin) {
-      sendPure(rootDoc, conn, message);
-    }
-  });
+  // P1（docs/design/message-reliable.md §6.1）：subdoc 更新改经子文档 room 广播，
+  // 排除发起者，保持与原先遍历 rootDoc.conns 时"不回显给 origin"一致的语义，
+  // 并借助 Redis Adapter 覆盖所有实例上订阅该子文档的连接。
+  broadcastToDocRoom(toDocRoom(subdocGuid), message, origin && origin.id);
 };
