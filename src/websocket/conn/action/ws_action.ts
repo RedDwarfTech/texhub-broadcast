@@ -41,6 +41,7 @@ import {
 } from "lib0/decoding";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
 import { cleanupHistoryDocForProject } from "@/common/app/throttle_util.js";
+import { getAccessScope } from "../event/server/authorization.js";
 
 /**
  * send message without broadcast
@@ -356,6 +357,16 @@ export const messageListener = async (
     const encoder = encoding.createEncoder();
     const decoder = decoding.createDecoder(message);
     const messageType: number = decoding.readVarUint(decoder);
+    // 兜底：建连鉴权是消息处理的前置条件。消息监听是在 authorizeConnection
+    // 之后才挂上的，正常不会走到这里，但任何绕过 setupWSConnection 的调用
+    // 路径都会在这里被拦下，不至于静默获得读写能力。
+    if (!getAccessScope(conn)) {
+      markDocUpdateFailed(conn, rootDoc.name, "unauthorized");
+      logger.error(
+        `message from unauthenticated scope rejected, doc=${rootDoc.name}, socket=${conn.id}`
+      );
+      return;
+    }
     switch (messageType) {
       case SyncMessageType.SubDocMessageSync:
         logSubDocRawMessage(message);

@@ -38,6 +38,10 @@ import {
   joinDocRoom,
   toDocRoom,
 } from "@/common/sync/room_broadcast.js";
+import {
+  assertFileBelongsToProject,
+  getAccessScope,
+} from "./authorization.js";
 
 let cryptoModule: any | null = null;
 
@@ -175,6 +179,19 @@ const preHandleSubDoc = async (
       file_id: "",
     };
     if (subdocGuid !== rootDoc.name) {
+      // subdoc 的 GUID 是客户端给的，必须先确认它属于本连接已授权的项目，
+      // 否则攻击者只要枚举 file_id 就能把自己的 subdoc 挂到别人的根文档上，
+      // 从而读写对方项目的文档。
+      const ownership = await assertFileBelongsToProject(conn, String(subdocGuid));
+      if (!ownership.allowed) {
+        logger.error(
+          `[ws-authz] subdoc rejected, subdocGuid=${subdocGuid}, rootDoc=${rootDoc.name}, reason=${ownership.reason}`
+        );
+        if (ackSeq !== undefined) {
+          emitSyncNack(conn, ackDoc, ackSeq, ownership.reason || "access_denied");
+        }
+        return;
+      }
       fileInfo = await getTexFileInfo(subdocGuid);
       if (fileInfo) {
         docIntId = fileInfo.id;
@@ -182,7 +199,10 @@ const preHandleSubDoc = async (
     }
     let syncFileAttr: SyncFileAttr = {
       docName: subdocGuid,
-      projectId: rootDoc.name,
+      // 用建连时解析出的权威 projectId，而不是 rootDoc.name：
+      // 单文件模式下 rootDoc.name 是 file_id，填进 projectId 会让
+      // 持久化/历史记录把子文档挂到错误的项目上。
+      projectId: getAccessScope(conn)?.projectId ?? rootDoc.name,
       docIntId: docIntId,
       docShowName: fileInfo.name,
       docType: 1,

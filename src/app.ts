@@ -1,9 +1,9 @@
 import express, { Express } from "express";
-import { Server, Socket } from "socket.io";
+import { Server } from "socket.io";
 import http from "http";
 import "dotenv/config";
 import { initialize } from "@websocket/entry/init.js";
-import { handleMiddlewareAuthCheck } from "@websocket/entry/handle/auth.js";
+import { registerAuthMiddleware } from "@websocket/entry/handle/auth.js";
 import { registerRoomServer } from "@common/sync/room_broadcast.js";
 import logger from "@common/log4js_config.js";
 const PORT = 1234;
@@ -34,16 +34,9 @@ export const websocketServer: Server = new Server(httpServer, {
   },
 });
 
-websocketServer.use((socket: Socket, next) => {
-  if (!socket.handshake) {
-    //logger.error("auth token is missing");
-    return next(new Error("1auth token is missing"));
-  }
-  // If everything is fine, call next without arguments
-  next();
-});
-
-handleMiddlewareAuthCheck(websocketServer);
+// 连接鉴权：fail-closed，失败即拒绝。必须覆盖 `/` 与 `/texhub` 两个命名空间，
+// 且必须在此（initialize 之前）注册，命名空间中间件在 connection 事件前生效。
+registerAuthMiddleware(websocketServer);
 
 // P1（docs/design/message-reliable.md §6.1）：把 Server 实例注入 room 广播模块。
 // 必须在此注册（bundle 侧的 provider 依赖 room_broadcast，但绝不能反向引用 app）。

@@ -13,6 +13,11 @@ import * as syncProtocol from "y-protocols/sync";
 // @ts-ignore
 import * as decoding from "lib0/decoding";
 import { SyncFileAttr } from "@/model/texhub/sync_file_attr.js";
+import { TeXFileType } from "@model/enum/tex_file_type.js";
+import {
+  assertFileBelongsToProject,
+  getAccessScope,
+} from "./authorization.js";
 
 export const handleControlSignals = (message: Uint8Array, conn: Socket) => {
   try {
@@ -46,10 +51,22 @@ export const handleControlSignals = (message: Uint8Array, conn: Socket) => {
 };
 
 const handleSwitchFiles = async (msg: ControlMsg, conn: Socket) => {
+  // 客户端传来的 fileId 完全不可信：必须确认它落在本连接已授权的项目内，
+  // 否则这行就是「传任意 file_id 拿回该文件的 sync step 1」，
+  // 等价于全平台任意文件读取。
+  const ownership = await assertFileBelongsToProject(conn, String(msg.fileId || ""));
+  if (!ownership.allowed) {
+    logger.error(
+      `[ws-authz] SwitchEditFile rejected, fileId=${msg.fileId}, reason=${ownership.reason}`
+    );
+    return;
+  }
+
+  const accessScope = getAccessScope(conn);
   let syncFileAttr: SyncFileAttr = {
-    docName: msg.fileId,
-    projectId: "",
-    docType: 1,
+    docName: String(msg.fileId),
+    projectId: accessScope ? accessScope.projectId : "",
+    docType: TeXFileType.TEX,
     docShowName: "unknown",
     src: "handleSwitchFiles",
   };

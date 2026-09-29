@@ -31,7 +31,6 @@ const CALLBACK_DEBOUNCE_WAIT =
   parseInt(process.env.CALLBACK_DEBOUNCE_WAIT!) || 2000;
 const CALLBACK_DEBOUNCE_MAXWAIT =
   parseInt(process.env.CALLBACK_DEBOUNCE_MAXWAIT!) || 10000;
-const JWT_SIGN_KEY = process.env.JWT_SIGN_KEY || "key-missing";
 
 export class WSSharedDoc extends Y.Doc {
   name: string;

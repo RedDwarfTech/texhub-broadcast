@@ -28,6 +28,12 @@ import {
   toDocRoom,
 } from "@/common/sync/room_broadcast.js";
 import { SERVER_EPOCH } from "@/common/sync/server_epoch.js";
+import {
+  AccessDeniedError,
+  ACCESS_DENIED_REASON,
+  authorizeConnection,
+  denyConnection,
+} from "./authorization.js";
 
 export async function setupWSConnection(
   socket: Socket,
@@ -52,6 +58,35 @@ export async function setupWSConnection(
     docShowName: docShowName || "unknown",
     src: "setupWSConnection"
   };
+
+  // 鉴权必须发生在 getYDoc / joinDocRoom 之前：
+  // getYDoc 会把文档装载进进程内共享的 docs 缓存并绑定 rootDoc.conns，
+  // 一旦在这之后才发现越权，攻击者已经能读到 doc 内容了。
+  try {
+    const accessScope = await authorizeConnection(socket, syncFileAttr);
+    (socket as any).data.accessScope = accessScope;
+    // 用服务端解析出的权威 projectId 覆盖客户端传来的 projId，
+    // 后续所有 subdoc / 控制消息的归属判定都以它为准。
+    syncFileAttr.projectId = accessScope.projectId;
+  } catch (err) {
+    if (err instanceof AccessDeniedError) {
+      logger.error(
+        `[ws-authz] rejecting connection, socket=${socket.id}, doc=${docId}, projId=${projId}, reason=${err.reason}`
+      );
+      denyConnection(socket, err);
+    } else {
+      logger.error(`[ws-authz] unexpected error while authorizing socket=${socket.id}`, err);
+      denyConnection(
+        socket,
+        new AccessDeniedError(
+          ACCESS_DENIED_REASON.PERMISSION_CHECK_FAILED,
+          "unexpected authorization error"
+        )
+      );
+    }
+    return;
+  }
+
   // get doc, initialize if it does not exist yet
   const rootDoc: WSSharedDoc = await getYDoc(syncFileAttr, gc);
   rootDoc.conns.set(socket, new Set());

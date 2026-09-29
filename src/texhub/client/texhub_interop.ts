@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import log4js from "log4js";
 import { FileContent } from "@model/texhub/file_content";
 import { AppResponse } from "../biz/AppResponse";
+import { TEX_SERVICE_BASE_URL } from "./texhub_endpoint.js";
 var logger = log4js.getLogger();
 
 const generateRequestId = (): string => {
@@ -39,8 +40,7 @@ const setCachedFileInfo = (fileId: string, data: AppResponse<FileContent>): void
 };
 
 const flushIndex = (fileId: string, content: string) => {
-  const baseUrl = "http://tex-service.reddwarf-pro.svc.cluster.local:8000";
-  const url = `${baseUrl}/tex/project/flush/idx`;
+  const url = `${TEX_SERVICE_BASE_URL}/tex/project/flush/idx`;
   let req = {
     file_id: fileId,
     content: content,
@@ -80,8 +80,7 @@ export const getFileJsonData = async (
   }
 
   return new Promise((resolve, reject) => {
-    const baseUrl = "http://tex-service.reddwarf-pro.svc.cluster.local:8000";
-    const url = `${baseUrl}/tex/file/y-websocket/detail?file_id=${encodeURIComponent(
+    const url = `${TEX_SERVICE_BASE_URL}/tex/file/y-websocket/detail?file_id=${encodeURIComponent(
       fileId
     )}`;
     const request = http.request(
