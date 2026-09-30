@@ -80,7 +80,7 @@ export const getFileJsonData = async (
   }
 
   return new Promise((resolve, reject) => {
-    const url = `${TEX_SERVICE_BASE_URL}/tex/file/y-websocket/detail?file_id=${encodeURIComponent(
+    const url = `${TEX_SERVICE_BASE_URL}/inner-tex/file/y-websocket/detail?file_id=${encodeURIComponent(
       fileId
     )}`;
     const request = http.request(
