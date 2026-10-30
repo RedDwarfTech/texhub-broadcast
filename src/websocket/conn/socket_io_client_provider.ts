@@ -47,6 +47,7 @@ type SyncStatusPayload = {
   state: "pending" | "synced" | "failed";
   pending: number;
   reason?: string;
+  stage?: "ack" | "enqueue" | "refresh";
 };
 
 type YDocUpdateHandler = (update: any, origin: any) => void;
@@ -557,6 +558,7 @@ export class SocketIOClientProvider extends Observable<string> {
         state: "failed",
         pending: outbox.getUnackedCount(doc),
         reason: "retry_exhausted",
+        stage: "ack",
       });
       return;
     }
@@ -566,6 +568,7 @@ export class SocketIOClientProvider extends Observable<string> {
       state: "failed",
       pending: outbox.getUnackedCount(doc),
       reason,
+      stage: "ack",
     });
     const delay = Math.min(
       syncRetryBaseDelayMs * Math.pow(2, attempts - 1),
@@ -667,6 +670,7 @@ export class SocketIOClientProvider extends Observable<string> {
         state: "failed",
         pending: outbox.getUnackedCount(docName),
         reason: "retry_exhausted",
+        stage: "enqueue",
       });
       this.scheduleDeferredOutboxRetry();
       return;
@@ -714,6 +718,7 @@ export class SocketIOClientProvider extends Observable<string> {
           state: "failed",
           pending: outbox.getUnackedCount(docName),
           reason: "outbox_error",
+          stage: "enqueue",
         });
         this.scheduleOutboxEnqueueRetry(
           key,
@@ -742,6 +747,7 @@ export class SocketIOClientProvider extends Observable<string> {
           state: "failed",
           pending: outbox.getUnackedCount(docName),
           reason: "outbox_error",
+          stage: "enqueue",
         });
         this.scheduleOutboxEnqueueRetry(
           key,
@@ -773,6 +779,7 @@ export class SocketIOClientProvider extends Observable<string> {
           state: "failed",
           pending: outbox.getUnackedCount(docName),
           reason: "frame_error",
+          stage: "enqueue",
         });
         return;
       }
@@ -941,6 +948,7 @@ export class SocketIOClientProvider extends Observable<string> {
         state: "failed",
         pending: outbox.getUnackedCount(docName),
         reason: "retry_exhausted",
+        stage: "refresh",
       });
       return;
     }
