@@ -88,6 +88,6 @@
   },
   "engine-strict": true,
   "overrides": {
-    "lib0": "^0.2.117"
+    "lib0": "^0.2.119"
   }
 }
