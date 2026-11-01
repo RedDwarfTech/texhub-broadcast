@@ -80,14 +80,31 @@ export const readMessage = (
   buf: Uint8Array,
   emitSynced: boolean
 ) => {
-  const decoder = createDecoder(buf);
   const encoder = createEncoder();
-  const messageType = readVarUint(decoder);
-  const messageHandler = provider.messageHandlers[messageType];
-  if (messageHandler) {
-    messageHandler(encoder, decoder, provider, emitSynced, messageType);
-  } else {
-    console.error("Unable to compute message");
+  try {
+    if (!buf || buf.length === 0) {
+      logger.warn(
+        `drop empty collaboration frame, doc=${provider.roomname}, socket=${provider.ws?.id}`
+      );
+      return encoder;
+    }
+    const decoder = createDecoder(buf);
+    const messageType = readVarUint(decoder);
+    const messageHandler = provider.messageHandlers[messageType];
+    if (messageHandler) {
+      messageHandler(encoder, decoder, provider, emitSynced, messageType);
+    } else {
+      console.error("Unable to compute message");
+    }
+  } catch (e) {
+    // A malformed frame must never escape into socket.io / BroadcastChannel /
+    // React call stacks: an uncaught "Unexpected end of array" would surface as
+    // an editor error. Drop the frame and any partially built reply instead.
+    logger.error(
+      `failed to handle collaboration frame, doc=${provider.roomname}, len=${buf?.length ?? 0}`,
+      e
+    );
+    return createEncoder();
   }
   return encoder;
 };

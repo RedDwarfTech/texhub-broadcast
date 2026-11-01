@@ -218,12 +218,30 @@ export class SocketIOClientProvider extends Observable<string> {
      * @param {ArrayBuffer} data
      * @param {any} origin
      */
-    this.bcSubscriber = (data: ArrayBuffer, origin: any) => {
-      if (origin !== this) {
-        const encoder = readMessage(this, new Uint8Array(data), false);
-        if (encoding.length(encoder) > 1) {
-          bc.publish(this.bcChannel, encoding.toUint8Array(encoder), this);
-        }
+    this.bcSubscriber = (data: any, origin: any) => {
+      if (origin === this) {
+        return;
+      }
+      // BroadcastChannel may hand back ArrayBuffer / Buffer / Uint8Array.
+      // Drop anything else instead of letting `new Uint8Array(data)` produce a
+      // zero-length frame that later fails with "Unexpected end of array".
+      let frame: Uint8Array | null = null;
+      if (data instanceof Uint8Array) {
+        frame = data;
+      } else if (data instanceof ArrayBuffer) {
+        frame = new Uint8Array(data);
+      } else if (ArrayBuffer.isView(data)) {
+        frame = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+      }
+      if (!frame || frame.length === 0) {
+        console.warn(
+          `[bc] drop invalid collaboration frame, doc=${this.roomname}`
+        );
+        return;
+      }
+      const encoder = readMessage(this, frame, false);
+      if (encoding.length(encoder) > 1) {
+        bc.publish(this.bcChannel, encoding.toUint8Array(encoder), this);
       }
     };
 
@@ -490,21 +508,29 @@ export class SocketIOClientProvider extends Observable<string> {
   }
 
   disconnectBc() {
-    // broadcast message with local awareness state set to null (indicating disconnect)
-    const encoder = encoding.createEncoder();
-    encoding.writeVarUint(encoder, SyncMessageType.MessageAwareness);
-    encoding.writeVarUint8Array(
-      encoder,
-      awarenessProtocol.encodeAwarenessUpdate(
-        this.awareness,
-        [this.doc.clientID],
-        new Map()
-      )
-    );
-    broadcastMessage(this, encoding.toUint8Array(encoder));
-    if (this.bcconnected) {
-      bc.unsubscribe(this.bcChannel, this.bcSubscriber);
-      this.bcconnected = false;
+    try {
+      // broadcast message with local awareness state set to null (indicating disconnect)
+      const encoder = encoding.createEncoder();
+      encoding.writeVarUint(encoder, SyncMessageType.MessageAwareness);
+      encoding.writeVarUint8Array(
+        encoder,
+        awarenessProtocol.encodeAwarenessUpdate(
+          this.awareness,
+          [this.doc.clientID],
+          new Map()
+        )
+      );
+      broadcastMessage(this, encoding.toUint8Array(encoder));
+    } catch (e) {
+      console.warn("broadcast disconnect awareness failed", e);
+    } finally {
+      // Always unsubscribe: a stale subscriber would keep decoding frames of a
+      // provider that is no longer active, and can surface decode errors inside
+      // the new provider's synchronous call stack.
+      if (this.bcconnected) {
+        bc.unsubscribe(this.bcChannel, this.bcSubscriber);
+        this.bcconnected = false;
+      }
     }
   }
 

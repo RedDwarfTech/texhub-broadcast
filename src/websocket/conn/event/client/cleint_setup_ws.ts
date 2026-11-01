@@ -12,6 +12,25 @@ import { SyncMessageType } from "@model/texhub/sync_msg_type.js";
 import * as syncProtocol from "y-protocols/sync";
 import { readMessage } from "../../action/ws_action.js";
 import { handleSubdocConnect } from "./subdoc_connect_handler.js";
+
+/**
+ * socket.io may deliver binary frames as ArrayBuffer / Buffer / Uint8Array.
+ * Anything else (string, object, empty payload) is not a collaboration frame
+ * and must be dropped instead of being decoded.
+ */
+const toFrameBytes = (data: any): Uint8Array | null => {
+  if (data instanceof Uint8Array) {
+    return data;
+  }
+  if (data instanceof ArrayBuffer) {
+    return new Uint8Array(data);
+  }
+  if (ArrayBuffer.isView(data)) {
+    return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+  }
+  return null;
+};
+
 /**
  * @param {SocketIOClientProvider} provider
  */
@@ -25,7 +44,14 @@ export const setupWebsocket = (provider: SocketIOClientProvider) => {
 
     socketio.on("message", (data) => {
       provider.markMessageReceived();
-      const encoder = readMessage(provider, new Uint8Array(data), true);
+      const frame = toFrameBytes(data);
+      if (!frame || frame.length === 0) {
+        logger.warn(
+          `[ws] drop invalid collaboration frame, doc=${provider.roomname}`
+        );
+        return;
+      }
+      const encoder = readMessage(provider, frame, true);
       if (encoding.length(encoder) > 1) {
         socketio.send(encoding.toUint8Array(encoder));
       }

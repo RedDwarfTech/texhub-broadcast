@@ -41,6 +41,13 @@ messageHandlers[SyncMessageType.SubDocMessageSync] = (
   emitSynced: boolean = true,
   messageType: number
 ) => {
+  if (!decoding.hasContent(decoder)) {
+    // A SubDocMessageSync frame must carry a context string. Frames that only
+    // contain the message type are malformed, so drop them instead of letting
+    // readVarString() run past the end of the buffer.
+    console.error("sub doc message sync missing context, drop frame");
+    return;
+  }
   const context = decoding.readVarString(decoder);
   const isJson = RdJsonUtil.hasJsonStructure(context);
   const docContext = isJson ? JSON.parse(context) : context;
@@ -51,7 +58,15 @@ messageHandlers[SyncMessageType.SubDocMessageSync] = (
     return;
   }
 
-  encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
+  if (!decoding.hasContent(decoder)) {
+    // One-way frames (sync step2 / update) carry no reply. Older clients also
+    // echoed the [type][context] header back, so such frames still show up on
+    // the wire; drop them here, otherwise readSyncMessage() throws
+    // "Unexpected end of array" on the empty decoder.
+    console.error("sub doc message sync has no content, drop frame");
+    return;
+  }
+
   const uniqueValue = uuidv4();
   let msg: SyncMessageContext = {
     doc_name: docGuid,
@@ -61,23 +76,29 @@ messageHandlers[SyncMessageType.SubDocMessageSync] = (
     msg_type: "read_sync",
   };
   let msgStr = JSON.stringify(msg);
-  // convert to the legacy message without doc guid
-  encoding.writeVarString(encoder, msgStr);
-  const hasContent = decoding.hasContent(decoder);
-  if (!hasContent) {
-    console.error("sub doc message sync has no content");
-  }
-  console.warn("sub doc message sync with content，docGuid:", docGuid);
   let copiedDecoder = decoding.clone(decoder);
   if (!enableTracing()) {
     logYjsUnwrapMsg(copiedDecoder, docContext);
   }
+  // Only sync step1 expects a reply; step2/update are one-way. Encode the reply
+  // into a temporary encoder and prepend [type][context] only when there is an
+  // actual reply, so this handler never emits a header-only frame.
+  const replyEncoder = encoding.createEncoder();
   const syncMessageType = syncProtocol.readSyncMessage(
     decoder,
-    encoder,
+    replyEncoder,
     doc,
     provider
   );
+  if (
+    syncMessageType === syncProtocol.messageYjsSyncStep1 &&
+    encoding.length(replyEncoder) > 0
+  ) {
+    encoding.writeVarUint(encoder, SyncMessageType.SubDocMessageSync);
+    // convert to the legacy message without doc guid
+    encoding.writeVarString(encoder, msgStr);
+    encoding.writeUint8Array(encoder, encoding.toUint8Array(replyEncoder));
+  }
 
   // main doc synced
   if (
@@ -109,6 +130,10 @@ messageHandlers[SyncMessageType.MessageSync] = (
   emitSynced: any,
   messageType: any
 ) => {
+  if (!decoding.hasContent(decoder)) {
+    console.error("sync message has no content, drop frame");
+    return;
+  }
   writeVarUint(encoder, SyncMessageType.MessageSync);
   const syncMessageType = syncProtocol.readSyncMessage(
     decoder,
@@ -149,6 +174,10 @@ messageHandlers[SyncMessageType.MessageAwareness] = (
   _emitSynced: any,
   _messageType: any
 ) => {
+  if (!decoding.hasContent(decoder)) {
+    console.error("awareness message has no content, drop frame");
+    return;
+  }
   awarenessProtocol.applyAwarenessUpdate(
     provider.awareness,
     readVarUint8Array(decoder),
@@ -163,6 +192,10 @@ messageHandlers[SyncMessageType.MessageAuth] = (
   _emitSynced: any,
   _messageType: any
 ) => {
+  if (!decoding.hasContent(decoder)) {
+    console.error("auth message has no content, drop frame");
+    return;
+  }
   authProtocol.readAuthMessage(
     decoder,
     provider.doc,
